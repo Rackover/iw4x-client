@@ -68,7 +68,8 @@ namespace Components
 
 	int Window::IsNoBorder()
 	{
-		return Window::NoBorder.get<bool>();
+		return 0;
+		////return Window::NoBorder.get<bool>();
 	}
 
 	__declspec(naked) void Window::StyleHookStub()
@@ -144,7 +145,7 @@ namespace Components
 	Window::Window()
 	{
 		// Borderless window
-		Window::NoBorder = Dvar::Register<bool>("r_noborder", true, Game::dvar_flag::DVAR_FLAG_SAVED, "Do not use a border in windowed mode");
+		Window::NoBorder = Dvar::Register<bool>("r_noborder", false, Game::dvar_flag::DVAR_FLAG_SAVED, "Do not use a border in windowed mode");
 		Window::NativeCursor = Dvar::Register<bool>("ui_nativeCursor", false, Game::dvar_flag::DVAR_FLAG_SAVED, "Display native cursor");
 
 		Utils::Hook(0x507643, Window::StyleHookStub, HOOK_CALL).install()->quick();

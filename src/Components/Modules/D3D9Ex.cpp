@@ -731,17 +731,19 @@ namespace Components
 
 	IDirect3D9* __stdcall D3D9Ex::Direct3DCreate9Stub(UINT sdk)
 	{
-		if (Dvar::Var("r_useD3D9Ex").get<bool>())
-		{
-			IDirect3D9Ex* test = nullptr;
-			if (FAILED(Direct3DCreate9Ex(sdk, &test))) return nullptr;
+		////if (Dvar::Var("r_useD3D9Ex").get<bool>())
+		////{
+		////	IDirect3D9Ex* test = nullptr;
+		////	if (FAILED(Direct3DCreate9Ex(sdk, &test))) return nullptr;
 
-			return (new D3D9Ex::D3D9(test));
-		}
-		else
-		{
-			return Direct3DCreate9(sdk);
-		}
+		////	return (new D3D9Ex::D3D9(test));
+		////}
+		////else
+		////{
+		////	return Direct3DCreate9(sdk);
+		////}
+
+		return Direct3DCreate9(sdk);
 	}
 
 	D3D9Ex::D3D9Ex()
