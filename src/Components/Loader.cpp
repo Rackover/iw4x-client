@@ -39,7 +39,7 @@ namespace Components
 		Loader::Register(new Dvar());
 		Loader::Register(new Lean());
 		Loader::Register(new Maps());
-		Loader::Register(new News());
+		////Loader::Register(new News());
 		Loader::Register(new Node());
 		Loader::Register(new RCon());
 		Loader::Register(new Stats());

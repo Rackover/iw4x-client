@@ -32,9 +32,10 @@ namespace Components
 		Party::Container.target = target;
 		Party::Container.challenge = Utils::Cryptography::Rand::GenerateChallenge();
 
-		Network::SendCommand(Party::Container.target, "getinfo", Party::Container.challenge);
-
-		Command::Execute("openmenu popup_reconnectingtoparty");
+		SteamID id = Party::GenerateLobbyId();
+		Party::LobbyMap[id.bits] = Party::Container.target;
+		Game::Steam_JoinLobby(id, 0);
+		
 	}
 
 	const char* Party::GetLobbyInfo(SteamID lobby, const std::string& key)
@@ -48,6 +49,14 @@ namespace Components
 				return Utils::String::VA("%d", address.getIP().full);
 			}
 			else if (key == "port")
+			{
+				return Utils::String::VA("%d", address.getPort());
+			}
+			else if (key == "addrLoc")
+			{
+				return Utils::String::VA("%d", address.getIP().full);
+			}
+			else if (key == "portLoc")
 			{
 				return Utils::String::VA("%d", address.getPort());
 			}
@@ -209,8 +218,8 @@ namespace Components
 
 		// Force xblive_privatematch 0 and rename it
 		//Utils::Hook::Set<BYTE>(0x420A6A, 4);
-		Utils::Hook::Set<BYTE>(0x420A6C, 0);
-		Utils::Hook::Set<char*>(0x420A6E, "xblive_privateserver");
+		////Utils::Hook::Set<BYTE>(0x420A6C, 0);
+		////Utils::Hook::Set<char*>(0x420A6E, "xblive_privateserver");
 
 		// Remove migration shutdown, it causes crashes and will be destroyed when erroring anyways
 		Utils::Hook::Nop(0x5A8E1C, 12);

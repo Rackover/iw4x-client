@@ -403,7 +403,7 @@ namespace Components
 		// Javelin fix
 		Utils::Hook(0x578F52, QuickPatch::JavelinResetHookStub, HOOK_JUMP).install()->quick();
 
-		// Add ultrawide support
+		// Add ultrawide support 
 		Utils::Hook(0x0051B13B, QuickPatch::Dvar_RegisterAspectRatioDvar, HOOK_CALL).install()->quick();
 		Utils::Hook(0x005063F3, QuickPatch::SetAspectRatioStub, HOOK_JUMP).install()->quick();
 
@@ -446,10 +446,10 @@ namespace Components
 		Utils::Hook::Set<char*>(0x6431D1, BASEGAME);
 
 		// UI version string
-		Utils::Hook::Set<char*>(0x43F73B, "IW4x: " VERSION);
+		Utils::Hook::Set<char*>(0x43F73B, VERSION);
 
 		// console version string
-		Utils::Hook::Set<char*>(0x4B12BB, "IW4x " VERSION " (built " __DATE__ " " __TIME__ ")");
+		Utils::Hook::Set<char*>(0x4B12BB, VERSION);
 
 		// version string
 		Utils::Hook::Set<char*>(0x60BD56, "IW4x (" VERSION ")");
@@ -516,6 +516,10 @@ namespace Components
 		// dont run UPNP stuff on main thread
 		Utils::Hook::Set<BYTE>(0x48A135, 0xC3);
 		Utils::Hook::Set<BYTE>(0x48A151, 0xC3);
+
+		// Disable UPNP!
+		Utils::Hook::Set<BYTE>(0x412300, 0xC3);
+
 		Utils::Hook::Nop(0x684080, 5); // Don't spam the console
 
 		// spawn upnp thread when UPNP_init returns

@@ -135,6 +135,20 @@ namespace Components
 			return;
 		}
 
+
+		if (!connectData.infostring().empty())
+		{
+			Game::SV_Cmd_EndTokenizedString();
+			Game::SV_Cmd_TokenizeString(connectData.infostring().data());
+			Game::SV_DirectConnect(*address.get());
+		}
+		else
+		{
+			Network::Send(address, "error\nInvalid infostring data!");
+		}
+
+
+		/*
 		// Simply connect, if we're in debug mode, we ignore all security checks
 #ifndef DEBUG
 		if (address.isLoopback())
@@ -236,6 +250,8 @@ namespace Components
 			Game::SV_DirectConnect(*address.get());
 		}
 #endif
+	*/
+
 	}
 
 	__declspec(naked) void Auth::DirectConnectStub()
@@ -283,7 +299,8 @@ namespace Components
 			cert.set_ctoken(Auth::ComputeToken.toString());
 			cert.set_privatekey(Auth::GuidKey.serialize(PK_PRIVATE));
 
-			Utils::IO::WriteFile("players/guid.dat", cert.SerializeAsString());
+			std::cout << "Wrote to " << Utils::String::VA("%s/iw4/players/guid.dat", getenv("APPDATA"));
+			Utils::IO::WriteFile(Utils::String::VA("%s/iw4/players/guid.dat", getenv("APPDATA")), cert.SerializeAsString());
 		}
 	}
 
@@ -301,7 +318,8 @@ namespace Components
 		if (!force && Auth::GuidKey.isValid()) return;
 
 		Proto::Auth::Certificate cert;
-		if (cert.ParseFromString(::Utils::IO::ReadFile("players/guid.dat")))
+		std::cout << "Reading from " << Utils::String::VA("%s/iw4/players/guid.dat", getenv("APPDATA"));
+		if (cert.ParseFromString(::Utils::IO::ReadFile(Utils::String::VA("%s/iw4/players/guid.dat", getenv("APPDATA")))))
 		{
 			Auth::GuidKey.deserialize(cert.privatekey());
 			Auth::GuidToken = cert.token();
