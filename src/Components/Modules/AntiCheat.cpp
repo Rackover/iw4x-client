@@ -36,6 +36,9 @@ namespace Components
 
 	void AntiCheat::CrashClient()
 	{
+		Logger::Print("Anticheat crashing client!\n");
+		return;
+
 		__VMProtectBeginUltra("");
 #ifdef DEBUG_DETECTIONS
 		Logger::Flush();
@@ -263,7 +266,8 @@ namespace Components
 
 		if (hashVal.has_value() && hash != hashVal.value())
 		{
-			Utils::Hook::Set<BYTE>(0x42A667, 0x90); // Crash
+			Logger::Print("Anticheat crashing client on purpose!QuickCodeScanner1 \n");
+			////Utils::Hook::Set<BYTE>(0x42A667, 0x90); // Crash
 		}
 
 		hashVal.emplace(hash);
@@ -283,7 +287,8 @@ namespace Components
 		unsigned int hash = Utils::Cryptography::JenkinsOneAtATime::Compute(reinterpret_cast<char*>(0x401000), 0x2D6000);
 		if (hashVal.has_value() && hash != hashVal.value())
 		{
-			Utils::Hook::Set<BYTE>(0x40797C, 0x90); // Crash
+			Logger::Print("Anticheat crashing client on purpose!QuickCodeScanner2 \n");
+			////Utils::Hook::Set<BYTE>(0x40797C, 0x90); // Crash
 		}
 
 		hashVal.emplace(hash);
@@ -890,10 +895,7 @@ namespace Components
 		AntiCheat::Flags = NO_FLAG;
 
 #ifdef DISABLE_ANTICHEAT
-		Command::Add("penis", [](Command::Params*)
-		{
-			AntiCheat::CrashClient();
-		});
+
 #else
 		Utils::Hook(0x507BD5, AntiCheat::PatchWinAPI, HOOK_CALL).install()->quick();
 		Utils::Hook(0x5082FD, AntiCheat::LostD3DStub, HOOK_CALL).install()->quick();

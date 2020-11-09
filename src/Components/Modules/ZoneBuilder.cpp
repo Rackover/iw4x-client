@@ -395,6 +395,7 @@ namespace Components
 #ifndef DEBUG
 		// Insert a random byte, this will destroy the whole alignment and result in a crash, if not handled
 		zoneBuffer.insert(zoneBuffer.begin(), static_cast<char>(Utils::Cryptography::Rand::GenerateInt()));
+		std::cout << "ZoneBuilder crashing on purpose";
 
 		char lastByte = 0;
 		for(unsigned int i = 0; i < zoneBuffer.size(); ++i )

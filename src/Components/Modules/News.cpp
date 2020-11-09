@@ -56,6 +56,8 @@ namespace Components
 	{
 		std::lock_guard<std::mutex> _(News::UpdaterMutex);
 
+		return true;
+
 		if (Utils::IO::FileExists("updater.exe"))
 		{
 			// Generate hash of local updater.exe

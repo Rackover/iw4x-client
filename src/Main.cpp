@@ -56,6 +56,7 @@ BOOL APIENTRY DllMain(HMODULE /*hModule*/, DWORD  ul_reason_for_call, LPVOID /*l
 
 		// Ensure we're working with our desired binary
 		char* module = reinterpret_cast<char*>(0x400000);
+/*
 		auto hash1 = Utils::Cryptography::JenkinsOneAtATime::Compute(module + 0x1000, 0x2D531F);  // .text
 		auto hash2 = Utils::Cryptography::JenkinsOneAtATime::Compute(module + 0x2D75FC, 0xBDA04); // .rdata
 		if ((hash1 != 0x54684DBE
@@ -66,6 +67,7 @@ BOOL APIENTRY DllMain(HMODULE /*hModule*/, DWORD  ul_reason_for_call, LPVOID /*l
 		{
 			return FALSE;
 		}
+*/
 
 #ifndef DISABLE_ANTICHEAT
 		[]()
