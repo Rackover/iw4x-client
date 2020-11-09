@@ -5,6 +5,8 @@
 
 #ifndef RC_INVOKED
 
+#define ENABLE_STEAM false
+
 #define _HAS_CXX17 1
 #define _HAS_CXX20 1
 #define VC_EXTRALEAN

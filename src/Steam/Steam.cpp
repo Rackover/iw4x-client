@@ -1,7 +1,5 @@
 #include "STDInclude.hpp"
 
-#define ENABLE_STEAM false
-
 namespace Steam
 {
 	uint64_t Callbacks::CallID = 0;
@@ -106,7 +104,7 @@ namespace Steam
 
 	bool Enabled()
 	{
-		return ENABLE_STEAM || !Components::Flags::HasFlag("nosteam");
+		return ENABLE_STEAM && !Components::Flags::HasFlag("nosteam");
 	}
 
 	extern "C"

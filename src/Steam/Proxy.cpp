@@ -372,6 +372,8 @@ namespace Steam
 
 	bool Proxy::Inititalize()
 	{
+		if (!ENABLE_STEAM) return false;
+
 		std::string directoy = Proxy::GetSteamDirectory();
 		if (directoy.empty()) return false;
 
