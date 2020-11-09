@@ -94,6 +94,8 @@ namespace Assets
 
 		if (modelFile.exists())
 		{
+			Components::Logger::Print("Reading model %s...\n", name.data());
+
 			Utils::Stream::Reader reader(builder->getAllocator(), modelFile.getBuffer());
 
 			__int64 magic = reader.read<__int64>();
