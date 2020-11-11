@@ -178,6 +178,13 @@ namespace Components
 			data.push_back({patchZone.data(), zoneInfo->allocFlags, zoneInfo->freeFlags});
 		}
 
+		std::string unsignedPatchZone = Utils::String::VA("upatch_%s", zoneInfo->name);
+		if (FastFiles::Exists(unsignedPatchZone))
+		{
+			Logger::Print("Pushing data from the unsigned patch zone %s", unsignedPatchZone.data());
+			data.push_back({ unsignedPatchZone.data(), zoneInfo->allocFlags, zoneInfo->freeFlags });
+		}
+
 		return FastFiles::LoadLocalizeZones(data.data(), data.size(), sync);
 	}
 

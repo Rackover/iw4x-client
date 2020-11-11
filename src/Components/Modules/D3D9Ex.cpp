@@ -744,6 +744,11 @@ namespace Components
 		////}
 
 		return Direct3DCreate9(sdk);
+
+		////IDirect3D9Ex* test = nullptr;
+		////if (FAILED(Direct3DCreate9Ex(sdk, &test))) return nullptr;
+
+		////return (new D3D9Ex::D3D9(test));
 	}
 
 	D3D9Ex::D3D9Ex()

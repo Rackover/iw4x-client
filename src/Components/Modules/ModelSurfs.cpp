@@ -18,6 +18,7 @@ namespace Components
 
 	void ModelSurfs::CreateBuffers(Game::XModelSurfs* surfs)
 	{
+		////Logger::Print("--Creating buffers for %d surfaces of name %s\n", surfs->numsurfs, surfs->name);
 		for (int i = 0; i < surfs->numsurfs; ++i)
 		{
 			Game::XSurface* surface = &surfs->surfs[i];
@@ -37,6 +38,7 @@ namespace Components
 
 	Game::XModelSurfs* ModelSurfs::LoadXModelSurfaces(const std::string& name)
 	{
+		////Logger::Print("--Loading XModel surfaces for model %s\n", name.data());
 		Utils::Memory::Allocator allocator;
 		FileSystem::FileReader model(Utils::String::VA("models/%s", name.data()));
 
@@ -154,8 +156,15 @@ namespace Components
 		{
 			Game::XModelSurfs* surfs = model->lodInfo[i].modelSurfs;
 
+			////if (model->name == )
+			////auto fp = fopen("surfaces.csv", "a");
+			////fprintf(fp, "xmodel,%s,%s\n", model->name, surfs->name);
+			////fflush(fp);
+			////fclose(fp);
+
 			if (!surfs->surfs)
 			{
+
 				AssertOffset(Game::XModelLodInfo, partBits, 12);
 				Game::XModelSurfs* newSurfs = ModelSurfs::LoadXModelSurfaces(surfs->name);
 				if (!newSurfs) continue;
@@ -225,8 +234,10 @@ namespace Components
 
 	void ModelSurfs::BeginRecover()
 	{
+		////Logger::Print("--Beginning ModelSurfs recover\n");
 		for (auto& buffer : ModelSurfs::BufferMap)
 		{
+			////Logger::Print("--Releasing buffer %s", buffer);
 			buffer.second->Release();
 		}
 
@@ -235,6 +246,7 @@ namespace Components
 
 	void ModelSurfs::EndRecover()
 	{
+		////Logger::Print("--Ending ModelSurfs recover\n");
 		Game::DB_EnumXAssets_Internal(Game::XAssetType::ASSET_TYPE_XMODEL_SURFS, [](Game::XAssetHeader header, void* /*userdata*/)
 		{
 			ModelSurfs::CreateBuffers(header.modelSurfs);

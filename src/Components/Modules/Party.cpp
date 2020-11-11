@@ -163,6 +163,9 @@ namespace Components
 		Dvar::Register<bool>("xblive_privatematch", true, Game::dvar_flag::DVAR_FLAG_WRITEPROTECTED, "").get<Game::dvar_t*>();
 		Dvar::Register<bool>("sv_lanOnly", true, Game::dvar_flag::DVAR_FLAG_NONE, "Don't act as node");
 
+		// Disable timeout entirely, because the maps take a long time to load the host always times out before the clients get a chance to join
+		Utils::Hook::Nop(0x4974AB, 2);
+
 		// various changes to SV_DirectConnect-y stuff to allow non-party joinees
 		Utils::Hook::Set<WORD>(0x460D96, 0x90E9);
 		Utils::Hook::Set<BYTE>(0x460F0A, 0xEB);
