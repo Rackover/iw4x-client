@@ -18,6 +18,12 @@ namespace Components
 		".arena",
 	};
 
+	const char* Maps::MapPatches[2] =
+	{
+		"lmdn_patch_minigun",
+		"lmdn_patch_vehicles"
+	};
+
 	Maps::UserMapContainer* Maps::GetUserMap()
 	{
 		return &Maps::UserMap;
@@ -181,8 +187,16 @@ namespace Components
 		std::string unsignedPatchZone = Utils::String::VA("upatch_%s", zoneInfo->name);
 		if (FastFiles::Exists(unsignedPatchZone))
 		{
-			Logger::Print("Pushing data from the unsigned patch zone %s", unsignedPatchZone.data());
 			data.push_back({ unsignedPatchZone.data(), zoneInfo->allocFlags, zoneInfo->freeFlags });
+		}
+
+		int patches = sizeof Maps::MapPatches / sizeof * Maps::MapPatches;
+		for (unsigned int i = 0; i < patches; i++) {
+			const char* patch = Maps::MapPatches[i];
+			if (FastFiles::Exists(patch))
+			{
+				data.push_back({ patch, zoneInfo->allocFlags, zoneInfo->freeFlags });
+			}
 		}
 
 		return FastFiles::LoadLocalizeZones(data.data(), data.size(), sync);

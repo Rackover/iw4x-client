@@ -446,7 +446,7 @@ namespace Components
 		Utils::Hook::Set<char*>(0x6431D1, BASEGAME);
 
 		// UI version string
-		Utils::Hook::Set<char*>(0x43F73B, VERSION);
+		Utils::Hook::Set<char*>(0x43F73B, SHORTVERSION "\n" __DATE__ " " __TIME__);
 
 		// console version string
 		Utils::Hook::Set<char*>(0x4B12BB, VERSION);
@@ -463,7 +463,7 @@ namespace Components
 		Utils::Hook::Nop(0x6310B8, 5); // Don't write the result
 		Dvar::OnInit([]()
 		{
-			*reinterpret_cast<Game::dvar_t**>(0x62E4B64) = Game::Dvar_RegisterVec2("ui_buildLocation", -70.0f, 474.0f, -10000.0, 10000.0, Game::DVAR_FLAG_READONLY, "Where to draw the build number");
+			*reinterpret_cast<Game::dvar_t**>(0x62E4B64) = Game::Dvar_RegisterVec2("ui_buildLocation", -40.0f, 434.0f, -10000.0, 10000.0, Game::DVAR_FLAG_READONLY, "Where to draw the build number");
 		});
 
 		// console title
