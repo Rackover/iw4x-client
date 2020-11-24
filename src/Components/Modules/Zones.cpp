@@ -2905,6 +2905,11 @@ namespace Components
 		{
 			std::string fileBuffer;
 			fileBuffer.resize(retval);
+			
+			if (file == "maps/mp/mp_backlot.d3dbsp.ents") {
+				Logger::Print("OpenFileReadForThreadHook %s | %d | %d | %d\n", file, &filePointer, thread, retval);
+			}
+
 			auto readSize = Game::FS_Read(&fileBuffer[0], retval, *filePointer);
 
 			// check if file should be skipped
@@ -3000,6 +3005,7 @@ namespace Components
 				}
 			}
 
+			////Logger::Print("Un-reading file %s\n", file);
 			// un-read data, file is apparently not encrypted
 			Game::FS_Seek(*filePointer, 0, Game::FS_SEEK_SET);
 		}

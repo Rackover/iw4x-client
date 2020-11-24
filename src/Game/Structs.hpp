@@ -760,6 +760,21 @@ namespace Game
 		float radiusSquared;
 	};
 
+	struct XModelAngle
+	{
+		short x;
+		short y;
+		short z;
+		short base;
+	};
+
+	struct XModelTagPos
+	{
+		float x;
+		float y;
+		float z;
+	};
+
 	struct XModel
 	{
 		const char *name;
@@ -771,8 +786,8 @@ namespace Game
 		unsigned int noScalePartBits[6];
 		unsigned __int16 *boneNames;
 		char *parentList;
-		__int16 *quats;
-		float *trans;
+		XModelAngle* quats;
+		XModelTagPos* trans;
 		char *partClassification;
 		DObjAnimMat *baseMat;
 		Material **materialHandles;

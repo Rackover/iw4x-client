@@ -373,11 +373,14 @@ namespace Components
 		if (type >= Game::XAssetType::ASSET_TYPE_COUNT) return header;
 
 		auto tempPool = &AssetHandler::TemporaryAssets[type];
+
+		// Caching
 		auto entry = tempPool->find(filename);
 		if (entry != tempPool->end())
 		{
 			return { entry->second };
 		}
+
 
 		if (AssetHandler::AssetInterfaces.find(type) != AssetHandler::AssetInterfaces.end())
 		{

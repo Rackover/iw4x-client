@@ -16,5 +16,7 @@ namespace Assets
 		void loadXModelSurfs(Game::XModelSurfs* asset, Utils::Stream::Reader* reader, Components::ZoneBuilder::Zone* builder);
 		void loadXSurface(Game::XSurface* surf, Utils::Stream::Reader* reader, Components::ZoneBuilder::Zone* builder);
 		void loadXSurfaceCollisionTree(Game::XSurfaceCollisionTree* entry, Utils::Stream::Reader* reader);
+		void loadIW4XModel(Game::XAssetHeader* header, Components::FileSystem::File modelFile, Components::ZoneBuilder::Zone* builder);
+		void loadZTModel(Game::XAssetHeader* header, Components::FileSystem::File modelFile, Components::ZoneBuilder::Zone* builder);
 	};
 }

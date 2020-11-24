@@ -90,232 +90,298 @@ namespace Assets
 			if (header->model) return;
 		}
 
-		Components::FileSystem::File modelFile(Utils::String::VA("xmodel/%s.iw4xModel", name.data()));
-
-		if (modelFile.exists())
+		// Parse iw4xmodel if it exists
+		Components::FileSystem::File modelFile;
+		
+		if ((modelFile = Components::FileSystem::File(Utils::String::VA("xmodel/%s.iw4xModel", name.data()))).exists())
 		{
-			Components::Logger::Print("Reading model %s...\n", name.data());
+			loadIW4XModel(header, modelFile, builder);
+		}
+		else if ((modelFile = Components::FileSystem::File(Utils::String::VA("xmodel/%s.xme6", name.data()))).exists()) {
+			loadZTModel(header, modelFile, builder);
+		}
+	}
 
-			Utils::Stream::Reader reader(builder->getAllocator(), modelFile.getBuffer());
+	void IXModel::loadZTModel(Game::XAssetHeader* header, Components::FileSystem::File modelFile, Components::ZoneBuilder::Zone* builder) {
+		std::string name = modelFile.getName();
 
-			__int64 magic = reader.read<__int64>();
-			if (std::memcmp(&magic, "IW4xModl", 8))
+		Components::Logger::Print("Reading model %s...\n", name.data());
+
+		// Use ZT code to produce IXModel by combining XME6 & Surface files
+
+		Utils::ZoneTool::AssetReader reader(modelFile.getBuffer(), builder->getAllocator());
+
+		const auto asset = reader.read_single<Game::XModel>();
+		asset->name = reader.read_string();
+
+		asset->boneNames = reader.read_array<unsigned short>();
+		for (int i = 0; i < asset->numBones; i++)
+		{
+			asset->boneNames[i] = Game::SL_GetString(reader.read_string(), 0);
+		}
+
+		asset->parentList = reader.read_array<char>();
+		asset->quats = reader.read_array<Game::XModelAngle>();
+		asset->trans = reader.read_array<Game::XModelTagPos>();
+		asset->partClassification = reader.read_array<char>();
+		asset->baseMat = reader.read_array<Game::DObjAnimMat>();
+		asset->boneInfo = reader.read_array<Game::XBoneInfo>();
+
+		// surfaces
+		asset->materialHandles = reader.read_array<Game::Material*>();
+		for (int i = 0; i < asset->numsurfs; i++)
+		{
+			asset->materialHandles[i] = reader.read_asset<Game::Material>();
+		}
+
+		// lods
+		for (int i = 0; i < asset->numLods; i++)
+		{
+			asset->lodInfo[i].modelSurfs = reader.read_asset<Game::XModelSurfs>();
+		}
+
+		// colSurfs
+		asset->collSurfs = reader.read_array<Game::XModelCollSurf_s>();
+		for (int i = 0; i < asset->numCollSurfs; i++)
+		{
+			asset->collSurfs[i].collTris = reader.read_array<Game::XModelCollTri_s>();
+		}
+
+
+		// subassets
+		asset->physPreset = reader.read_asset<Game::PhysPreset>();
+		asset->physCollmap = reader.read_asset<Game::PhysCollmap>();
+
+
+		header->model = asset;
+
+		Components::Logger::Print("Done reading model %s\n", name);
+	}
+
+	void IXModel::loadIW4XModel(Game::XAssetHeader* header, Components::FileSystem::File modelFile, Components::ZoneBuilder::Zone* builder) {
+		std::string name = modelFile.getName();
+
+		Components::Logger::Print("Reading model %s...\n", name.data());
+
+		Utils::Stream::Reader reader(builder->getAllocator(), modelFile.getBuffer());
+
+		__int64 magic = reader.read<__int64>();
+		if (std::memcmp(&magic, "IW4xModl", 8))
+		{
+			Components::Logger::Error(0, "Reading model '%s' failed, header is invalid!", name.data());
+		}
+
+		int version = reader.read<int>();
+		if (version != IW4X_MODEL_VERSION)
+		{
+			Components::Logger::Error(0, "Reading model '%s' failed, expected version is %d, but it was %d!", name.data(), IW4X_MODEL_VERSION, version);
+		}
+
+		if (version == 4)
+		{
+			Components::Logger::Print("WARNING: Model '%s' is in legacy format, please update it!\n", name.data());
+		}
+
+		Game::XModel* asset = reader.readObject<Game::XModel>();
+
+		if (asset->name)
+		{
+			asset->name = reader.readCString();
+		}
+
+		if (asset->boneNames)
+		{
+			asset->boneNames = builder->getAllocator()->allocateArray<unsigned short>(asset->numBones);
+
+			for (char i = 0; i < asset->numBones; ++i)
 			{
-				Components::Logger::Error(0, "Reading model '%s' failed, header is invalid!", name.data());
+				asset->boneNames[i] = Game::SL_GetString(reader.readCString(), 0);
+			}
+		}
+
+		if (asset->parentList)
+		{
+			asset->parentList = reader.readArray<char>(asset->numBones - asset->numRootBones);
+		}
+
+		if (asset->quats)
+		{
+			asset->quats = reader.readArray<Game::XModelAngle>((asset->numBones - asset->numRootBones) * 4);
+		}
+
+		if (asset->trans)
+		{
+			asset->trans = reader.readArray<Game::XModelTagPos>((asset->numBones - asset->numRootBones) * 3);
+		}
+
+		if (asset->partClassification)
+		{
+			asset->partClassification = reader.readArray<char>(asset->numBones);
+		}
+
+		if (asset->baseMat)
+		{
+			asset->baseMat = reader.readArray<Game::DObjAnimMat>(asset->numBones);
+		}
+
+		if (asset->materialHandles)
+		{
+			asset->materialHandles = reader.readArray<Game::Material*>(asset->numsurfs);
+
+			for (unsigned char i = 0; i < asset->numsurfs; ++i)
+			{
+				if (asset->materialHandles[i])
+				{
+					asset->materialHandles[i] = Components::AssetHandler::FindAssetForZone(Game::XAssetType::ASSET_TYPE_MATERIAL, reader.readString(), builder).material;
+				}
+			}
+		}
+
+		// Save_XModelLodInfoArray
+		{
+			for (int i = 0; i < 4; ++i)
+			{
+				if (asset->lodInfo[i].modelSurfs)
+				{
+					asset->lodInfo[i].modelSurfs = reader.readObject<Game::XModelSurfs>();
+					this->loadXModelSurfs(asset->lodInfo[i].modelSurfs, &reader, builder);
+					Components::AssetHandler::StoreTemporaryAsset(Game::XAssetType::ASSET_TYPE_XMODEL_SURFS, { asset->lodInfo[i].modelSurfs });
+
+					asset->lodInfo[i].surfs = asset->lodInfo[i].modelSurfs->surfs;
+
+					// Zero that for now, it breaks the models.
+					// TODO: Figure out how that can be converted
+					asset->lodInfo[i].smcBaseIndexPlusOne = 0;
+					asset->lodInfo[i].smcSubIndexMask = 0;
+					asset->lodInfo[i].smcBucket = 0;
+				}
+			}
+		}
+
+		// Save_XModelCollSurfArray
+		if (asset->collSurfs)
+		{
+			asset->collSurfs = reader.readArray<Game::XModelCollSurf_s>(asset->numCollSurfs);
+
+			for (int i = 0; i < asset->numCollSurfs; ++i)
+			{
+				Game::XModelCollSurf_s* collSurf = &asset->collSurfs[i];
+
+				if (collSurf->collTris)
+				{
+					collSurf->collTris = reader.readArray<Game::XModelCollTri_s>(collSurf->numCollTris);
+				}
+			}
+		}
+
+		if (asset->boneInfo)
+		{
+			asset->boneInfo = reader.readArray<Game::XBoneInfo>(asset->numBones);
+		}
+
+		if (asset->physPreset)
+		{
+			asset->physPreset = reader.readObject<Game::PhysPreset>();
+
+			if (asset->physPreset->name)
+			{
+				asset->physPreset->name = reader.readCString();
 			}
 
-			int version = reader.read<int>();
-			if (version != IW4X_MODEL_VERSION)
+			if (asset->physPreset->sndAliasPrefix)
 			{
-				Components::Logger::Error(0, "Reading model '%s' failed, expected version is %d, but it was %d!", name.data(), IW4X_MODEL_VERSION, version);
+				asset->physPreset->sndAliasPrefix = reader.readCString();
 			}
 
+			// This is an experiment, ak74 fails though
+			if (asset->name == "weapon_ak74u"s)
+			{
+				asset->physPreset = nullptr;
+			}
+			else
+			{
+				Game::PhysPreset* preset = Components::AssetHandler::FindAssetForZone(Game::XAssetType::ASSET_TYPE_PHYSPRESET, asset->physPreset->name, builder).physPreset;
+				if (preset)
+				{
+					asset->physPreset = preset;
+				}
+				else
+				{
+					Components::AssetHandler::StoreTemporaryAsset(Game::XAssetType::ASSET_TYPE_PHYSPRESET, { asset->physPreset });
+				}
+			}
+		}
+
+		if (asset->physCollmap)
+		{
 			if (version == 4)
 			{
-				Components::Logger::Print("WARNING: Model '%s' is in legacy format, please update it!\n", name.data());
+				asset->physCollmap = nullptr;
 			}
-
-			Game::XModel* asset = reader.readObject<Game::XModel>();
-
-			if (asset->name)
+			else
 			{
-				asset->name = reader.readCString();
-			}
+				Game::PhysCollmap* collmap = reader.readObject<Game::PhysCollmap>();
+				asset->physCollmap = collmap;
 
-			if (asset->boneNames)
-			{
-				asset->boneNames = builder->getAllocator()->allocateArray<unsigned short>(asset->numBones);
-
-				for (char i = 0; i < asset->numBones; ++i)
+				if (collmap->name)
 				{
-					asset->boneNames[i] = Game::SL_GetString(reader.readCString(), 0);
+					collmap->name = reader.readCString();
 				}
-			}
 
-			if (asset->parentList)
-			{
-				asset->parentList = reader.readArray<char>(asset->numBones - asset->numRootBones);
-			}
-
-			if (asset->quats)
-			{
-				asset->quats = reader.readArray<short>((asset->numBones - asset->numRootBones) * 4);
-			}
-
-			if (asset->trans)
-			{
-				asset->trans = reader.readArray<float>((asset->numBones - asset->numRootBones) * 3);
-			}
-
-			if (asset->partClassification)
-			{
-				asset->partClassification = reader.readArray<char>(asset->numBones);
-			}
-
-			if (asset->baseMat)
-			{
-				asset->baseMat = reader.readArray<Game::DObjAnimMat>(asset->numBones);
-			}
-
-			if (asset->materialHandles)
-			{
-				asset->materialHandles = reader.readArray<Game::Material*>(asset->numsurfs);
-
-				for (unsigned char i = 0; i < asset->numsurfs; ++i)
+				if (collmap->geoms)
 				{
-					if (asset->materialHandles[i])
+					collmap->geoms = reader.readArray<Game::PhysGeomInfo>(collmap->count);
+
+					for (unsigned int i = 0; i < collmap->count; ++i)
 					{
-						asset->materialHandles[i] = Components::AssetHandler::FindAssetForZone(Game::XAssetType::ASSET_TYPE_MATERIAL, reader.readString(), builder).material;
-					}
-				}
-			}
+						Game::PhysGeomInfo* geom = &collmap->geoms[i];
 
-			// Save_XModelLodInfoArray
-			{
-				for (int i = 0; i < 4; ++i)
-				{
-					if (asset->lodInfo[i].modelSurfs)
-					{
-						asset->lodInfo[i].modelSurfs = reader.readObject<Game::XModelSurfs>();
-						this->loadXModelSurfs(asset->lodInfo[i].modelSurfs, &reader, builder);
-						Components::AssetHandler::StoreTemporaryAsset(Game::XAssetType::ASSET_TYPE_XMODEL_SURFS, { asset->lodInfo[i].modelSurfs });
-
-						asset->lodInfo[i].surfs = asset->lodInfo[i].modelSurfs->surfs;
-
-						// Zero that for now, it breaks the models.
-						// TODO: Figure out how that can be converted
-						asset->lodInfo[i].smcBaseIndexPlusOne = 0;
-						asset->lodInfo[i].smcSubIndexMask = 0;
-						asset->lodInfo[i].smcBucket = 0;
-					}
-				}
-			}
-
-			// Save_XModelCollSurfArray
-			if (asset->collSurfs)
-			{
-				asset->collSurfs = reader.readArray<Game::XModelCollSurf_s>(asset->numCollSurfs);
-
-				for (int i = 0; i < asset->numCollSurfs; ++i)
-				{
-					Game::XModelCollSurf_s* collSurf = &asset->collSurfs[i];
-
-					if (collSurf->collTris)
-					{
-						collSurf->collTris = reader.readArray<Game::XModelCollTri_s>(collSurf->numCollTris);
-					}
-				}
-			}
-
-			if (asset->boneInfo)
-			{
-				asset->boneInfo = reader.readArray<Game::XBoneInfo>(asset->numBones);
-			}
-
-			if (asset->physPreset)
-			{
-				asset->physPreset = reader.readObject<Game::PhysPreset>();
-
-				if (asset->physPreset->name)
-				{
-					asset->physPreset->name = reader.readCString();
-				}
-
-				if (asset->physPreset->sndAliasPrefix)
-				{
-					asset->physPreset->sndAliasPrefix = reader.readCString();
-				}
-
-				// This is an experiment, ak74 fails though
-				if (asset->name == "weapon_ak74u"s)
-				{
-					asset->physPreset = nullptr;
-				}
-				else
-				{
-					Game::PhysPreset* preset = Components::AssetHandler::FindAssetForZone(Game::XAssetType::ASSET_TYPE_PHYSPRESET, asset->physPreset->name, builder).physPreset;
-					if (preset)
-					{
-						asset->physPreset = preset;
-					}
-					else
-					{
-						Components::AssetHandler::StoreTemporaryAsset(Game::XAssetType::ASSET_TYPE_PHYSPRESET, { asset->physPreset });
-					}
-				}
-			}
-
-			if (asset->physCollmap)
-			{
-				if (version == 4)
-				{
-					asset->physCollmap = nullptr;
-				}
-				else
-				{
-					Game::PhysCollmap* collmap = reader.readObject<Game::PhysCollmap>();
-					asset->physCollmap = collmap;
-
-					if (collmap->name)
-					{
-						collmap->name = reader.readCString();
-					}
-
-					if (collmap->geoms)
-					{
-						collmap->geoms = reader.readArray<Game::PhysGeomInfo>(collmap->count);
-
-						for (unsigned int i = 0; i < collmap->count; ++i)
+						if (geom->brushWrapper)
 						{
-							Game::PhysGeomInfo* geom = &collmap->geoms[i];
-
-							if (geom->brushWrapper)
+							Game::BrushWrapper* brush = reader.readObject<Game::BrushWrapper>();
+							geom->brushWrapper = brush;
 							{
-								Game::BrushWrapper* brush = reader.readObject<Game::BrushWrapper>();
-								geom->brushWrapper = brush;
+								if (brush->brush.sides)
 								{
-									if (brush->brush.sides)
+									brush->brush.sides = reader.readArray<Game::cbrushside_t>(brush->brush.numsides);
+									for (unsigned short j = 0; j < brush->brush.numsides; ++j)
 									{
-										brush->brush.sides = reader.readArray<Game::cbrushside_t>(brush->brush.numsides);
-										for (unsigned short j = 0; j < brush->brush.numsides; ++j)
-										{
-											Game::cbrushside_t* side = &brush->brush.sides[j];
+										Game::cbrushside_t* side = &brush->brush.sides[j];
 
-											// TODO: Add pointer support
-											if (side->plane)
-											{
-												side->plane = reader.readObject<Game::cplane_s>();
-											}
+										// TODO: Add pointer support
+										if (side->plane)
+										{
+											side->plane = reader.readObject<Game::cplane_s>();
 										}
 									}
-
-									if (brush->brush.baseAdjacentSide)
-									{
-										brush->brush.baseAdjacentSide = reader.readArray<char>(brush->totalEdgeCount);
-									}
 								}
 
-								// TODO: Add pointer support
-								if (brush->planes)
+								if (brush->brush.baseAdjacentSide)
 								{
-									brush->planes = reader.readArray<Game::cplane_s>(brush->brush.numsides);
+									brush->brush.baseAdjacentSide = reader.readArray<char>(brush->totalEdgeCount);
 								}
+							}
+
+							// TODO: Add pointer support
+							if (brush->planes)
+							{
+								brush->planes = reader.readArray<Game::cplane_s>(brush->brush.numsides);
 							}
 						}
 					}
-
-					Components::AssetHandler::StoreTemporaryAsset(Game::XAssetType::ASSET_TYPE_PHYSCOLLMAP, { asset->physCollmap });
-					// asset->physCollmap = nullptr;
 				}
-			}
 
-			if (!reader.end())
-			{
-				Components::Logger::Error(0, "Reading model '%s' failed, remaining raw data found!", name.data());
+				Components::AssetHandler::StoreTemporaryAsset(Game::XAssetType::ASSET_TYPE_PHYSCOLLMAP, { asset->physCollmap });
+				// asset->physCollmap = nullptr;
 			}
-
-			header->model = asset;
 		}
+
+		if (!reader.end())
+		{
+			Components::Logger::Error(0, "Reading model '%s' failed, remaining raw data found!", name.data());
+		}
+
+		header->model = asset;
 	}
 
 	void IXModel::mark(Game::XAssetHeader header, Components::ZoneBuilder::Zone* builder)

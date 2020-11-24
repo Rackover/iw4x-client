@@ -136,6 +136,8 @@ template <size_t S> class Sizer { };
 #include "Game/Functions.hpp"
 
 #include "Utils/Stream.hpp"
+#include "Utils/ZoneBuffer.hpp"
+#include "Utils/AssetReader.hpp"
 
 #include "Components/Loader.hpp"
 
