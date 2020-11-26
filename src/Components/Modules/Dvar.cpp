@@ -237,9 +237,8 @@ namespace Components
 		// remove write protection from fs_game
 		Utils::Hook::Xor<DWORD>(0x6431EA, Game::dvar_flag::DVAR_FLAG_WRITEPROTECTED);
 
-		// set cg_fov max to 90.0
-		// ...120 because of V2
-		static float cgFov90 = 120.0f;
+		// set cg_fov max to 80
+		static float cgFov90 = 80.0f;
 		Utils::Hook::Set<float*>(0x4F8E28, &cgFov90);
 
 		// set max volume to 1
