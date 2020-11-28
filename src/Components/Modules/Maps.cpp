@@ -190,7 +190,7 @@ namespace Components
 			data.push_back({ unsignedPatchZone.data(), zoneInfo->allocFlags, zoneInfo->freeFlags });
 		}
 
-		int patches = sizeof Maps::MapPatches / sizeof * Maps::MapPatches;
+		unsigned int patches = sizeof Maps::MapPatches / sizeof * Maps::MapPatches;
 		for (unsigned int i = 0; i < patches; i++) {
 			const char* patch = Maps::MapPatches[i];
 			if (FastFiles::Exists(patch))

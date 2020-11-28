@@ -256,10 +256,10 @@ namespace Components
 				Utils::String::Replace(zone, "_load", "");
 			}
 
-			if (Utils::IO::FileExists(Utils::String::VA("usermaps\\%s\\%s.ff", zone.data(), filename.data())))
-			{
-				return Utils::String::VA("usermaps\\%s\\", zone.data());
-			}
+			////if (Utils::IO::FileExists(Utils::String::VA("usermaps\\%s\\%s.ff", zone.data(), filename.data())))
+			////{
+			////	return Utils::String::VA("usermaps\\%s\\", zone.data());
+			////}
 		}
 
 		Utils::Merge(&paths, FastFiles::ZonePaths);

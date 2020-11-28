@@ -469,15 +469,15 @@ namespace Components
 		// console title
 		if (ZoneBuilder::IsEnabled())
 		{
-			Utils::Hook::Set<char*>(0x4289E8, "IW4x (" VERSION "): ZoneBuilder");
+			Utils::Hook::Set<char*>(0x4289E8, PLAINVERSION " ZoneBuilder");
 		}
 		else if (Dedicated::IsEnabled())
 		{
-			Utils::Hook::Set<char*>(0x4289E8, "IW4x (" VERSION "): Dedicated");
+			Utils::Hook::Set<char*>(0x4289E8, PLAINVERSION " Dedicated");
 		}
 		else
 		{
-			Utils::Hook::Set<char*>(0x4289E8, "IW4x (" VERSION "): Console");
+			Utils::Hook::Set<char*>(0x4289E8, PLAINVERSION " Console");
 		}
 
 		// window title

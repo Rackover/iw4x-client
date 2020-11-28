@@ -536,8 +536,11 @@ namespace Components
 
 	Console::Console()
 	{
+		// Display game's native console no matter what
+		Utils::Hook::Nop(0x60BB58, 11);
+
 		// Console '%s: %s> ' string
-		Utils::Hook::Set<char*>(0x5A44B4, "IW4x: " SHORTVERSION "> ");
+		Utils::Hook::Set<char*>(0x5A44B4, SHORTVERSION "> ");
 
 		// Patch console color
 		static float consoleColor[] = { 0.70f, 1.00f, 0.00f, 1.00f };

@@ -237,8 +237,9 @@ namespace Components
 		// remove write protection from fs_game
 		Utils::Hook::Xor<DWORD>(0x6431EA, Game::dvar_flag::DVAR_FLAG_WRITEPROTECTED);
 
-		// set cg_fov max to 80
-		static float cgFov90 = 80.0f;
+		// set cg_fov max to 90.0
+		// ...120 because of V2
+		static float cgFov90 = 120.0f;
 		Utils::Hook::Set<float*>(0x4F8E28, &cgFov90);
 
 		// set max volume to 1
@@ -247,6 +248,9 @@ namespace Components
 
 		// Uncheat ui_showList
 		Utils::Hook::Xor<BYTE>(0x6310DC, Game::dvar_flag::DVAR_FLAG_CHEAT);
+
+		// Protect r_fullbright
+		Utils::Hook::Set<BYTE>(0x519887, Game::dvar_flag::DVAR_FLAG_CHEAT);
 
 		// Uncheat ui_debugMode
 		Utils::Hook::Xor<BYTE>(0x6312DE, Game::dvar_flag::DVAR_FLAG_CHEAT);
@@ -263,7 +267,6 @@ namespace Components
 		// SetDvar
 		Utils::Hook(0x63444C, Dvar::SetFromStringByNameSafeExternal, HOOK_CALL).install()->quick();
 
-		//// Rack: This part was commented out to allow the standard options menu to work normally (volume/gamma/etc)
 		// Slider
 		////Utils::Hook(0x636159, Dvar::SetFromStringByNameExternal, HOOK_CALL).install()->quick();
 		////Utils::Hook(0x636189, Dvar::SetFromStringByNameExternal, HOOK_CALL).install()->quick();
