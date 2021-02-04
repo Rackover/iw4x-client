@@ -242,7 +242,8 @@ namespace Components
 
 		// set cg_fov max to 90.0
 		// ...120 because of V2
-		static float cgFov90 = 120.0f;
+		/// Rack: 85
+		static float cgFov90 = 85.0f;
 		Utils::Hook::Set<float*>(0x4F8E28, &cgFov90);
 
 		// set max volume to 1
@@ -276,6 +277,9 @@ namespace Components
 		// SetDvar
 		Utils::Hook(0x63444C, Dvar::SetFromStringByNameSafeExternal, HOOK_CALL).install()->quick();
 
+		// Set autoteams to false by default!
+		Utils::Hook::Set<BYTE>(0x004D6026, 0);
+		
 		// Slider
 		////Utils::Hook(0x636159, Dvar::SetFromStringByNameExternal, HOOK_CALL).install()->quick();
 		////Utils::Hook(0x636189, Dvar::SetFromStringByNameExternal, HOOK_CALL).install()->quick();

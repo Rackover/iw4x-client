@@ -63,10 +63,6 @@ namespace Components
 		static void GetFunctionStub();
 
 		static void ScrShutdownSystemStub(int);
-		static void StoreScriptBaseProgramNumStub();
-		static void StoreScriptBaseProgramNum();
-		static void Scr_PrintPrevCodePosStub();
-		static void Scr_PrintPrevCodePos(int);
 
 		static int SetExpFogStub();
 
