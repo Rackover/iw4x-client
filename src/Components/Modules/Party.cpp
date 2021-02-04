@@ -164,7 +164,7 @@ namespace Components
 		Dvar::Register<bool>("sv_lanOnly", true, Game::dvar_flag::DVAR_FLAG_NONE, "Don't act as node");
 
 		// Disable timeout entirely, because the maps take a long time to load the host always times out before the clients get a chance to join
-		Utils::Hook::Nop(0x4974AB, 2);
+		////Utils::Hook::Nop(0x4974AB, 2);
 
 		// various changes to SV_DirectConnect-y stuff to allow non-party joinees
 		Utils::Hook::Set<WORD>(0x460D96, 0x90E9);
@@ -198,7 +198,7 @@ namespace Components
 		Utils::Hook::Set<BYTE>(0x49D007, 0xEB);
 
 		// functions checking party heartbeat timeouts, cause random issues
-		Utils::Hook::Nop(0x4E532D, 5);
+		////Utils::Hook::Nop(0x4E532D, 5);
 
 		// Steam_JoinLobby call causes migration
 		Utils::Hook::Nop(0x5AF851, 5);

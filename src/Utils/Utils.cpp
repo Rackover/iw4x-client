@@ -72,10 +72,10 @@ namespace Utils
 		return 0;
 	}
 
-	size_t GetModuleSize(HMODULE module)
+	size_t GetModuleSize(HMODULE _module)
 	{
-		PIMAGE_DOS_HEADER header = PIMAGE_DOS_HEADER(module);
-		PIMAGE_NT_HEADERS ntHeader = PIMAGE_NT_HEADERS(DWORD(module) + header->e_lfanew);
+		PIMAGE_DOS_HEADER header = PIMAGE_DOS_HEADER(_module);
+		PIMAGE_NT_HEADERS ntHeader = PIMAGE_NT_HEADERS(DWORD(_module) + header->e_lfanew);
 		return ntHeader->OptionalHeader.SizeOfImage;
 	}
 
