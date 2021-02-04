@@ -71,32 +71,42 @@ namespace Assets
 
 		if (asset->lightmaps)
 		{
+			Components::Logger::Print("Reading light maps...\n");
 			asset->lightmaps = reader->readArray<Game::GfxLightmapArray>(asset->lightmapCount);
 
 			for (int i = 0; i < asset->lightmapCount; ++i)
 			{
 				Game::GfxLightmapArray* lightmapArray = &asset->lightmaps[i];
+				Components::Logger::Print("Reading light map #%d\n", i);
 
 				if (lightmapArray->primary)
 				{
-					lightmapArray->primary = Components::AssetHandler::FindAssetForZone(Game::XAssetType::ASSET_TYPE_IMAGE, reader->readString().data(), builder).image;
+					auto name = reader->readString().data();
+					Components::Logger::Print("Reading primary light map #%d %s\n", i, name);
+					lightmapArray->primary = Components::AssetHandler::FindAssetForZone(Game::XAssetType::ASSET_TYPE_IMAGE, name, builder).image;
 				}
 
 				if (lightmapArray->secondary)
 				{
-					lightmapArray->secondary = Components::AssetHandler::FindAssetForZone(Game::XAssetType::ASSET_TYPE_IMAGE, reader->readString().data(), builder).image;
+					auto name = reader->readString().data();
+					Components::Logger::Print("Reading secondary light map #%d %s\n", i, name);
+					lightmapArray->secondary = Components::AssetHandler::FindAssetForZone(Game::XAssetType::ASSET_TYPE_IMAGE, name, builder).image;
 				}
 			}
 		}
 
 		if (asset->lightmapOverridePrimary)
 		{
-			asset->lightmapOverridePrimary = Components::AssetHandler::FindAssetForZone(Game::XAssetType::ASSET_TYPE_IMAGE, reader->readString().data(), builder).image;
+			auto name = reader->readString().data();
+			Components::Logger::Print("Reading primary light map OVERRIDE %s\n", name);
+			asset->lightmapOverridePrimary = Components::AssetHandler::FindAssetForZone(Game::XAssetType::ASSET_TYPE_IMAGE, name, builder).image;
 		}
 
 		if (asset->lightmapOverrideSecondary)
 		{
-			asset->lightmapOverrideSecondary = Components::AssetHandler::FindAssetForZone(Game::XAssetType::ASSET_TYPE_IMAGE, reader->readString().data(), builder).image;
+			auto name = reader->readString().data();
+			Components::Logger::Print("Reading SECONDARY light map OVERRIDE %s\n", name);
+			asset->lightmapOverrideSecondary = Components::AssetHandler::FindAssetForZone(Game::XAssetType::ASSET_TYPE_IMAGE, name, builder).image;
 		}
 
 		// saveGfxWorldVertexData
@@ -145,6 +155,7 @@ namespace Assets
 			{
 				Components::Logger::Error("Reading gfxworld '%s' failed, expected version is %d, but it was %d!", name.data(), IW4X_GFXMAP_VERSION, version);
 			}
+			Components::Logger::Print("Reading gfxworld '%s' version %d\n!", name.data(), version);
 
 			Game::GfxWorld* asset = reader.readObject<Game::GfxWorld>();
 			header->gfxWorld = asset;
