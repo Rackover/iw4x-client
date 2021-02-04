@@ -10,6 +10,8 @@ namespace Steam
 	Interface        Proxy::ClientUser;
 	Interface        Proxy::ClientFriends;
 
+	Interface        Proxy::Placeholder;
+
 	Proxy::Handle Proxy::SteamPipe = nullptr;
 	Proxy::Handle Proxy::SteamUser = nullptr;
 
@@ -154,7 +156,7 @@ namespace Steam
 		gameID.type = 1; // k_EGameIDTypeGameMod
 		gameID.appID = Proxy::AppId & 0xFFFFFF;
 
-		char* modId = "IW4x";
+		char* modId = const_cast<char*>("IW4x");
 		gameID.modID = *reinterpret_cast<unsigned int*>(modId) | 0x80000000;
 
 		Interface clientUtils(Proxy::ClientEngine->GetIClientUtils(Proxy::SteamPipe));
@@ -194,7 +196,7 @@ namespace Steam
 
 	void Proxy::RunMod()
 	{
-		char* command = "-proc ";
+		const char* command = "-proc ";
 		char* parentProc = strstr(GetCommandLineA(), command);
 
 		if (parentProc)
@@ -416,6 +418,9 @@ namespace Steam
 
 		Proxy::ClientUser = Proxy::ClientEngine->GetIClientUser(Proxy::SteamUser, Proxy::SteamPipe);
 		if (!Proxy::ClientUser) return false;
+
+		//temporary fix required since Steam runtime update v0.20201203.1 (an additional function was added by steam)
+		Proxy::Placeholder = Proxy::ClientEngine->Placeholder(0);
 
 		Proxy::ClientFriends = Proxy::ClientEngine->GetIClientFriends(Proxy::SteamUser, Proxy::SteamPipe);
 		if (!Proxy::ClientFriends) return false;

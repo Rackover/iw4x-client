@@ -257,9 +257,9 @@ namespace Components
 		//Utils::Hook(0x4D5D51, Party::RegisterMinPlayers, HOOK_CALL).install()->quick();
 
 		// Set ui_maxclients to sv_maxclients
-		Utils::Hook::Set<char*>(0x42618F, "sv_maxclients");
-		Utils::Hook::Set<char*>(0x4D3756, "sv_maxclients");
-		Utils::Hook::Set<char*>(0x5E3772, "sv_maxclients");
+		Utils::Hook::Set<const char*>(0x42618F, "sv_maxclients");
+		Utils::Hook::Set<const char*>(0x4D3756, "sv_maxclients");
+		Utils::Hook::Set<const char*>(0x5E3772, "sv_maxclients");
 
 		// Unlatch maxclient dvars
 		Utils::Hook::Xor<BYTE>(0x426187, Game::dvar_flag::DVAR_FLAG_LATCHED);

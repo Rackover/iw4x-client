@@ -119,22 +119,22 @@ namespace Components
 		}
 	}
 
-	__declspec(naked) int QuickPatch::SVGameClientNum()
+	__declspec(naked) int QuickPatch::G_GetClientScore()
 	{
-		_asm
+		__asm
 		{
-			mov eax, [esp + 4] // index
-			mov ecx, 1A831A8h
-			mov ecx, [ecx]
-			imul eax, 366Ch
-			lea edx, [eax + ecx + 3134h]
-			cmp edx, 0
-			jnz valid_player_state
-			mov eax, 0
-			ret
+			mov eax, [esp + 4]		// index
+			mov ecx, ds : 1A831A8h	// level: &g_clients
 
-			valid_player_state:
+			test ecx, ecx;
+			jz invalid_ptr;
+			
+			imul eax, 366Ch
 			mov eax, [eax + ecx + 3134h]
+			ret
+			
+		invalid_ptr:
+			xor eax, eax
 			ret
 		}
 	}
@@ -159,7 +159,7 @@ namespace Components
 
 	__declspec(naked) void QuickPatch::InvalidNameStub()
 	{
-		static char* kick_reason = "Invalid name detected.";
+		static const char* kick_reason = "Invalid name detected.";
 
 		__asm
 		{
@@ -180,6 +180,63 @@ namespace Components
 		returnSafe:
 			push 0x00401988;
 			retn;
+		}
+	}
+
+	Game::dvar_t* QuickPatch::g_antilag;
+
+	__declspec(naked) void QuickPatch::ClientEventsFireWeaponStub()
+	{
+		__asm
+		{
+			// check g_antilag dvar value
+			mov eax, g_antilag;
+			cmp byte ptr[eax + 16], 1;
+
+			// do antilag if 1
+			je fireWeapon
+
+			// do not do antilag if 0
+			mov eax, 0x1A83554 // level.time
+			mov ecx, [eax]
+
+		fireWeapon:
+			push    edx
+			push    ecx
+			push    edi
+			mov     eax, 0x4A4D50 // FireWeapon
+			call    eax
+			add     esp, 0Ch
+			pop     edi
+			pop     ecx
+			retn
+		}
+	}
+
+	__declspec(naked) void QuickPatch::ClientEventsFireWeaponMeleeStub()
+	{
+		__asm
+		{
+			// check g_antilag dvar value
+			mov eax, g_antilag;
+			cmp byte ptr[eax + 16], 1;
+
+			// do antilag if 1
+			je fireWeaponMelee
+
+			// do not do antilag if 0
+			mov eax, 0x1A83554 // level.time
+			mov edx, [eax]
+
+		fireWeaponMelee:
+			push    edx
+			push    edi
+			mov     eax, 0x4F2470 // FireWeaponMelee
+			call    eax
+			add     esp, 8
+			pop     edi
+			pop     ecx
+			retn
 		}
 	}
 
@@ -216,11 +273,11 @@ namespace Components
 	{
 		static std::vector < char * > values =
 		{
-			"auto",
-			"standard",
-			"wide 16:10",
-			"wide 16:9",
-			"custom",
+			const_cast<char*>("auto"),
+			const_cast<char*>("standard"),
+			const_cast<char*>("wide 16:10"),
+			const_cast<char*>("wide 16:9"),
+			const_cast<char*>("custom"),
 			nullptr,
 		};
 
@@ -387,7 +444,7 @@ namespace Components
 		Utils::Hook(0x4B1B2D, QuickPatch::BounceStub, HOOK_JUMP).install()->quick();
 
 		// Intermission time dvar
-		Game::Dvar_RegisterFloat("scr_intermissionTime", 10, 0, 120, Game::DVAR_FLAG_REPLICATED | Game::DVAR_FLAG_SAVED | Game::DVAR_FLAG_DEDISAVED, "Time in seconds before match server loads the next map");
+		Game::Dvar_RegisterFloat("scr_intermissionTime", 10, 0, 120, Game::DVAR_FLAG_REPLICATED | Game::DVAR_FLAG_DEDISAVED, "Time in seconds before match server loads the next map");
 
 		// Player Collision dvar
 		g_playerCollision = Game::Dvar_RegisterBool("g_playerCollision", true, Game::DVAR_FLAG_REPLICATED, "Flag whether player collision is on or off");
@@ -396,6 +453,10 @@ namespace Components
 		// Player Ejection dvar
 		g_playerEjection = Game::Dvar_RegisterBool("g_playerEjection", true, Game::DVAR_FLAG_REPLICATED, "Flag whether player ejection is on or off");
 		Utils::Hook(0x5D814A, QuickPatch::PlayerEjectionStub, HOOK_JUMP).install()->quick();
+
+		g_antilag = Game::Dvar_RegisterBool("g_antilag", true, Game::DVAR_FLAG_REPLICATED, "Perform antilag");
+		Utils::Hook(0x5D6D56, QuickPatch::ClientEventsFireWeaponStub, HOOK_JUMP).install()->quick();
+		Utils::Hook(0x5D6D6A, QuickPatch::ClientEventsFireWeaponMeleeStub, HOOK_JUMP).install()->quick();
 
 		// Disallow invalid player names
 		Utils::Hook(0x401983, QuickPatch::InvalidNameStub, HOOK_JUMP).install()->quick();
@@ -443,16 +504,16 @@ namespace Components
 		Utils::Hook::Set<DWORD>(0x45ACE0, 0xC301B0);
 
 		// fs_basegame
-		Utils::Hook::Set<char*>(0x6431D1, BASEGAME);
+		Utils::Hook::Set<const char*>(0x6431D1, BASEGAME);
 
 		// UI version string
-		Utils::Hook::Set<char*>(0x43F73B, SHORTVERSION "\n" __DATE__ " " __TIME__);
+		Utils::Hook::Set<const char*>(0x43F73B, SHORTVERSION "\n" __DATE__ " " __TIME__);
 
 		// console version string
-		Utils::Hook::Set<char*>(0x4B12BB, VERSION);
+		Utils::Hook::Set<const char*>(0x4B12BB, VERSION);
 
 		// version string
-		Utils::Hook::Set<char*>(0x60BD56, "IW4x (" VERSION ")");
+		Utils::Hook::Set<const char*>(0x60BD56, "IW4x (" VERSION ")");
 
 		// version string color
 		static float buildLocColor[] = { 1.0f, 1.0f, 1.0f, 0.8f };
@@ -469,34 +530,34 @@ namespace Components
 		// console title
 		if (ZoneBuilder::IsEnabled())
 		{
-			Utils::Hook::Set<char*>(0x4289E8, PLAINVERSION " ZoneBuilder");
+			Utils::Hook::Set<const char*>(0x4289E8, PLAINVERSION " ZoneBuilder");
 		}
 		else if (Dedicated::IsEnabled())
 		{
-			Utils::Hook::Set<char*>(0x4289E8, PLAINVERSION " Dedicated");
+			Utils::Hook::Set<const char*>(0x4289E8, PLAINVERSION " Dedicated");
 		}
 		else
 		{
-			Utils::Hook::Set<char*>(0x4289E8, PLAINVERSION " Console");
+			Utils::Hook::Set<const char*>(0x4289E8, PLAINVERSION " Console");
 		}
 
 		// window title
-		Utils::Hook::Set<char*>(0x5076A0, PROGRAM_NAME);
+		Utils::Hook::Set<const char*>(0x5076A0, PROGRAM_NAME);
 
 		// sv_hostname
-		Utils::Hook::Set<char*>(0x4D378B, "IW4Host");
+		Utils::Hook::Set<const char*>(0x4D378B, "IW4Host");
 
 		// shortversion
-		Utils::Hook::Set<char*>(0x60BD91, SHORTVERSION);
+		Utils::Hook::Set<const char*>(0x60BD91, SHORTVERSION);
 
 		// console logo
-		Utils::Hook::Set<char*>(0x428A66, BASEGAME "/images/logo.bmp");
+		Utils::Hook::Set<const char*>(0x428A66, BASEGAME "/images/logo.bmp");
 
 		// splash logo
 		Utils::Hook::Nop(0x45148B, 5);	// Disable splash screen
-		////Utils::Hook::Set<char*>(0x475F9E, BASEGAME "/images/splash.bmp");
+		////Utils::Hook::Set<const char*>(0x475F9E, BASEGAME "/images/splash.bmp");
 
-		Utils::Hook::Set<char*>(0x4876C6, "Successfully read stats data\n");
+		Utils::Hook::Set<const char*>(0x4876C6, "Successfully read stats data\n");
 
 		// Numerical ping (cg_scoreboardPingText 1)
 		Utils::Hook::Set<BYTE>(0x45888E, 1);
@@ -601,21 +662,21 @@ namespace Components
 		// intro stuff
 		Utils::Hook::Nop(0x60BEE9, 5); // Don't show legals
 		Utils::Hook::Nop(0x60BEF6, 5); // Don't reset the intro dvar
-		Utils::Hook::Set<char*>(0x60BED2, "unskippablecinematic IW_logo\n");
-		Utils::Hook::Set<char*>(0x51C2A4, "%s\\" BASEGAME "\\video\\%s.bik");
+		Utils::Hook::Set<const char*>(0x60BED2, "unskippablecinematic IW_logo\n");
+		Utils::Hook::Set<const char*>(0x51C2A4, "%s\\" BASEGAME "\\video\\%s.bik");
 		Utils::Hook::Set<DWORD>(0x51C2C2, 0x78A0AC);
 
 		// Redirect logs
-		Utils::Hook::Set<char*>(0x5E44D8, "logs/games_mp.log");
-		Utils::Hook::Set<char*>(0x60A90C, "logs/console_mp.log");
-		Utils::Hook::Set<char*>(0x60A918, "logs/console_mp.log");
+		Utils::Hook::Set<const char*>(0x5E44D8, "logs/games_mp.log");
+		Utils::Hook::Set<const char*>(0x60A90C, "logs/console_mp.log");
+		Utils::Hook::Set<const char*>(0x60A918, "logs/console_mp.log");
 
 		// Rename config
-		Utils::Hook::Set<char*>(0x461B4B, CLIENT_CONFIG);
-		Utils::Hook::Set<char*>(0x47DCBB, CLIENT_CONFIG);
-		Utils::Hook::Set<char*>(0x6098F8, CLIENT_CONFIG);
-		Utils::Hook::Set<char*>(0x60B279, CLIENT_CONFIG);
-		Utils::Hook::Set<char*>(0x60BBD4, CLIENT_CONFIG);
+		Utils::Hook::Set<const char*>(0x461B4B, CLIENT_CONFIG);
+		Utils::Hook::Set<const char*>(0x47DCBB, CLIENT_CONFIG);
+		Utils::Hook::Set<const char*>(0x6098F8, CLIENT_CONFIG);
+		Utils::Hook::Set<const char*>(0x60B279, CLIENT_CONFIG);
+		Utils::Hook::Set<const char*>(0x60BBD4, CLIENT_CONFIG);
 
 		//// Rack: This part was commented out to allow the standard options menu to work normally (volume/gamma/etc)
 		// Disable profile system
@@ -686,8 +747,8 @@ namespace Components
 		// Patch selectStringTableEntryInDvar
 		Utils::Hook::Set(0x405959, QuickPatch::SelectStringTableEntryInDvarStub);
 
-		// Patch SV_GameClientNum for edge case generating status
-		Utils::Hook(0x624DE2, QuickPatch::SVGameClientNum, HOOK_CALL).install()->quick();
+		// Patch G_GetClientScore for uninitialised game
+		Utils::Hook(0x469AC0, QuickPatch::G_GetClientScore, HOOK_JUMP).install()->quick();
 
 		// Ignore call to print 'Offhand class mismatch when giving weapon...'
 		Utils::Hook(0x5D9047, 0x4BB9B0, HOOK_CALL).install()->quick();
