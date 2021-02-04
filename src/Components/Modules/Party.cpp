@@ -198,7 +198,7 @@ namespace Components
 		Utils::Hook::Set<BYTE>(0x49D007, 0xEB);
 
 		// functions checking party heartbeat timeouts, cause random issues
-		////Utils::Hook::Nop(0x4E532D, 5);
+		Utils::Hook::Nop(0x4E532D, 5);
 
 		// Steam_JoinLobby call causes migration
 		Utils::Hook::Nop(0x5AF851, 5);
