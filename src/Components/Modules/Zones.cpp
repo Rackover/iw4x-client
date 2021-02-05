@@ -2901,12 +2901,17 @@ namespace Components
 	{
 		const auto retval = FS_FOpenFileReadForThreadOriginal(file, filePointer, thread);
 
-		if (file != nullptr && filePointer != nullptr && strlen(file) >= 4 && retval > 0)
+		if (file != nullptr && filePointer != nullptr && *filePointer != 0 && strlen(file) >= 4 && retval > 0)
 		{
-			// Ends with .zip.iw4
+			// If ends with .zip.iw4...
 			std::string suffix = ".zip.iw4";
 			std::string filename = std::string(file);
 			if (filename.size() >= suffix.size() && 0 == filename.compare(filename.size() - suffix.size(), suffix.size(), suffix)) {
+				return retval;
+			}
+
+			// If does not end with iwi...
+			if (strlen(file) > 5 && ((strncmp(&file[strlen(file) - 4], ".iwi", 4) != 0))){
 				return retval;
 			}
 
@@ -2917,11 +2922,7 @@ namespace Components
 			// check if file should be skipped
 			auto skipFile = false;
 
-			if (strlen(file) > 5 && ((strncmp(&file[strlen(file) - 4], ".iwi", 4) != 0)))
-			{
-				skipFile = true;
-			}
-			else if (readSize >= 3 && (!memcmp(&fileBuffer[0], "IWi", 3)))
+			if (readSize >= 3 && (!memcmp(&fileBuffer[0], "IWi", 3)))
 			{
 				skipFile = true;
 			}
