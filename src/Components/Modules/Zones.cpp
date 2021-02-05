@@ -2906,7 +2906,7 @@ namespace Components
 			// If ends with .zip.iw4...
 			std::string suffix = ".zip.iw4";
 			std::string filename = std::string(file);
-			if (filename.size() >= suffix.size() && 0 == filename.compare(filename.size() - suffix.size(), suffix.size(), suffix)) {
+			if (Utils::String::EndsWith(suffix, filename)) {
 				return retval;
 			}
 
