@@ -2903,6 +2903,13 @@ namespace Components
 
 		if (file != nullptr && filePointer != nullptr && strlen(file) >= 4 && retval > 0)
 		{
+			// Ends with .zip.iw4
+			std::string suffix = ".zip.iw4";
+			std::string filename = std::string(file);
+			if (filename.size() >= suffix.size() && 0 == filename.compare(filename.size() - suffix.size(), suffix.size(), suffix)) {
+				return retval;
+			}
+
 			std::string fileBuffer;
 			fileBuffer.resize(retval);
 			auto readSize = Game::FS_Read(&fileBuffer[0], retval, *filePointer);
