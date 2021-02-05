@@ -148,7 +148,8 @@ namespace Components
 		{
 			if (!dest[i]) break;
 
-			if (dest[i] > 125 || dest[i] < 32 || dest[i] == '%') 
+			// Name restriction is toned down because otherwise, the game will not accept accents éèàù
+			if (/*dest[i] > 125 || dest[i] < 32 || */dest[i] == '%') 
 			{
 				return false;
 			}
