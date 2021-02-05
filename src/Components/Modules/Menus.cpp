@@ -842,72 +842,72 @@ namespace Components
 
 			//make Com_Error and similar go back to main_text instead of menu_xboxlive.
 			Utils::Hook::SetString(0x6FC790, "main_text");
+////
+////			Command::Add("openmenu", [](Command::Params* params)
+////				{
+////					if (params->length() != 2)
+////					{
+////						Logger::Print("USAGE: openmenu <menu name>\n");
+////						return;
+////					}
+////
+////					// Not quite sure if we want to do this if we're not ingame, but it's only needed for ingame menus.
+////					if (Dvar::Var("cl_ingame").get<bool>())
+////					{
+////						Game::Key_SetCatcher(0, 16);
+////					}
+////
+////					Game::Menus_OpenByName(Game::uiContext, params->get(1));
+////				});
+////
+////			Command::Add("reloadmenus", [](Command::Params*)
+////				{
+////					// Close all menus
+////					Game::Menus_CloseAll(Game::uiContext);
+////
+////					// Free custom menus
+////					Menus::FreeEverything();
+////
+////					// Only disconnect if in-game, context is updated automatically!
+////					if (Game::CL_IsCgameInitialized())
+////					{
+////						Game::Cbuf_AddText(0, "disconnect\n");
+////					}
+////					else
+////					{
+////						// Reinitialize ui context
+////						Utils::Hook::Call<void()>(0x401700)();
+////
+////						// Reopen main menu
+////						Game::Menus_OpenByName(Game::uiContext, "main_text");
+////					}
+////				});
+////
+////#ifndef DISABLE_ANTICHEAT
+////			Scheduler::OnFrameAsync(AntiCheat::QuickCodeScanner2);
+////#endif
 
-			Command::Add("openmenu", [](Command::Params* params)
-				{
-					if (params->length() != 2)
-					{
-						Logger::Print("USAGE: openmenu <menu name>\n");
-						return;
-					}
+			////Command::Add("mp_QuickMessage", [](Command::Params*)
+			////	{
+			////		Command::Execute("openmenu quickmessage");
+			////	});
 
-					// Not quite sure if we want to do this if we're not ingame, but it's only needed for ingame menus.
-					if (Dvar::Var("cl_ingame").get<bool>())
-					{
-						Game::Key_SetCatcher(0, 16);
-					}
-
-					Game::Menus_OpenByName(Game::uiContext, params->get(1));
-				});
-
-			Command::Add("reloadmenus", [](Command::Params*)
-				{
-					// Close all menus
-					Game::Menus_CloseAll(Game::uiContext);
-
-					// Free custom menus
-					Menus::FreeEverything();
-
-					// Only disconnect if in-game, context is updated automatically!
-					if (Game::CL_IsCgameInitialized())
-					{
-						Game::Cbuf_AddText(0, "disconnect\n");
-					}
-					else
-					{
-						// Reinitialize ui context
-						Utils::Hook::Call<void()>(0x401700)();
-
-						// Reopen main menu
-						Game::Menus_OpenByName(Game::uiContext, "main_text");
-					}
-				});
-
-#ifndef DISABLE_ANTICHEAT
-			Scheduler::OnFrameAsync(AntiCheat::QuickCodeScanner2);
-#endif
-
-			Command::Add("mp_QuickMessage", [](Command::Params*)
-				{
-					Command::Execute("openmenu quickmessage");
-				});
-
-			// Define custom menus here
-			Menus::Add("ui_mp/changelog.menu");
-			Menus::Add("ui_mp/theater_menu.menu");
-			Menus::Add("ui_mp/pc_options_multi.menu");
-			Menus::Add("ui_mp/pc_options_game.menu");
-			Menus::Add("ui_mp/stats_reset.menu");
-			Menus::Add("ui_mp/stats_unlock.menu");
-			Menus::Add("ui_mp/security_increase_popmenu.menu");
-			Menus::Add("ui_mp/mod_download_popmenu.menu");
-			Menus::Add("ui_mp/popup_friends.menu");
-			Menus::Add("ui_mp/menu_first_launch.menu");
-			Menus::Add("ui_mp/startup_messages.menu");
-			Menus::Add("ui_mp/pc_store.menu");
-			Menus::Add("ui_mp/iw4x_credits.menu");
-			Menus::Add("ui_mp/resetclass.menu");
-			Menus::Add("ui_mp/popup_customtitle.menu");
+			////// Define custom menus here
+			////Menus::Add("ui_mp/changelog.menu");
+			////Menus::Add("ui_mp/theater_menu.menu");
+			////Menus::Add("ui_mp/pc_options_multi.menu");
+			////Menus::Add("ui_mp/pc_options_game.menu");
+			////Menus::Add("ui_mp/stats_reset.menu");
+			////Menus::Add("ui_mp/stats_unlock.menu");
+			////Menus::Add("ui_mp/security_increase_popmenu.menu");
+			////Menus::Add("ui_mp/mod_download_popmenu.menu");
+			////Menus::Add("ui_mp/popup_friends.menu");
+			////Menus::Add("ui_mp/menu_first_launch.menu");
+			////Menus::Add("ui_mp/startup_messages.menu");
+			////Menus::Add("ui_mp/pc_store.menu");
+			////Menus::Add("ui_mp/iw4x_credits.menu");
+			////Menus::Add("ui_mp/resetclass.menu");
+			////Menus::Add("ui_mp/popup_customtitle.menu");
 	}
 
 	Menus::~Menus()
