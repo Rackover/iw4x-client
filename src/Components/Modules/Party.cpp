@@ -164,7 +164,11 @@ namespace Components
 		Dvar::Register<bool>("sv_lanOnly", true, Game::dvar_flag::DVAR_FLAG_NONE, "Don't act as node");
 
 		// Disable timeout entirely, because the maps take a long time to load the host always times out before the clients get a chance to join
-		////Utils::Hook::Nop(0x4974AB, 2);
+		////Utils::Hook::Nop(0x4974AB, 2); 005029A1 
+
+		// Increase timeout instead (smarter) to 30 seconds (7530) in little endian (3075)
+		Utils::Hook::Set<WORD>(0x4974A7, 0x3075);
+		Utils::Hook::Set<WORD>(0x4974C2, 0x3075);
 
 		// various changes to SV_DirectConnect-y stuff to allow non-party joinees
 		Utils::Hook::Set<WORD>(0x460D96, 0x90E9);
