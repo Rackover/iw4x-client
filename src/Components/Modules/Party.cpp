@@ -166,9 +166,9 @@ namespace Components
 		// Disable timeout entirely, because the maps take a long time to load the host always times out before the clients get a chance to join
 		////Utils::Hook::Nop(0x4974AB, 2); 005029A1 
 
-		// Increase timeout instead (smarter) to 30 seconds (7530) in little endian (3075)
-		Utils::Hook::Set<WORD>(0x4974A7, 0x3075);
-		Utils::Hook::Set<WORD>(0x4974C2, 0x3075);
+		// Increase timeout instead to 30 seconds (0x7530)
+		Utils::Hook::Set<WORD>(0x4974A7, 30000);
+		Utils::Hook::Set<WORD>(0x4974C2, 30000);
 
 		// various changes to SV_DirectConnect-y stuff to allow non-party joinees
 		Utils::Hook::Set<WORD>(0x460D96, 0x90E9);
