@@ -40,6 +40,7 @@
 #include <future>
 #include <unordered_map>
 #include <queue>
+#include <algorithm>
 
 // Experimental C++17 features
 #include <filesystem>
