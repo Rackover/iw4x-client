@@ -953,11 +953,6 @@ namespace Components
 			}
 		});
 
-		Dvar::OnInit([]
-		{
-			Dvar::Register<bool>("r_drawAabbTrees", false, Game::DVAR_FLAG_USERCREATED, "Draw aabb trees");
-		});
-
 		Scheduler::OnFrame([]()
 		{
 			if (!Game::CL_IsCgameInitialized() || !Dvar::Var("r_drawAabbTrees").get<bool>()) return;
@@ -984,6 +979,8 @@ namespace Components
 			{
 				Dvar::Register<bool>("r_drawSceneModelBoundingBoxes", false, Game::DVAR_FLAG_CHEAT, "Draw scene model bounding boxes");
 				Dvar::Register<bool>("r_drawSceneModelCollisions", false, Game::DVAR_FLAG_CHEAT, "Draw scene model collisions");
+				Dvar::Register<bool>("r_drawTriggers", false, Game::DVAR_FLAG_CHEAT, "Draw triggers");
+				Dvar::Register<bool>("r_drawAabbTrees", false, Game::DVAR_FLAG_USERCREATED, "Draw aabb trees");
 			});
 
 		Scheduler::OnFrame([]()
@@ -1054,12 +1051,6 @@ namespace Components
 					}
 				}
 			});
-
-
-		Dvar::OnInit([]
-		{
-			Dvar::Register<bool>("r_drawTriggers", false, Game::DVAR_FLAG_CHEAT, "Draw triggers");
-		});
 
 		Scheduler::OnFrame([]()
 		{
