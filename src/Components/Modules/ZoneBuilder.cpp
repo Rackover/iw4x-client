@@ -222,8 +222,14 @@ namespace Components
 		}
 
 		Game::XAssetHeader assetHeader = AssetHandler::FindAssetForZone(type, name, this, isSubAsset);
+
+		if (type == Game::XAssetType::ASSET_TYPE_LOADED_SOUND) {
+			Logger::Print("Loading loaded_sound '%s'\n", name.data());
+		}
+
 		if (!assetHeader.data)
-		{			Logger::Error("Error: Missing asset '%s' of type '%s'\n", name.data(), Game::DB_GetXAssetTypeName(type));
+		{		
+			Logger::Error("Error: Missing asset '%s' of type '%s'\n", name.data(), Game::DB_GetXAssetTypeName(type));
 			return false;
 		}
 
@@ -395,7 +401,6 @@ namespace Components
 #ifndef DEBUG
 		// Insert a random byte, this will destroy the whole alignment and result in a crash, if not handled
 		zoneBuffer.insert(zoneBuffer.begin(), static_cast<char>(Utils::Cryptography::Rand::GenerateInt()));
-		std::cout << "ZoneBuilder crashing on purpose";
 
 		char lastByte = 0;
 		for(unsigned int i = 0; i < zoneBuffer.size(); ++i )
