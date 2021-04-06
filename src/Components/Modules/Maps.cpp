@@ -18,11 +18,9 @@ namespace Components
 		".arena",
 	};
 
-	const char* Maps::MapPatches[3] =
+	const char* Maps::MapPatches[1] =
 	{
-		"lmdn_patch_minigun",
-		"lmdn_patch_vehicles",
-		"lmdn_patch_sounds"
+		"louv_patch_sounds"
 	};
 
 	Maps::UserMapContainer* Maps::GetUserMap()
