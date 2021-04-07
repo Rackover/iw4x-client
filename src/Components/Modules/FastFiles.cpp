@@ -570,7 +570,7 @@ namespace Components
 		// Add custom zone paths
 		FastFiles::AddZonePath("zone\\patch\\");
 		FastFiles::AddZonePath("zone\\dlc\\");
-		FastFiles::AddZonePath("zone\\lmdn\\");
+		FastFiles::AddZonePath("zone\\louv\\");
 
 		Scheduler::OnFrame([]()
 		{
