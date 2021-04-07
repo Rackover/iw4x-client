@@ -580,9 +580,6 @@ namespace Components
 		Utils::Hook::Set<BYTE>(0x48A135, 0xC3);
 		Utils::Hook::Set<BYTE>(0x48A151, 0xC3);
 
-		// Disable UPNP!
-		Utils::Hook::Set<BYTE>(0x412300, 0xC3);
-
 		Utils::Hook::Nop(0x684080, 5); // Don't spam the console
 
 		// spawn upnp thread when UPNP_init returns
