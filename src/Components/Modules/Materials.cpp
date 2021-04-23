@@ -246,7 +246,7 @@ namespace Components
 			std::string newImage = image;
 			Utils::String::Replace(newImage, "preview_", "loadscreen_");
 
-			if (FileSystem::FileReader(fmt::sprintf("images/%s.iwi", newImage.data())).exists())
+			if (FileSystem::FileReader(Utils::String::VA("images/%s.iwi", newImage.data())).exists())
 			{
 				image = Utils::String::VA("%s", newImage.data());
 			}
@@ -260,6 +260,21 @@ namespace Components
 	{
 		//__debugbreak();
 		return Utils::Hook::Call<int(Game::Material*, Game::Material*)>(0x5235B0)(m1, m2);
+	}
+
+	Game::XAssetHeader Materials::MaterialPreviewLoad(Game::XAssetType /*type*/, const std::string& filename)
+	{
+		Game::XAssetHeader header = { nullptr };
+
+		if (Utils::String::StartsWith(filename, "preview_mp")) {
+
+			auto image = Game::DB_FindXAssetEntry(Game::XAssetType::ASSET_TYPE_IMAGE, filename.data())->asset.header.image;
+			header.material = Materials::Create(filename, image);
+
+			printf("");
+		}
+
+		return header;
 	}
 
 #ifdef DEBUG
@@ -301,6 +316,8 @@ namespace Components
 
 		// Debug material comparison
 		Utils::Hook::Set<void*>(0x523894, Materials::MaterialComparePrint);
+
+		AssetHandler::OnFind(Game::XAssetType::ASSET_TYPE_MATERIAL, Materials::MaterialPreviewLoad);
 
 #ifdef DEBUG
 		if (Flags::HasFlag("dump"))

@@ -37,6 +37,7 @@ namespace Components
 		static void DumpImageCfg(int, const char*, const char* material);
 		static void DumpImageCfgPath(int, const char*, const char* material);
 #endif
+		static Game::XAssetHeader MaterialPreviewLoad(Game::XAssetType /*type*/, const std::string& filename);
 
 		static int MaterialComparePrint(Game::Material* m1, Game::Material* m2);
 
