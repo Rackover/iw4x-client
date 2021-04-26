@@ -113,6 +113,9 @@ template <size_t S> class Sizer { };
 #include "proto/ipc.pb.h"
 #include "proto/friends.pb.h"
 
+// Xinput
+#include <XInput.h>
+
 #pragma warning(pop)
 
 #include "Utils/IO.hpp"
@@ -151,6 +154,8 @@ template <size_t S> class Sizer { };
 #pragma comment(lib, "Advapi32.lib")
 #pragma comment(lib, "rpcrt4.lib")
 #pragma comment(lib, "dbghelp.lib")
+#pragma comment(lib, "XInput.lib")
+#pragma comment(lib, "Xinput9_1_0.lib")
 
 // Enable additional literals
 using namespace std::literals;
