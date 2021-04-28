@@ -989,7 +989,7 @@ namespace Components
 				for (auto i = 0; i < scene->sceneDObjCount; i++)
 				{
 					if (scene->sceneDObj[i].obj) {
-						for (size_t j = 0; j < scene->sceneDObj[i].obj->numModels; j++)
+						for (int j = 0; j < scene->sceneDObj[i].obj->numModels; j++)
 						{
 							Game::R_AddDebugString(dobjsColor, scene->sceneDObj[i].placement.origin, 1.0, scene->sceneDObj[i].obj->models[j]->name);
 						}
@@ -997,7 +997,7 @@ namespace Components
 				}
 
 				// Static models
-				for (auto i = 0; i < world->dpvs.smodelCount; i++)
+				for (size_t i = 0; i < world->dpvs.smodelCount; i++)
 				{
 					auto staticModel = world->dpvs.smodelDrawInsts[i];
 					if (staticModel.model) {
