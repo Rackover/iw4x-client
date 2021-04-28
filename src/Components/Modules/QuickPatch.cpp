@@ -935,21 +935,6 @@ namespace Components
 			}
 		});
 
-		AssetHandler::OnLoad([](Game::XAssetType type, Game::XAssetHeader asset, const std::string& /*name*/, bool* /*restrict*/)
-		{
-			if (type == Game::XAssetType::ASSET_TYPE_GFXWORLD)
-			{
-				std::string buffer;
-
-				for (unsigned int i = 0; i < asset.gfxWorld->dpvs.staticSurfaceCount; ++i)
-				{
-					buffer.append(Utils::String::VA("%s\n", asset.gfxWorld->dpvs.surfaces[asset.gfxWorld->dpvs.sortedSurfIndex[i]].material->info.name));
-				}
-
-				Utils::IO::WriteFile("userraw/logs/matlog.txt", buffer);
-			}
-		});
-
 		Scheduler::OnFrame([]()
 		{
 			if (!Game::CL_IsCgameInitialized() || !Dvar::Var("r_drawAabbTrees").get<bool>()) return;
