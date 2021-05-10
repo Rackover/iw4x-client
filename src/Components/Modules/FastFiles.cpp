@@ -161,8 +161,10 @@ namespace Components
 			info.name = "iw4x_ui_mp";
 			data.push_back(info);
 
-			info.name = "louv_ui_previews";
-			data.push_back(info);
+			if (FastFiles::Exists("louv_ui_previews")){
+				info.name = "louv_ui_previews";
+				data.push_back(info);
+			}
 		}
 		else // Fallback
 		{
