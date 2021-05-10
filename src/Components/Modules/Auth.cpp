@@ -136,23 +136,10 @@ namespace Components
 		}
 
 
-		if (!connectData.infostring().empty())
-		{
-			Game::SV_Cmd_EndTokenizedString();
-			Game::SV_Cmd_TokenizeString(connectData.infostring().data());
-			Game::SV_DirectConnect(*address.get());
-		}
-		else
-		{
-			Network::Send(address, "error\nInvalid infostring data!");
-		}
-
-
-		/*
 		// Simply connect, if we're in debug mode, we ignore all security checks
-#ifndef DEBUG
-		if (address.isLoopback())
-#endif
+//#ifndef DEBUG
+//		if (address.isLoopback())
+//#endif
 		{
 			if (!connectData.infostring().empty())
 			{
@@ -165,93 +152,91 @@ namespace Components
 				Network::Send(address, "error\nInvalid infostring data!");
 			}
 		}
-#ifndef DEBUG
-		else
-		{
-			// Validate proto data
-			if (connectData.signature().empty() || connectData.publickey().empty() || connectData.token().empty() || connectData.infostring().empty())
-			{
-				Network::Send(address, "error\nInvalid connect data!");
-				return;
-			}
-
-			// Setup new cmd params
-			Game::SV_Cmd_EndTokenizedString();
-			Game::SV_Cmd_TokenizeString(connectData.infostring().data());
-
-			// Access the params
-			Command::ServerParams params;
-
-			// Ensure there are enough params
-			if (params.length() < 3)
-			{
-				Network::Send(address, "error\nInvalid connect string!");
-				return;
-			}
-
-			// Parse the infostring
-			Utils::InfoString infostr(params[2]);
-
-			// Read the required data
-			std::string steamId = infostr.get("xuid");
-			std::string challenge = infostr.get("challenge");
-
-			if (steamId.empty() || challenge.empty())
-			{
-				Network::Send(address, "error\nInvalid connect data!");
-				return;
-			}
-
-			// Parse the id
-			unsigned __int64 xuid = strtoull(steamId.data(), nullptr, 16);
-
-			SteamID guid;
-			guid.bits = xuid;
-
-			if (Bans::IsBanned({ guid, address.getIP() }))
-			{
-				Network::Send(address, "error\nEXE_ERR_BANNED_PERM");
-				return;
-			}
-
-			if (std::find(Auth::BannedUids.begin(), Auth::BannedUids.end(), xuid) != Auth::BannedUids.end())
-			{
-				Network::Send(address, "error\nYour online profile is invalid. Delete your players folder and restart ^2IW4x^7.");
-				return;
-			}
-
-			if (xuid != Auth::GetKeyHash(connectData.publickey()))
-			{
-				Network::Send(address, "error\nXUID doesn't match the certificate!");
-				return;
-			}
-
-			// Verify the signature
-			Utils::Cryptography::ECC::Key key;
-			key.set(connectData.publickey());
-
-			if (!key.isValid() || !Utils::Cryptography::ECC::VerifyMessage(key, challenge, connectData.signature()))
-			{
-				Network::Send(address, "error\nChallenge signature was invalid!");
-				return;
-			}
-
-			// Verify the security level
-			uint32_t ourLevel = static_cast<uint32_t>(Dvar::Var("sv_securityLevel").get<int>());
-			uint32_t userLevel = Auth::GetZeroBits(connectData.token(), connectData.publickey());
-
-			if (userLevel < ourLevel)
-			{
-				Network::Send(address, Utils::String::VA("error\nYour security level (%d) is lower than the server's security level (%d)", userLevel, ourLevel));
-				return;
-			}
-
-			Logger::Print("Verified XUID %llX (%d) from %s\n", xuid, userLevel, address.getCString());
-			Game::SV_DirectConnect(*address.get());
-		}
-#endif
-	*/
-
+//#ifndef DEBUG
+//		else
+//		{
+//			// Validate proto data
+//			if (connectData.signature().empty() || connectData.publickey().empty() || connectData.token().empty() || connectData.infostring().empty())
+//			{
+//				Network::Send(address, "error\nInvalid connect data!");
+//				return;
+//			}
+//
+//			// Setup new cmd params
+//			Game::SV_Cmd_EndTokenizedString();
+//			Game::SV_Cmd_TokenizeString(connectData.infostring().data());
+//
+//			// Access the params
+//			Command::ServerParams params;
+//
+//			// Ensure there are enough params
+//			if (params.length() < 3)
+//			{
+//				Network::Send(address, "error\nInvalid connect string!");
+//				return;
+//			}
+//
+//			// Parse the infostring
+//			Utils::InfoString infostr(params[2]);
+//
+//			// Read the required data
+//			std::string steamId = infostr.get("xuid");
+//			std::string challenge = infostr.get("challenge");
+//
+//			if (steamId.empty() || challenge.empty())
+//			{
+//				Network::Send(address, "error\nInvalid connect data!");
+//				return;
+//			}
+//
+//			// Parse the id
+//			unsigned __int64 xuid = strtoull(steamId.data(), nullptr, 16);
+//
+//			SteamID guid;
+//			guid.bits = xuid;
+//
+//			if (Bans::IsBanned({ guid, address.getIP() }))
+//			{
+//				Network::Send(address, "error\nEXE_ERR_BANNED_PERM");
+//				return;
+//			}
+//
+//			if (std::find(Auth::BannedUids.begin(), Auth::BannedUids.end(), xuid) != Auth::BannedUids.end())
+//			{
+//				Network::Send(address, "error\nYour online profile is invalid. Delete your players folder and restart ^2IW4x^7.");
+//				return;
+//			}
+//
+//			if (xuid != Auth::GetKeyHash(connectData.publickey()))
+//			{
+//				Network::Send(address, "error\nXUID doesn't match the certificate!");
+//				return;
+//			}
+//
+//			// Verify the signature
+//			Utils::Cryptography::ECC::Key key;
+//			key.set(connectData.publickey());
+//
+//			if (!key.isValid() || !Utils::Cryptography::ECC::VerifyMessage(key, challenge, connectData.signature()))
+//			{
+//				Network::Send(address, "error\nChallenge signature was invalid!");
+//				return;
+//			}
+//
+//			// Verify the security level
+//			uint32_t ourLevel = static_cast<uint32_t>(Dvar::Var("sv_securityLevel").get<int>());
+//			uint32_t userLevel = Auth::GetZeroBits(connectData.token(), connectData.publickey());
+//
+//			if (userLevel < ourLevel)
+//			{
+//				Network::Send(address, Utils::String::VA("error\nYour security level (%d) is lower than the server's security level (%d)", userLevel, ourLevel));
+//				return;
+//			}
+//
+//			Logger::Print("Verified XUID %llX (%d) from %s\n", xuid, userLevel, address.getCString());
+//			Game::SV_DirectConnect(*address.get());
+//		}
+//#endif
 	}
 
 	__declspec(naked) void Auth::DirectConnectStub()

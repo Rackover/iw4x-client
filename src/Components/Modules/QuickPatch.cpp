@@ -397,8 +397,51 @@ namespace Components
 		return std::function < T >(reinterpret_cast<T*>(procAddr));
 	}
 
+	int SND_StopStreamChannel_Hook1(int a1) {
+		std::ostringstream ss;
+
+		ss << std::this_thread::get_id();
+
+		std::string idstr = ss.str();
+		Logger::Print("time %d Stop stream channel %d from SND_UpdateLoopingSounds (thread %s)\n", Game::Sys_Milliseconds(), a1, idstr.c_str());
+		return Utils::Hook::Call<int(int)>(0x430BF0)(a1);
+	}
+
+
+	int SND_StopStreamChannel_Hook2(int a1) {
+		std::ostringstream ss;
+
+		ss << std::this_thread::get_id();
+
+		std::string idstr = ss.str();
+		Logger::Print("time %d Stop stream channel %d from SND_StopBackground (thread %s)\n", Game::Sys_Milliseconds(), a1, idstr.c_str());
+		return Utils::Hook::Call<int(int)>(0x430BF0)(a1);
+	}
+
+
+	void SND_ExecuteStreamReadWrapperHook(int a1) {
+		std::ostringstream ss;
+
+		ss << std::this_thread::get_id();
+
+		std::string idstr = ss.str();
+		Logger::Print("time %d Executing stream read on stream %d (0-11) (thread %s)\n", Game::Sys_Milliseconds(), a1, idstr.c_str());
+		Utils::Hook::Call<int(int)>(0x4258E0)(a1);
+	}
+
+
 	QuickPatch::QuickPatch()
 	{
+
+		// int __cdecl SND_StopStreamChannel(int a1) in looping sounds
+		Utils::Hook(0x501060, SND_StopStreamChannel_Hook1, HOOK_CALL).install()->quick();
+		Utils::Hook(0x6862B9, SND_StopStreamChannel_Hook2, HOOK_CALL).install()->quick();
+		Utils::Hook(0x659A3D, SND_ExecuteStreamReadWrapperHook, HOOK_CALL).install()->quick();
+
+		
+
+
+
 		QuickPatch::FrameTime = 0;
 		Scheduler::OnFrame([]()
 		{
