@@ -9,6 +9,9 @@ namespace Components
 
 	bool Maps::SPMap;
 	std::vector<Maps::DLC> Maps::DlcPacks;
+	std::vector<const char*> Maps::MapPatches = {
+		"louv_patch_sounds"
+	};
 
 	const char* Maps::UserMapFiles[4] =
 	{
@@ -176,6 +179,23 @@ namespace Components
 		if (FastFiles::Exists(patchZone))
 		{
 			data.push_back({patchZone.data(), zoneInfo->allocFlags, zoneInfo->freeFlags});
+		}
+
+		// Load our unsigned patches
+		std::string unsignedPatchZone = Utils::String::VA("upatch_%s", zoneInfo->name);
+		if (FastFiles::Exists(unsignedPatchZone))
+		{
+			Logger::Print("Pushing data from the unsigned patch zone %s", unsignedPatchZone.data());
+			data.push_back({ unsignedPatchZone.data(), zoneInfo->allocFlags, zoneInfo->freeFlags });
+		}
+
+		unsigned int patches = Maps::MapPatches.size();
+		for (unsigned int i = 0; i < patches; i++) {
+			const char* patch = Maps::MapPatches[i];
+			if (FastFiles::Exists(patch))
+			{
+				data.push_back({ patch, zoneInfo->allocFlags, zoneInfo->freeFlags });
+			}
 		}
 
 		return FastFiles::LoadLocalizeZones(data.data(), data.size(), sync);
