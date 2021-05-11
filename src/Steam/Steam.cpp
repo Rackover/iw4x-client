@@ -104,6 +104,10 @@ namespace Steam
 
 	bool Enabled()
 	{
+#ifdef DISABLE_STEAM
+		return false;
+#endif
+
 		return !Components::Flags::HasFlag("nosteam");
 	}
 
@@ -111,6 +115,7 @@ namespace Steam
 	{
 		bool SteamAPI_Init()
 		{
+#ifdef DISABLE_STEAM
 			Proxy::SetGame(10190);
 
 			if (!Proxy::Inititalize())
@@ -123,6 +128,7 @@ namespace Steam
 				Proxy::SetMod("IW4x: Modern Warfare 2");
 				Proxy::RunGame();
 			}
+#endif
 
 			return true;
 		}
