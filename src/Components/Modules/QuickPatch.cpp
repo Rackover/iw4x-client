@@ -148,7 +148,8 @@ namespace Components
 		{
 			if (!dest[i]) break;
 
-			if (dest[i] > 125 || dest[i] < 32 || dest[i] == '%') 
+			// Rack: Name restriction toned down to allow accents & other french characters
+			if (/*dest[i] > 125 || dest[i] < 32 || */dest[i] == '%') 
 			{
 				return false;
 			}
@@ -507,10 +508,10 @@ namespace Components
 		Utils::Hook::Set<const char*>(0x6431D1, BASEGAME);
 
 		// UI version string
-		Utils::Hook::Set<const char*>(0x43F73B, "IW4x: " VERSION);
+		Utils::Hook::Set<const char*>(0x43F73B, SHORTVERSION "\n" __DATE__ " " __TIME__);
 
 		// console version string
-		Utils::Hook::Set<const char*>(0x4B12BB, "IW4x " VERSION " (built " __DATE__ " " __TIME__ ")");
+		Utils::Hook::Set<const char*>(0x4B12BB, PLAINVERSION " (built " __DATE__ " " __TIME__ ")");
 
 		// version string
 		Utils::Hook::Set<const char*>(0x60BD56, "IW4x (" VERSION ")");
@@ -524,21 +525,21 @@ namespace Components
 		Utils::Hook::Nop(0x6310B8, 5); // Don't write the result
 		Dvar::OnInit([]()
 		{
-			*reinterpret_cast<Game::dvar_t**>(0x62E4B64) = Game::Dvar_RegisterVec2("ui_buildLocation", -60.0f, 474.0f, -10000.0, 10000.0, Game::DVAR_FLAG_READONLY, "Where to draw the build number");
+				*reinterpret_cast<Game::dvar_t**>(0x62E4B64) = Game::Dvar_RegisterVec2("ui_buildLocation", -40.0f, 434.0f, -10000.0, 10000.0, Game::DVAR_FLAG_READONLY, "Where to draw the build number");
 		});
 
 		// console title
 		if (ZoneBuilder::IsEnabled())
 		{
-			Utils::Hook::Set<const char*>(0x4289E8, "IW4x (" VERSION "): ZoneBuilder");
+			Utils::Hook::Set<const char*>(0x4289E8, PLAINVERSION " ZoneBuilder");
 		}
 		else if (Dedicated::IsEnabled())
 		{
-			Utils::Hook::Set<const char*>(0x4289E8, "IW4x (" VERSION "): Dedicated");
+			Utils::Hook::Set<const char*>(0x4289E8, PLAINVERSION " Dedicated");
 		}
 		else
 		{
-			Utils::Hook::Set<const char*>(0x4289E8, "IW4x (" VERSION "): Console");
+			Utils::Hook::Set<const char*>(0x4289E8, PLAINVERSION " Console");
 		}
 
 		// window title

@@ -245,7 +245,8 @@ namespace Components
 
 		// set cg_fov max to 90.0
 		// ...120 because of V2
-		static float cgFov90 = 120.0f;
+		// Rack: 85
+		static float cgFov90 = 85.0f;
 		Utils::Hook::Set<float*>(0x4F8E28, &cgFov90);
 
 		// set max volume to 1
@@ -254,6 +255,9 @@ namespace Components
 
 		// Uncheat ui_showList
 		Utils::Hook::Xor<BYTE>(0x6310DC, Game::dvar_flag::DVAR_FLAG_CHEAT);
+
+		// Protect r_fullbright
+		Utils::Hook::Set<BYTE>(0x519887, Game::dvar_flag::DVAR_FLAG_CHEAT);
 
 		// Uncheat ui_debugMode
 		Utils::Hook::Xor<BYTE>(0x6312DE, Game::dvar_flag::DVAR_FLAG_CHEAT);
@@ -277,13 +281,13 @@ namespace Components
 		Utils::Hook(0x63444C, Dvar::SetFromStringByNameSafeExternal, HOOK_CALL).install()->quick();
 
 		// Slider
-		Utils::Hook(0x636159, Dvar::SetFromStringByNameExternal, HOOK_CALL).install()->quick();
-		Utils::Hook(0x636189, Dvar::SetFromStringByNameExternal, HOOK_CALL).install()->quick();
-		Utils::Hook(0x6364EA, Dvar::SetFromStringByNameExternal, HOOK_CALL).install()->quick();
+		////Utils::Hook(0x636159, Dvar::SetFromStringByNameExternal, HOOK_CALL).install()->quick();
+		////Utils::Hook(0x636189, Dvar::SetFromStringByNameExternal, HOOK_CALL).install()->quick();
+		////Utils::Hook(0x6364EA, Dvar::SetFromStringByNameExternal, HOOK_CALL).install()->quick();
 
-		Utils::Hook(0x636207, Dvar::SetFromStringByNameExternal, HOOK_CALL).install()->quick();
-		Utils::Hook(0x636608, Dvar::SetFromStringByNameExternal, HOOK_CALL).install()->quick();
-		Utils::Hook(0x636695, Dvar::SetFromStringByNameExternal, HOOK_CALL).install()->quick();
+		////Utils::Hook(0x636207, Dvar::SetFromStringByNameExternal, HOOK_CALL).install()->quick();
+		////Utils::Hook(0x636608, Dvar::SetFromStringByNameExternal, HOOK_CALL).install()->quick();
+		////Utils::Hook(0x636695, Dvar::SetFromStringByNameExternal, HOOK_CALL).install()->quick();
 
 		// Entirely block setting cheat dvars internally without sv_cheats
 		//Utils::Hook(0x4F52EC, Dvar::SetFromStringByNameExternal, HOOK_CALL).install()->quick();
