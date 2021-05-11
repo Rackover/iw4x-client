@@ -4,6 +4,8 @@ namespace Components
 {
 	int QuickPatch::FrameTime = 0;
 
+	static std::mutex Mutex;
+
 	void QuickPatch::UnlockStats()
 	{
 		if (Dedicated::IsEnabled()) return;
@@ -397,38 +399,54 @@ namespace Components
 		return std::function < T >(reinterpret_cast<T*>(procAddr));
 	}
 
+	int AIL_last_error() {
+		return Utils::Hook::Call<int()>(0x689F46)();
+	}
+	// *(reinterpret_cast<int*>(0x21165710))
+
 	int SND_StopStreamChannel_Hook1(int a1) {
 		std::ostringstream ss;
-
 		ss << std::this_thread::get_id();
-
-		std::string idstr = ss.str();
-		Logger::Print("time %d Stop stream channel %d from SND_UpdateLoopingSounds (thread %s)\n", Game::Sys_Milliseconds(), a1, idstr.c_str());
-		return Utils::Hook::Call<int(int)>(0x430BF0)(a1);
+		std::string idstr = ss.str(); 
+		Logger::Print("time %d Stop stream channel %d from SND_UpdateLoopingSounds (thread %s) (last error is %d)\n", Game::Sys_Milliseconds(), a1, idstr.c_str(), AIL_last_error());
+		auto result = Utils::Hook::Call<int(int)>(0x430BF0)(a1);
+		return result;
 	}
 
 
 	int SND_StopStreamChannel_Hook2(int a1) {
 		std::ostringstream ss;
-
 		ss << std::this_thread::get_id();
-
 		std::string idstr = ss.str();
-		Logger::Print("time %d Stop stream channel %d from SND_StopBackground (thread %s)\n", Game::Sys_Milliseconds(), a1, idstr.c_str());
+		Logger::Print("time %d Stop stream channel %d from SND_StopBackground (thread %s) (last error is is %d)\n", Game::Sys_Milliseconds(), a1, idstr.c_str(), AIL_last_error());
 		return Utils::Hook::Call<int(int)>(0x430BF0)(a1);
 	}
 
 
 	void SND_ExecuteStreamReadWrapperHook(int a1) {
 		std::ostringstream ss;
-
 		ss << std::this_thread::get_id();
-
 		std::string idstr = ss.str();
-		Logger::Print("time %d Executing stream read on stream %d (0-11) (thread %s)\n", Game::Sys_Milliseconds(), a1, idstr.c_str());
+		Logger::Print("time %d Executing stream read on stream %d (0-11) (thread %s) (last error is %d)\n", Game::Sys_Milliseconds(), a1, idstr.c_str(), AIL_last_error());
 		Utils::Hook::Call<int(int)>(0x4258E0)(a1);
 	}
 
+	void LockMutex() {
+		std::ostringstream ss;
+		ss << std::this_thread::get_id();
+		std::string idstr = ss.str();
+		Logger::Print("time %d Locking mutex for thread %s\n", Game::Sys_Milliseconds(),  idstr.c_str());
+
+		Utils::Hook::Call<void()>(0x21101090)();
+	}
+
+	BOOL __stdcall UnlockMutex(HANDLE hMutex) {
+		std::ostringstream ss;
+		ss << std::this_thread::get_id();
+		std::string idstr = ss.str();
+		Logger::Print("time %d Unlocking mutex for thread %s (handle %d)\n", Game::Sys_Milliseconds(), idstr.c_str(), hMutex);
+		return ReleaseMutex(hMutex);
+	}
 
 	QuickPatch::QuickPatch()
 	{
@@ -438,9 +456,12 @@ namespace Components
 		Utils::Hook(0x6862B9, SND_StopStreamChannel_Hook2, HOOK_CALL).install()->quick();
 		Utils::Hook(0x659A3D, SND_ExecuteStreamReadWrapperHook, HOOK_CALL).install()->quick();
 
-		
+		//Utils::Hook::Nop(0x2111B031, 6);
+		//Utils::Hook(0x2111B015, LockMutex, HOOK_CALL).install()->quick();
+		//Utils::Hook(0x2111B031, UnlockMutex, HOOK_CALL).install()->quick();
+		//Utils::Hook::Nop(0x2111B030, 1);
 
-
+		//Utils::Hook::Set(0x21165710, 0);
 
 		QuickPatch::FrameTime = 0;
 		Scheduler::OnFrame([]()
