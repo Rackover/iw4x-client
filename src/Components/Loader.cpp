@@ -39,7 +39,7 @@ namespace Components
 		Loader::Register(new Dvar());
 		Loader::Register(new Lean());
 		Loader::Register(new Maps());
-		Loader::Register(new News());
+		//Loader::Register(new News());
 		Loader::Register(new Node());
 		Loader::Register(new RCon());
 		Loader::Register(new Stats());
@@ -48,7 +48,7 @@ namespace Components
 		Loader::Register(new Party());
 		Loader::Register(new Zones());
 		Loader::Register(new Colors());
-		Loader::Register(new D3D9Ex());
+		////Loader::Register(new D3D9Ex());
 #if (!defined(VLD_RPTHOOK_INSTALL) || defined(VLDEnable)) && defined(COMPILE_IW4MVM) // IW4MVM uses detours which produces memory leaks, but those are not really relevant
 		Loader::Register(new IW4MVM());
 #endif
@@ -58,7 +58,7 @@ namespace Components
 		Loader::Register(new Window());
 		Loader::Register(new Command());
 		Loader::Register(new Console());
-		Loader::Register(new Friends());
+		////Loader::Register(new Friends());
 		Loader::Register(new IPCPipe());
 		Loader::Register(new MapDump());
 		Loader::Register(new ModList());
@@ -73,7 +73,7 @@ namespace Components
 		Loader::Register(new Renderer());
 		Loader::Register(new UIFeeder());
 		Loader::Register(new UIScript());
-		Loader::Register(new AntiCheat());
+		////Loader::Register(new AntiCheat());
 		Loader::Register(new Changelog());
 		Loader::Register(new Dedicated());
 		Loader::Register(new Discovery());
