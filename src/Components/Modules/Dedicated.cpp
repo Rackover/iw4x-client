@@ -314,8 +314,6 @@ namespace Components
 			// Make sure all callbacks are handled
 			Scheduler::OnFrame(Steam::SteamAPI_RunCallbacks);
 
-			Dvar::Register<bool>("sv_lanOnly", false, Game::dvar_flag::DVAR_FLAG_NONE, "Don't act as node");
-
 			Utils::Hook(0x60BE98, Dedicated::InitDedicatedServer, HOOK_CALL).install()->quick();
 
 			Utils::Hook::Set<BYTE>(0x683370, 0xC3); // steam sometimes doesn't like the server

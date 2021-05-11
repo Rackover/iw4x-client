@@ -224,7 +224,7 @@ namespace Components
 		Utils::Hook::Set<BYTE>(0x6258D0, 0xC3);
 
 		// Allow colored names ingame
-		Utils::Hook(0x5D8B40, Colors::ClientUserinfoChanged, HOOK_JUMP).install()->quick();
+		////Utils::Hook(0x5D8B40, Colors::ClientUserinfoChanged, HOOK_JUMP).install()->quick();
 
 		// Though, don't apply that to overhead names.
 		Utils::Hook(0x581932, Colors::GetClientName, HOOK_CALL).install()->quick();

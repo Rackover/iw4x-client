@@ -84,7 +84,7 @@ namespace Components
 	void Console::ShowPrompt()
 	{
 		wattron(Console::InputWindow, COLOR_PAIR(10) | A_BOLD);
-		wprintw(Console::InputWindow, "%s> ", VERSION);
+		wprintw(Console::InputWindow, "%s> ", SHORTVERSION);
 	}
 
 	void Console::RefreshOutput()
@@ -535,9 +535,12 @@ namespace Components
 	}
 
 	Console::Console()
-	{
+	{        
+		// Display game's native console no matter what
+		Utils::Hook::Nop(0x60BB58, 11);
+
 		// Console '%s: %s> ' string
-		Utils::Hook::Set<const char*>(0x5A44B4, "IW4x: " VERSION "> ");
+		Utils::Hook::Set<const char*>(0x5A44B4, SHORTVERSION "> ");
 
 		// Patch console color
 		static float consoleColor[] = { 0.70f, 1.00f, 0.00f, 1.00f };
