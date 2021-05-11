@@ -677,33 +677,33 @@ namespace Components
 //		Utils::Hook::Nop(0x60BEB1, 5);          // GamerProfile_InitAllProfiles - Causes an error, when calling a harrier killstreak.
 //		Utils::Hook::Nop(0x60BEB8, 5);          // GamerProfile_LogInProfile
 //		Utils::Hook::Nop(0x4059EA, 5);          // GamerProfile_RegisterCommands
-		Utils::Hook::Nop(0x4059EF, 5);          // GamerProfile_RegisterDvars
-		Utils::Hook::Nop(0x47DF9A, 5);          // GamerProfile_UpdateSystemDvars
-		Utils::Hook::Set<BYTE>(0x5AF0D0, 0xC3); // GamerProfile_SaveProfile
-		Utils::Hook::Set<BYTE>(0x4E6870, 0xC3); // GamerProfile_UpdateSystemVarsFromProfile
-		Utils::Hook::Set<BYTE>(0x4C37F0, 0xC3); // GamerProfile_UpdateProfileAndSaveIfNeeded
-		Utils::Hook::Set<BYTE>(0x633CA0, 0xC3); // GamerProfile_SetPercentCompleteMP
+		////Utils::Hook::Nop(0x4059EF, 5);          // GamerProfile_RegisterDvars
+		////Utils::Hook::Nop(0x47DF9A, 5);          // GamerProfile_UpdateSystemDvars
+		////Utils::Hook::Set<BYTE>(0x5AF0D0, 0xC3); // GamerProfile_SaveProfile
+		////Utils::Hook::Set<BYTE>(0x4E6870, 0xC3); // GamerProfile_UpdateSystemVarsFromProfile
+		////Utils::Hook::Set<BYTE>(0x4C37F0, 0xC3); // GamerProfile_UpdateProfileAndSaveIfNeeded
+		////Utils::Hook::Set<BYTE>(0x633CA0, 0xC3); // GamerProfile_SetPercentCompleteMP
 
 		Utils::Hook::Nop(0x5AF1EC, 5); // Profile loading error
 		Utils::Hook::Set<BYTE>(0x5AE212, 0xC3); // Profile reading
 
 		// GamerProfile_RegisterCommands
 		// Some random function used as nullsub :P
-		Utils::Hook::Set<DWORD>(0x45B868, 0x5188FB); // profile_menuDvarsSetup
-		Utils::Hook::Set<DWORD>(0x45B87E, 0x5188FB); // profile_menuDvarsFinish
-		Utils::Hook::Set<DWORD>(0x45B894, 0x5188FB); // profile_toggleInvertedPitch
-		Utils::Hook::Set<DWORD>(0x45B8AA, 0x5188FB); // profile_setViewSensitivity
-		Utils::Hook::Set<DWORD>(0x45B8C3, 0x5188FB); // profile_setButtonsConfig
-		Utils::Hook::Set<DWORD>(0x45B8D9, 0x5188FB); // profile_setSticksConfig
-		Utils::Hook::Set<DWORD>(0x45B8EF, 0x5188FB); // profile_toggleAutoAim
-		Utils::Hook::Set<DWORD>(0x45B905, 0x5188FB); // profile_SetHasEverPlayed_MainMenu
-		Utils::Hook::Set<DWORD>(0x45B91E, 0x5188FB); // profile_SetHasEverPlayed_SP
-		Utils::Hook::Set<DWORD>(0x45B934, 0x5188FB); // profile_SetHasEverPlayed_SO
-		Utils::Hook::Set<DWORD>(0x45B94A, 0x5188FB); // profile_SetHasEverPlayed_MP
-		Utils::Hook::Set<DWORD>(0x45B960, 0x5188FB); // profile_setVolume
-		Utils::Hook::Set<DWORD>(0x45B979, 0x5188FB); // profile_setGamma
-		Utils::Hook::Set<DWORD>(0x45B98F, 0x5188FB); // profile_setBlacklevel
-		Utils::Hook::Set<DWORD>(0x45B9A5, 0x5188FB); // profile_toggleCanSkipOffensiveMissions
+		////Utils::Hook::Set<DWORD>(0x45B868, 0x5188FB); // profile_menuDvarsSetup
+		////Utils::Hook::Set<DWORD>(0x45B87E, 0x5188FB); // profile_menuDvarsFinish
+		////Utils::Hook::Set<DWORD>(0x45B894, 0x5188FB); // profile_toggleInvertedPitch
+		////Utils::Hook::Set<DWORD>(0x45B8AA, 0x5188FB); // profile_setViewSensitivity
+		////Utils::Hook::Set<DWORD>(0x45B8C3, 0x5188FB); // profile_setButtonsConfig
+		////Utils::Hook::Set<DWORD>(0x45B8D9, 0x5188FB); // profile_setSticksConfig
+		////Utils::Hook::Set<DWORD>(0x45B8EF, 0x5188FB); // profile_toggleAutoAim
+		////Utils::Hook::Set<DWORD>(0x45B905, 0x5188FB); // profile_SetHasEverPlayed_MainMenu
+		////Utils::Hook::Set<DWORD>(0x45B91E, 0x5188FB); // profile_SetHasEverPlayed_SP
+		////Utils::Hook::Set<DWORD>(0x45B934, 0x5188FB); // profile_SetHasEverPlayed_SO
+		////Utils::Hook::Set<DWORD>(0x45B94A, 0x5188FB); // profile_SetHasEverPlayed_MP
+		////Utils::Hook::Set<DWORD>(0x45B960, 0x5188FB); // profile_setVolume
+		////Utils::Hook::Set<DWORD>(0x45B979, 0x5188FB); // profile_setGamma
+		////Utils::Hook::Set<DWORD>(0x45B98F, 0x5188FB); // profile_setBlacklevel
+		////Utils::Hook::Set<DWORD>(0x45B9A5, 0x5188FB); // profile_toggleCanSkipOffensiveMissions
 
 		// Patch SV_IsClientUsingOnlineStatsOffline
 		Utils::Hook::Set<DWORD>(0x46B710, 0x90C3C033);
@@ -931,6 +931,7 @@ namespace Components
 			}
 		});
 
+#ifdef DEBUG
 		AssetHandler::OnLoad([](Game::XAssetType type, Game::XAssetHeader asset, const std::string& /*name*/, bool* /*restrict*/)
 		{
 			if (type == Game::XAssetType::ASSET_TYPE_GFXWORLD)
@@ -945,6 +946,7 @@ namespace Components
 				Utils::IO::WriteFile("userraw/logs/matlog.txt", buffer);
 			}
 		});
+#endif
 
 		Scheduler::OnFrame([]()
 		{
