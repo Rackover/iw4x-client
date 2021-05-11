@@ -262,10 +262,12 @@ namespace Components
 				Utils::String::Replace(zone, "_load", "");
 			}
 
+#ifdef DEBUG
 			if (Utils::IO::FileExists(Utils::String::VA("usermaps\\%s\\%s.ff", zone.data(), filename.data())))
 			{
 				return Utils::String::VA("usermaps\\%s\\", zone.data());
 			}
+#endif
 		}
 
 		Utils::Merge(&paths, FastFiles::ZonePaths);
