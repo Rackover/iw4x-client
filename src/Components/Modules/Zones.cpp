@@ -2426,6 +2426,8 @@ namespace Components
 	
 	int Zones::LoadMapEnts(bool atStreamStart, Game::MapEnts* buffer, int size)
 	{
+		Logger::Print("Loading map entities for zone version %d\n", Zones::Version());
+
 		if (Zones::Version() >= 448)
 		{
 			size /= 44;
