@@ -170,6 +170,12 @@ namespace Components
 			data.push_back(info);
 		}
 
+		if (FastFiles::Exists("iw4x_ui_mp"))
+		{
+			info.name = "louv_ui_previews";
+			data.push_back(info);
+		}
+
 		return FastFiles::LoadLocalizeZones(data.data(), data.size(), sync);
 	}
 
@@ -568,6 +574,7 @@ namespace Components
 		// Add custom zone paths
 		FastFiles::AddZonePath("zone\\patch\\");
 		FastFiles::AddZonePath("zone\\dlc\\");
+		FastFiles::AddZonePath("zone\\louv\\");
 
 		Scheduler::OnFrame([]()
 		{
