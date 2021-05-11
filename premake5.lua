@@ -463,7 +463,7 @@ workspace "*"
 				"/std:c++latest"
 			}
 	systemversion "latest"
-	defines { "_SILENCE_ALL_CXX17_DEPRECATION_WARNINGS", "DISABLE_FRIENDS", "DISABLE_ANTICHEAT" }
+	defines { "_SILENCE_ALL_CXX17_DEPRECATION_WARNINGS", "DISABLE_FRIENDS", "DISABLE_ANTICHEAT", "DISABLE_STEAM" }
 
 rule "ProtobufCompiler"
 	display "Protobuf compiler"
