@@ -31,10 +31,15 @@ namespace Components
 		Party::Container.joinTime = Game::Sys_Milliseconds();
 		Party::Container.target = target;
 		Party::Container.challenge = Utils::Cryptography::Rand::GenerateChallenge();
-
+#ifdef USE_IW4X_PROTOCOL
 		Network::SendCommand(Party::Container.target, "getinfo", Party::Container.challenge);
 
 		Command::Execute("openmenu popup_reconnectingtoparty");
+#else
+		SteamID id = Party::GenerateLobbyId();
+		Party::LobbyMap[id.bits] = Party::Container.target;
+		Game::Steam_JoinLobby(id, 0);
+#endif
 	}
 
 	const char* Party::GetLobbyInfo(SteamID lobby, const std::string& key)
@@ -150,9 +155,13 @@ namespace Components
 
 	Party::Party()
 	{
-		static Game::dvar_t* partyEnable = Dvar::Register<bool>("party_enable", Dedicated::IsEnabled(), Game::dvar_flag::DVAR_FLAG_NONE, "Enable party system").get<Game::dvar_t*>();
+		static Game::dvar_t* partyEnable = Dvar::Register<bool>("party_enable", !Dedicated::IsEnabled(), Game::dvar_flag::DVAR_FLAG_NONE, "Enable party system").get<Game::dvar_t*>();
 		Dvar::Register<bool>("xblive_privatematch", true, Game::dvar_flag::DVAR_FLAG_WRITEPROTECTED, "").get<Game::dvar_t*>();
 		Dvar::Register<bool>("sv_lanOnly", true, Game::dvar_flag::DVAR_FLAG_NONE, "Don't act as node");
+
+		// Increase timeout instead to 30 seconds (0x7530)
+		Utils::Hook::Set<WORD>(0x4974A7, 30000);
+		Utils::Hook::Set<WORD>(0x4974C2, 30000);
 
 		// various changes to SV_DirectConnect-y stuff to allow non-party joinees
 		Utils::Hook::Set<WORD>(0x460D96, 0x90E9);
@@ -210,8 +219,8 @@ namespace Components
 
 		// Force xblive_privatematch 0 and rename it
 		//Utils::Hook::Set<BYTE>(0x420A6A, 4);
-		Utils::Hook::Set<BYTE>(0x420A6C, 0);
-		Utils::Hook::Set<const char*>(0x420A6E, "xblive_privateserver");
+		////Utils::Hook::Set<BYTE>(0x420A6C, 0);
+		////Utils::Hook::Set<const char*>(0x420A6E, "xblive_privateserver");
 
 		// Remove migration shutdown, it causes crashes and will be destroyed when erroring anyways
 		Utils::Hook::Nop(0x5A8E1C, 12);
@@ -282,6 +291,7 @@ namespace Components
 			Party::Connect(Party::Container.target);
 		});
 
+#ifdef USE_IW4X_PROTOCOL
 		Scheduler::OnFrame([]()
 		{
 			if (Party::Container.valid)
@@ -513,6 +523,7 @@ namespace Components
 			ServerList::Insert(address, info);
 			Friends::UpdateServer(address, info.get("hostname"), info.get("mapname"));
 		});
+#endif
 	}
 
 	Party::~Party()
