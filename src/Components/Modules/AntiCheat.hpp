@@ -1,8 +1,10 @@
 #pragma once
 
 #ifndef DEBUG
+#ifndef DISABLE_ANTICHEAT
 // Hide AntiCheat in embeded symbol names
 #define AntiCheat SubComponent
+#endif
 #else
 # ifndef DISABLE_ANTICHEAT
 #  define DISABLE_ANTICHEAT
