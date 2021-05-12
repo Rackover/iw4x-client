@@ -567,6 +567,13 @@ namespace Components
 		Utils::Hook(0x47548B, Script::ScrShutdownSystemStub, HOOK_CALL).install()->quick();
 		Utils::Hook(0x4D06BA, Script::ScrShutdownSystemStub, HOOK_CALL).install()->quick();
 
+		// Rack: Allow override of builtins functions
+		// Not useful for now, so I'm leaving it out
+#if 0
+		Utils::Hook::Nop(0x613EDA, 2);
+		Utils::Hook::Nop(0x613EF0, 2);
+#endif
+
 		Scheduler::OnFrame([]()
 		{
 			if (!Game::SV_Loaded())
