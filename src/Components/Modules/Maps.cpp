@@ -10,7 +10,8 @@ namespace Components
 	bool Maps::SPMap;
 	std::vector<Maps::DLC> Maps::DlcPacks;
 	std::vector<const char*> Maps::MapPatches = {
-		"louv_patch_sounds"
+		"louv_patch_sounds",
+		"louv_ui_mp"
 	};
 
 	const char* Maps::UserMapFiles[4] =
