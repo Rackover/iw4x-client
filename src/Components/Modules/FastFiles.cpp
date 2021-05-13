@@ -170,9 +170,9 @@ namespace Components
 			data.push_back(info);
 		}
 
-		if (FastFiles::Exists("louv_ui_previews"))
+		if (FastFiles::Exists("louv_ui_mp"))
 		{
-			info.name = "louv_ui_previews";
+			info.name = "louv_ui_mp";
 			data.push_back(info);
 		}
 
