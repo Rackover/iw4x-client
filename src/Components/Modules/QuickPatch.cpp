@@ -1,4 +1,5 @@
 #include "STDInclude.hpp"
+#define RAWFILE_VERSION_FILE "VERSION.TXT"
 
 namespace Components
 {
@@ -507,14 +508,11 @@ namespace Components
 		// fs_basegame
 		Utils::Hook::Set<const char*>(0x6431D1, BASEGAME);
 
-		// UI version string
-		Utils::Hook::Set<const char*>(0x43F73B, SHORTVERSION "\n" __DATE__ " " __TIME__);
-
 		// console version string
 		Utils::Hook::Set<const char*>(0x4B12BB, PLAINVERSION " (built " __DATE__ " " __TIME__ ")");
 
 		// version string
-		Utils::Hook::Set<const char*>(0x60BD56, "IW4x (" VERSION ")");
+		Utils::Hook::Set<const char*>(0x60BD56, VERSION);
 
 		// version string color
 		static float buildLocColor[] = { 1.0f, 1.0f, 1.0f, 0.8f };
@@ -543,7 +541,7 @@ namespace Components
 		}
 
 		// window title
-		Utils::Hook::Set<const char*>(0x5076A0, "IW4x: Multiplayer");
+		Utils::Hook::Set<const char*>(0x5076A0, PROGRAM_NAME);
 
 		// sv_hostname
 		Utils::Hook::Set<const char*>(0x4D378B, "IW4Host");
@@ -979,6 +977,21 @@ namespace Components
 				Dvar::Register<bool>("r_drawModelNames", false, Game::DVAR_FLAG_CHEAT, "Draw all model names");
 				Dvar::Register<bool>("r_drawAabbTrees", false, Game::DVAR_FLAG_USERCREATED, "Draw aabb trees");
 			});
+
+
+		Dvar::OnInit([]() {
+			// UI version string
+			static std::string menuVersionString = VERSION"\n";
+			if (Game::FS_FileExists(RAWFILE_VERSION_FILE)) {
+				auto verFile = FileSystem::File(RAWFILE_VERSION_FILE);
+				menuVersionString += "raw.iwd v" + verFile.getBuffer();
+			}
+			else {
+				menuVersionString += "No raw.iwd";
+			}
+
+			Utils::Hook::Set<const char*>(0x43F73B, menuVersionString.c_str());
+		});
 
 		Scheduler::OnFrame([]()
 			{

@@ -159,7 +159,7 @@ newaction {
 		versionHeader:write("#define VERSION_RC " .. table.concat(vertonumarr(tagName, revNumber), ",") .. "\n")
 		versionHeader:write("\n")
 		versionHeader:write("// Alias definitions\n")
-		versionHeader:write("#define VERSION " .. cstrquote("^3IW4X-LOUV-" .. revNumber .. " ^7" .. os.date("%Y-%m-%d %H:%M:%S")) .. "\n")
+		versionHeader:write("#define VERSION " .. cstrquote("^3IW4X-LOUV-" .. revNumber .. "\n^7" .. os.date("%Y-%m-%d %H:%M:%S")) .. "\n")
 		versionHeader:write("#define PLAINVERSION " .. cstrquote("IW4X-LOUV-" .. revNumber .. " " .. os.date("%Y-%m-%d %H:%M:%S")) .. "\n")
 		versionHeader:write("#define SHORTVERSION " .. cstrquote("IW4X-LOUV-" .. revNumber) .. "\n")
 		versionHeader:write("#define PROGRAM_NAME " .. cstrquote("Call of Duty: Modern Warfare 2") .. "\n")
