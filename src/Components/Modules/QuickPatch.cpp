@@ -746,6 +746,20 @@ namespace Components
 		// Ignore call to print 'Offhand class mismatch when giving weapon...'
 		Utils::Hook(0x5D9047, 0x4BB9B0, HOOK_CALL).install()->quick();
 
+		Dvar::OnInit([]() {
+			// UI version string
+			static std::string menuVersionString = VERSION"\n";
+			auto verFile = FileSystem::File(RAWFILE_VERSION_FILE);
+			if (verFile.exists()) {
+				menuVersionString += "raw.iwd v" + verFile.getBuffer();
+			}
+			else {
+				menuVersionString += "No raw.iwd";
+			}
+
+			Utils::Hook::Set<const char*>(0x43F73B, menuVersionString.c_str());
+			});
+
 		Command::Add("unlockstats", [](Command::Params*)
 		{
 			QuickPatch::UnlockStats();
@@ -977,21 +991,6 @@ namespace Components
 				Dvar::Register<bool>("r_drawModelNames", false, Game::DVAR_FLAG_CHEAT, "Draw all model names");
 				Dvar::Register<bool>("r_drawAabbTrees", false, Game::DVAR_FLAG_USERCREATED, "Draw aabb trees");
 			});
-
-
-		Dvar::OnInit([]() {
-			// UI version string
-			static std::string menuVersionString = VERSION"\n";
-			if (Game::FS_FileExists(RAWFILE_VERSION_FILE)) {
-				auto verFile = FileSystem::File(RAWFILE_VERSION_FILE);
-				menuVersionString += "raw.iwd v" + verFile.getBuffer();
-			}
-			else {
-				menuVersionString += "No raw.iwd";
-			}
-
-			Utils::Hook::Set<const char*>(0x43F73B, menuVersionString.c_str());
-		});
 
 		Scheduler::OnFrame([]()
 			{

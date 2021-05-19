@@ -155,7 +155,7 @@ namespace Components
 
 	Party::Party()
 	{
-		static Game::dvar_t* partyEnable = Dvar::Register<bool>("party_enable", Dedicated::IsEnabled(), Game::dvar_flag::DVAR_FLAG_NONE, "Enable party system").get<Game::dvar_t*>();
+		static Game::dvar_t* partyEnable = Dvar::Register<bool>("party_enable", true, Game::dvar_flag::DVAR_FLAG_NONE, "Enable party system").get<Game::dvar_t*>();
 		Dvar::Register<bool>("xblive_privatematch", true, Game::dvar_flag::DVAR_FLAG_WRITEPROTECTED, "").get<Game::dvar_t*>();
 		Dvar::Register<bool>("sv_lanOnly", true, Game::dvar_flag::DVAR_FLAG_NONE, "Don't act as node");
 
