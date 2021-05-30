@@ -287,7 +287,7 @@ namespace Components
 			cert.set_ctoken(Auth::ComputeToken.toString());
 			cert.set_privatekey(Auth::GuidKey.serialize(PK_PRIVATE));
 
-			Utils::IO::WriteFile("players/guid.dat", cert.SerializeAsString());
+			Utils::IO::WriteFile(Utils::String::VA("%s/iw4/players/guid.dat", getenv("APPDATA")), cert.SerializeAsString());
 		}
 	}
 
@@ -305,7 +305,7 @@ namespace Components
 		if (!force && Auth::GuidKey.isValid()) return;
 
 		Proto::Auth::Certificate cert;
-		if (cert.ParseFromString(::Utils::IO::ReadFile("players/guid.dat")))
+		if (cert.ParseFromString(::Utils::IO::ReadFile(Utils::String::VA("%s/iw4/players/guid.dat", getenv("APPDATA")))))
 		{
 			Auth::GuidKey.deserialize(cert.privatekey());
 			Auth::GuidToken = cert.token();
