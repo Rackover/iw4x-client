@@ -35,7 +35,7 @@ namespace Components
 
 		Loader::Register(new Auth());
 		Loader::Register(new Bans());
-		Loader::Register(new Bots());
+		//Loader::Register(new Bots());
 		Loader::Register(new Dvar());
 		Loader::Register(new Lean());
 		Loader::Register(new Maps());
@@ -82,7 +82,7 @@ namespace Components
 		Loader::Register(new Gametypes());
 		Loader::Register(new Materials());
 		Loader::Register(new Scheduler());
-		Loader::Register(new Threading());
+		//Loader::Register(new Threading());
 		Loader::Register(new CardTitles());
 		Loader::Register(new FileSystem());
 		Loader::Register(new ModelSurfs());
