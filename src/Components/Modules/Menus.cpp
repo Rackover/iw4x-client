@@ -843,22 +843,22 @@ namespace Components
 			//make Com_Error and similar go back to main_text instead of menu_xboxlive.
 			Utils::Hook::SetString(0x6FC790, "main_text");
 
-////			Command::Add("openmenu", [](Command::Params* params)
-////				{
-////					if (params->length() != 2)
-////					{
-////						Logger::Print("USAGE: openmenu <menu name>\n");
-////						return;
-////					}
-////
-////					// Not quite sure if we want to do this if we're not ingame, but it's only needed for ingame menus.
-////					if (Dvar::Var("cl_ingame").get<bool>())
-////					{
-////						Game::Key_SetCatcher(0, 16);
-////					}
-////
-////					Game::Menus_OpenByName(Game::uiContext, params->get(1));
-////				});
+			Command::Add("openmenu", [](Command::Params* params)
+				{
+					if (params->length() != 2)
+					{
+						Logger::Print("USAGE: openmenu <menu name>\n");
+						return;
+					}
+
+					// Not quite sure if we want to do this if we're not ingame, but it's only needed for ingame menus.
+					if (Dvar::Var("cl_ingame").get<bool>())
+					{
+						Game::Key_SetCatcher(0, 16);
+					}
+
+					Game::Menus_OpenByName(Game::uiContext, params->get(1));
+				});
 ////
 ////			Command::Add("reloadmenus", [](Command::Params*)
 ////				{
@@ -887,10 +887,10 @@ namespace Components
 ////			Scheduler::OnFrameAsync(AntiCheat::QuickCodeScanner2);
 ////#endif
 ////
-////			Command::Add("mp_QuickMessage", [](Command::Params*)
-////				{
-////					Command::Execute("openmenu quickmessage");
-////				});
+			Command::Add("mp_QuickMessage", [](Command::Params*)
+				{
+					Command::Execute("openmenu quickmessage");
+				});
 ////
 ////			// Define custom menus here
 ////			Menus::Add("ui_mp/changelog.menu");
