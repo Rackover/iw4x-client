@@ -274,6 +274,26 @@ namespace Components
 				asset.mapEnts->numEntityChars = mapEntities.size() + 1;
 			}
 		}
+
+		if (type == Game::XAssetType::ASSET_TYPE_RAWFILE)
+		{
+			if ((Flags::HasFlag("dumpgsc") && Utils::String::EndsWith(asset.rawfile->name, ".gsc")) ||
+				Flags::HasFlag("dumpraw"))
+			{
+				if (asset.rawfile->compressedLen) {
+					auto decompressed = Utils::Compression::ZLib::Decompress(std::string(
+						asset.rawfile->buffer,
+						asset.rawfile->compressedLen)
+					);
+					Utils::IO::WriteFile(Utils::String::VA("dump/%s", asset.rawfile->name),
+						decompressed
+					);
+				}
+				else {
+					Utils::IO::WriteFile(Utils::String::VA("dump/%s", asset.rawfile->name), std::string(asset.rawfile->buffer, asset.rawfile->len));
+				}
+			}
+		}
 		
 		// This is broken
 		if ((type == Game::XAssetType::ASSET_TYPE_MENU || type == Game::XAssetType::ASSET_TYPE_MENULIST) && Zones::Version() >= 359)
