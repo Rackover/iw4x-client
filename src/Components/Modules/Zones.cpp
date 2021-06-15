@@ -3030,15 +3030,11 @@ namespace Components
 			auto readSize = Game::FS_Read(&fileBuffer[0], retval, *filePointer);
 
 			// check if file should be skipped
-			auto skipFile = false;
+			auto skipFile = true;
 
-			if (strlen(file) > 5 && ((strncmp(&file[strlen(file) - 4], ".iwi", 4) != 0)))
-			{
-				skipFile = true;
-			}
-			else if (readSize >= 3 && (!memcmp(&fileBuffer[0], "IWi", 3)))
-			{
-				skipFile = true;
+			if (Utils::String::EndsWith(file, ".mp3") ||
+				(Utils::String::EndsWith(file, ".iwi") && readSize >= 3 && (!memcmp(&fileBuffer[0], "IWi", 3)))) {
+				skipFile = false;
 			}
 			
 			// if the header seems encrypted...
@@ -3483,37 +3479,38 @@ namespace Components
 
 			Logger::Print("decrypted %u images!\n", images.size());
 		});
+
 		Command::Add("decryptSounds", [](Command::Params*)
-		{
-			auto sounds = Game::Sys_ListFilesWrapper("iw4x/sound", "iwi");
-			Logger::Print("decrypting %u sounds...\n", sounds.size());
-
-			for (auto& sound : sounds)
 			{
-				char* buffer = nullptr;
-				auto fileLength = Game::FS_ReadFile(Utils::String::VA("sound/%s", sound.data()), &buffer);
+				auto sounds = Game::Sys_ListFilesWrapper("iw4x/sound", "mp3");
+				Logger::Print("decrypting %u sounds...\n", sounds.size());
 
-				if (fileLength && buffer)
+				for (auto& sound : sounds)
 				{
-					auto path = std::filesystem::path(sound.data());
-					std::filesystem::create_directories("raw/sound" / path.parent_path());
+					char* buffer = nullptr;
+					auto fileLength = Game::FS_ReadFile(Utils::String::VA("sound/%s", sound.data()), &buffer);
 
-					if (!std::filesystem::exists(Utils::String::VA("raw/sound/%s", sound.data())))
+					if (fileLength && buffer)
 					{
-						const auto fp = fopen(Utils::String::VA("raw/sound/%s", sound.data()), "wb");
-						if (fp)
+						auto path = std::filesystem::path(sound.data());
+						std::filesystem::create_directories("raw/sound" / path.parent_path());
+
+						if (!std::filesystem::exists(Utils::String::VA("raw/sound/%s", sound.data())))
 						{
-							fwrite(buffer, fileLength, 1, fp);
-							fclose(fp);
+							const auto fp = fopen(Utils::String::VA("raw/sound/%s", sound.data()), "wb");
+							if (fp)
+							{
+								fwrite(buffer, fileLength, 1, fp);
+								fclose(fp);
+							}
 						}
+
+						Game::FS_FreeFile(buffer);
 					}
-
-					Game::FS_FreeFile(buffer);
 				}
-			}
 
-			Logger::Print("decrypted %u sounds!\n", sounds.size());
-		});
+				Logger::Print("decrypted %u sounds!\n", sounds.size());
+			});
 
 		// patch max filecount Sys_ListFiles can return
 		Utils::Hook::Set<std::uint32_t>(0x45A66B, (maxFileCount + fileCountMultiplier) * 4);
