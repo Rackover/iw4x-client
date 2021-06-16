@@ -3033,7 +3033,8 @@ namespace Components
 			auto skipFile = true;
 
 			if (Utils::String::EndsWith(file, ".mp3") ||
-				(Utils::String::EndsWith(file, ".iwi") && readSize >= 3 && (!memcmp(&fileBuffer[0], "IWi", 3)))) {
+				Utils::String::EndsWith(file, ".wav") ||
+				(Utils::String::EndsWith(file, ".iwi") && readSize >= 3 && !Utils::String::StartsWith(fileBuffer, "IWi"))) {
 				skipFile = false;
 			}
 			
@@ -3482,7 +3483,20 @@ namespace Components
 
 		Command::Add("decryptSounds", [](Command::Params*)
 			{
-				auto sounds = Game::Sys_ListFilesWrapper("iw4x/sound", "mp3");
+				auto path = "iw4x/sound";
+				std::vector<std::string> sounds{};
+				std::error_code os_error;
+				std::filesystem::recursive_directory_iterator walker(path, std::filesystem::directory_options::skip_permission_denied);
+				for (auto i = std::filesystem::begin(walker); i != std::filesystem::end(walker); i = i.increment(os_error)) {
+					if (!os_error) {
+						if (!is_directory(i->path())) {
+							auto pathStr = i->path().string();
+							Utils::String::Replace(pathStr, Utils::String::VA("%s\\", path), "");
+							sounds.push_back(pathStr);
+						}
+					}
+				}
+
 				Logger::Print("decrypting %u sounds...\n", sounds.size());
 
 				for (auto& sound : sounds)
