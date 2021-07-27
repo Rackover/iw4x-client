@@ -750,11 +750,11 @@ namespace Components
 					const char* formatString;
 					if (type == Game::ASSET_TYPE_PIXELSHADER)
 					{
-						formatString = "userraw/shader_bin/%.ps";
+						formatString = "userraw/shader_bin/%s.ps";
 					}
 					else
 					{
-						formatString = "userraw/shader_bin/%.vs";
+						formatString = "userraw/shader_bin/%s.vs";
 					}
 
 					if (Utils::IO::FileExists(Utils::String::VA(formatString, name.data()))) return;
