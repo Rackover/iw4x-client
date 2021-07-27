@@ -237,11 +237,24 @@ namespace Components
 			}
 		}
 
+		if (type == Game::XAssetType::ASSET_TYPE_RAWFILE)
+		{
+			if (Flags::HasFlag("dump"))
+			{
+				if (asset.rawfile->compressedLen) {
+					Utils::IO::WriteFile(Utils::String::VA("dump/%s", name.data()), Utils::Compression::ZLib::Decompress(std::string(asset.rawfile->buffer, asset.rawfile->compressedLen)));
+				}
+				else {
+					Utils::IO::WriteFile(Utils::String::VA("dump/%s", name.data()), asset.rawfile->buffer);
+				}
+			}
+		}
+
 		if (type == Game::XAssetType::ASSET_TYPE_MAP_ENTS)
 		{
 			if (Flags::HasFlag("dump"))
 			{
-				Utils::IO::WriteFile(Utils::String::VA("raw/%s.ents", name.data()), asset.mapEnts->entityString);
+				Utils::IO::WriteFile(Utils::String::VA("dump/%s.ents", name.data()), asset.mapEnts->entityString);
 			}
 
 			static std::string mapEntities;
@@ -251,6 +264,56 @@ namespace Components
 				mapEntities = ents.getBuffer();
 				asset.mapEnts->entityString = const_cast<char*>(mapEntities.data());
 				asset.mapEnts->numEntityChars = mapEntities.size() + 1;
+			}
+		}
+
+		if (type == Game::XAssetType::ASSET_TYPE_GFXWORLD) 
+		{
+			if (ZoneBuilder::IsEnabled()) {
+				if (Flags::HasFlag("dump_gfxworld_smodels")) {
+					auto world = asset.gfxWorld;
+
+					std::vector<std::string> models{};
+
+					// Static models
+					for (size_t i = 0; i < world->dpvs.smodelCount; i++)
+					{
+						auto staticModel = world->dpvs.smodelDrawInsts[i];
+						if (staticModel.model)
+						{
+							auto name = std::string(staticModel.model->name);
+							if (std::find(models.begin(), models.end(), name) == models.end()) {
+								Game::XAsset xAsset{};
+								xAsset.type = Game::XAssetType::ASSET_TYPE_XMODEL;
+								xAsset.header = Game::XAssetHeader{};
+								xAsset.header.model = staticModel.model;
+								AssetHandler::Dump(xAsset);
+
+								models.emplace_back(name);
+							}
+						}
+					}
+				}
+			}
+		}
+
+		if (type == Game::XAssetType::ASSET_TYPE_RAWFILE)
+		{
+			if ((Flags::HasFlag("dumpgsc") && Utils::String::EndsWith(asset.rawfile->name, ".gsc")) ||
+				Flags::HasFlag("dumpraw"))
+			{
+				if (asset.rawfile->compressedLen) {
+					auto decompressed = Utils::Compression::ZLib::Decompress(std::string(
+						asset.rawfile->buffer,
+						asset.rawfile->compressedLen)
+					);
+					Utils::IO::WriteFile(Utils::String::VA("dump/%s", asset.rawfile->name),
+						decompressed
+					);
+				}
+				else {
+					Utils::IO::WriteFile(Utils::String::VA("dump/%s", asset.rawfile->name), std::string(asset.rawfile->buffer, asset.rawfile->len));
+				}
 			}
 		}
 		
