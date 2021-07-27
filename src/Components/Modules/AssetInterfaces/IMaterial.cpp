@@ -11,6 +11,102 @@ namespace Assets
 		if (!header->data) this->loadBinary(header, name, builder); // Check if we need to import a new one into the game
 	}
 
+	void IMaterial::dump(Game::XAssetHeader header)
+	{
+		Game::Material* asset = header.material;
+
+		Utils::Stream buffer;
+		buffer.saveArray("IW4xMat" IW4X_MAT_VERSION, 8); // just stick version in the magic since we have an extra char
+
+		buffer.saveObject(*asset);
+
+		if (asset->info.name)
+		{
+			buffer.saveString(asset->info.name);
+		}
+
+		if (asset->techniqueSet)
+		{
+			buffer.saveString(asset->techniqueSet->name);
+			//Components::AssetHandler::Dump({ Game::XAssetType::ASSET_TYPE_TECHNIQUE_SET, { asset->techniqueSet } });
+		}
+
+		if (asset->textureTable)
+		{
+			buffer.saveArray(asset->textureTable, asset->textureCount);
+
+			for (char i = 0; i < asset->textureCount; ++i)
+			{
+				Game::MaterialTextureDef* textureDef = &asset->textureTable[i];
+
+#define TS_WATER_MAP 0xB
+
+				if (textureDef->semantic == TS_WATER_MAP)
+				{
+					AssertSize(Game::water_t, 68);
+
+					Game::water_t* water = textureDef->u.water;
+
+					if (water)
+					{
+						buffer.saveObject(*water);
+
+						// Save_water_t
+						if (water->H0)
+						{
+							buffer.saveArray(water->H0, water->M * water->N);
+						}
+
+						if (water->wTerm)
+						{
+							buffer.saveArray(water->wTerm, water->M * water->N);
+						}
+
+						if (water->image)
+						{
+							buffer.saveString(water->image->name);
+							Components::AssetHandler::Dump({ Game::XAssetType::ASSET_TYPE_IMAGE,  { water->image } });
+						}
+					}
+				}
+				else if (textureDef->u.image)
+				{
+					buffer.saveString(textureDef->u.image->name);
+					Components::AssetHandler::Dump({ Game::XAssetType::ASSET_TYPE_IMAGE,  { textureDef->u.image } });
+				}
+			}
+		}
+
+		if (asset->constantTable)
+		{
+			for (char i = 0; i < asset->constantCount; ++i)
+			{
+				Game::MaterialConstantDef constantDef;
+				std::memcpy(&constantDef, &asset->constantTable[i], sizeof Game::MaterialConstantDef);
+
+				// This is like the ugliest fix i could come up with.
+				// I'm way to sick to even understand what MaterialConstantDef actually contain
+				// And for now, this shit seems to work
+				if (constantDef.name == "envMapParms"s)
+				{
+					constantDef.literal[0] *= 0.0875f;
+					constantDef.literal[1] *= 0.165f;
+					constantDef.literal[2] *= 1.4f;
+					constantDef.literal[3] *= 3.2f;
+				}
+
+				buffer.saveObject(constantDef);
+			}
+		}
+
+		if (asset->stateBitsTable)
+		{
+			buffer.saveArray(asset->stateBitsTable, asset->stateBitsCount);
+		}
+
+		Utils::IO::WriteFile(Utils::String::VA("dump/materials/%s.iw4xMaterial", asset->info.name), buffer.toBuffer());
+	}
+
 	void IMaterial::loadBinary(Game::XAssetHeader* header, const std::string& name, Components::ZoneBuilder::Zone* builder)
 	{
 		static const char* techsetSuffix[] =
