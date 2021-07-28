@@ -8,7 +8,8 @@ namespace Components
 	std::vector<Game::GfxImage*> Materials::ImageTable;
 	std::vector<Game::Material*> Materials::MaterialTable;
 
-	std::map<std::string, std::string> Materials::TechsetSwaps{
+	std::map<std::string, std::string> Materials::TechsetSwaps
+	{
 		{ "mc_l_hsm_b0c0s0_em", "mc_l_hsm_b0c0s0_custom_growing_ice_cracks" }, // Car windows in mp_italy_sh
 		{ "mc_l_hsm_t0c0n0s0_fgcb", "mc_l_hsm_t0c0n0s0"},
 		{ "mc_l_hsm_r0c0n0s0_fgcb", "mc_l_hsm_r0c0n0s0"},
@@ -288,10 +289,12 @@ namespace Components
 	}
 
 #endif
-	int __cdecl Materials::FindTechniqueSet(const char* a1, int a2) {
+	int __cdecl Materials::FindTechniqueSet(const char* a1, int a2)
+	{
 		std::string techName = a1;
-		if (TechsetSwaps.find(techName) != TechsetSwaps.end()) {
-			a1 = TechsetSwaps[techName].c_str();
+		if (TechsetSwaps.find(techName) != TechsetSwaps.end())
+		{
+			a1 = TechsetSwaps[techName].data();
 			Components::Logger::Print("Swapped techset %s for %s at runtime\n", techName.data(), a1);
 		}
 
