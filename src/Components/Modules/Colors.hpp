@@ -22,6 +22,7 @@ namespace Components
 		};
 
 		static Dvar::Var NewColors;
+		static Dvar::Var ColorBlind;
 
 		static DWORD HsvToRgb(HsvColor hsv);
 
@@ -35,6 +36,7 @@ namespace Components
 		static void LookupColor(DWORD* color, char index);
 		static void LookupColorStub();
 		static char* CleanStrStub(char* string);
+		static signed int Dvar_GetUnpackedColorByName(const char* name, float* color);
 		static std::vector<DWORD> ColorTable;
 	};
 }
