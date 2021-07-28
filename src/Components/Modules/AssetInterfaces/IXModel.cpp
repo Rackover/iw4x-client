@@ -751,12 +751,13 @@ namespace Assets
 		buffer->popBlock();
 	}
 
-	IXModel::IXModel() : Components::AssetHandler::IAsset() {
+	IXModel::IXModel() : Components::AssetHandler::IAsset()
+	{
 		Components::Command::Add("dumpXModel", [this](Components::Command::Params* params)
-			{
-				if (params->length() < 2) return;
-				auto mdlName = params->get(1);
-				IXModel::dump(Game::DB_FindXAssetHeader(Game::XAssetType::ASSET_TYPE_XMODEL, mdlName).model);
-			});
+		{
+			if (params->length() < 2) return;
+			auto mdlName = params->get(1);
+			IXModel::dump(Game::DB_FindXAssetHeader(Game::XAssetType::ASSET_TYPE_XMODEL, mdlName).model);
+		});
 	}
 }

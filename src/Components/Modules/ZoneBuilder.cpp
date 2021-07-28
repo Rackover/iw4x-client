@@ -1559,19 +1559,19 @@ namespace Components
 				}
 
 				Game::DB_EnumXAssetEntries(Game::ASSET_TYPE_IMAGE, [zoneIndex](Game::XAssetEntry* entry)
+				{
+					if (entry && (zoneIndex < 0 || entry->zoneIndex == zoneIndex))
 					{
-						if (entry && (zoneIndex < 0 || entry->zoneIndex == zoneIndex))
+						auto header = entry->asset.header;
+						auto image = header.image;
+
+						if (image && (image->category == Game::ImageCategory::IMG_CATEGORY_LOAD_FROM_FILE || image->category == Game::ImageCategory::IMG_CATEGORY_RAW))
 						{
-							auto header = entry->asset.header;
-
-							auto image = header.image;
-							if (image && (image->category == Game::ImageCategory::IMG_CATEGORY_LOAD_FROM_FILE || image->category == Game::ImageCategory::IMG_CATEGORY_RAW))
-							{
-								Logger::Print("(zone %d) %s\\%s.iwi\n", entry->zoneIndex, "images", image->name);
-							}
-
+							Logger::Print("(zone %d) %s\\%s.iwi\n", entry->zoneIndex, "images", image->name);
 						}
-					}, false, true);
+
+					}
+				}, false, true);
 			});
 		}
 	}
