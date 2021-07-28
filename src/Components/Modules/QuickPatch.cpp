@@ -908,7 +908,7 @@ namespace Components
 		Scheduler::OnFrame([]()
 		{
 			if (!Game::CL_IsCgameInitialized() || !Dvar::Var("r_drawAabbTrees").get<bool>()) return;
-
+			
 			float cyan[4] = { 0.0f, 0.5f, 0.5f, 1.0f };
 			float red[4] = { 1.0f, 0.0f, 0.0f, 1.0f };
 
@@ -916,93 +916,93 @@ namespace Components
 			//Game::GfxWorld* gameWorld = *reinterpret_cast<Game::GfxWorld**>(0x66DEE94);
 			if (!clipMap) return;
 
-            for (unsigned short i = 0; i < clipMap->smodelNodeCount; ++i)
-            {
-                Game::R_AddDebugBounds(cyan, &clipMap->smodelNodes[i].bounds);
-            }
+			for (unsigned short i = 0; i < clipMap->smodelNodeCount; ++i)
+			{
+				Game::R_AddDebugBounds(cyan, &clipMap->smodelNodes[i].bounds);
+			}
 
-            for (unsigned int i = 0; i < clipMap->numStaticModels; i += 2)
-            {
-                Game::R_AddDebugBounds(red, &clipMap->staticModelList[i].absBounds);
-            }			
+			for (unsigned int i = 0; i < clipMap->numStaticModels; i += 2)
+			{
+				Game::R_AddDebugBounds(red, &clipMap->staticModelList[i].absBounds);
+			}			
 		});
 
 		Dvar::OnInit([]
+		{
+			static std::vector < char * > values =
 			{
-				static std::vector < char* > values =
-				{
-					const_cast<char*>("Disabled"),
-					const_cast<char*>("Scene Models"),
-					const_cast<char*>("Scene Dynamic Objects"),
-					const_cast<char*>("GfxWorld Static Models"),
-					nullptr
-				};
+				const_cast<char*>("Disabled"),
+				const_cast<char*>("Scene Models"),
+				const_cast<char*>("Scene Dynamic Objects"),
+				const_cast<char*>("GfxWorld Static Models"),
+				nullptr
+			};
 
-				Dvar::Register<bool>("r_drawSceneModelBoundingBoxes", false, Game::DVAR_FLAG_CHEAT, "Draw scene model bounding boxes");
-				Dvar::Register<bool>("r_drawSceneModelCollisions", false, Game::DVAR_FLAG_CHEAT, "Draw scene model collisions");
-				Dvar::Register<bool>("r_drawTriggers", false, Game::DVAR_FLAG_CHEAT, "Draw triggers");
-				r_drawModelNames = Game::Dvar_RegisterEnum("r_drawModelNames", values.data(), 0, Game::DVAR_FLAG_CHEAT, "Draw all model names");
-				Dvar::Register<bool>("r_drawAabbTrees", false, Game::DVAR_FLAG_USERCREATED, "Draw aabb trees");
-			});
+			Dvar::Register<bool>("r_drawSceneModelBoundingBoxes", false, Game::DVAR_FLAG_CHEAT, "Draw scene model bounding boxes");
+			Dvar::Register<bool>("r_drawSceneModelCollisions", false, Game::DVAR_FLAG_CHEAT, "Draw scene model collisions");
+			Dvar::Register<bool>("r_drawTriggers", false, Game::DVAR_FLAG_CHEAT, "Draw triggers");
+			r_drawModelNames = Game::Dvar_RegisterEnum("r_drawModelNames", values.data(), 0, Game::DVAR_FLAG_CHEAT, "Draw all model names");
+			Dvar::Register<bool>("r_drawAabbTrees", false, Game::DVAR_FLAG_USERCREATED, "Draw aabb trees");
+		});
 
 		Scheduler::OnFrame([]()
+		{
+			auto val = r_drawModelNames->current.integer;
+
+			if (!Game::CL_IsCgameInitialized() || !val) return;
+
+			float sceneModelsColor[4] = { 1.0f, 1.0f, 0.0f, 1.0f };
+			float dobjsColor[4] = { 0.0f, 1.0f, 1.0f, 1.0f };
+			float staticModelsColor[4] = { 1.0f, 0.0f, 1.0f, 1.0f };
+
+			auto mapName = Dvar::Var("mapname").get<const char*>();
+			auto* scene = Game::scene;
+			auto world = Game::DB_FindXAssetEntry(Game::XAssetType::ASSET_TYPE_GFXWORLD, Utils::String::VA("maps/mp/%s.d3dbsp", mapName))->asset.header.gfxWorld;
+
+			if (val == 1)
 			{
-				auto val = r_drawModelNames->current.integer;
-
-				if (!Game::CL_IsCgameInitialized() || !val) return;
-
-				float sceneModelsColor[4] = { 1.0f, 1.0f, 0.0f, 1.0f };
-				float dobjsColor[4] = { 0.0f, 1.0f, 1.0f, 1.0f };
-				float staticModelsColor[4] = { 1.0f, 0.0f, 1.0f, 1.0f };
-
-				auto mapName = Dvar::Var("mapname").get<const char*>();
-				auto* scene = Game::scene;
-				auto world = Game::DB_FindXAssetEntry(Game::XAssetType::ASSET_TYPE_GFXWORLD, Utils::String::VA("maps/mp/%s.d3dbsp", mapName))->asset.header.gfxWorld;
-
-				if (val == 1)
+				for (auto i = 0; i < scene->sceneModelCount; i++)
 				{
-					for (auto i = 0; i < scene->sceneModelCount; i++)
-					{
-						if (!scene->sceneModel[i].model)
-							continue;
+					if (!scene->sceneModel[i].model)
+						continue;
 
-						Game::R_AddDebugString(sceneModelsColor, scene->sceneModel[i].placement.base.origin, 1.0, scene->sceneModel[i].model->name);
-					}
+					Game::R_AddDebugString(sceneModelsColor, scene->sceneModel[i].placement.base.origin, 1.0, scene->sceneModel[i].model->name);
 				}
+			}
 
-				else if (val == 2)
+			else if (val == 2)
+			{
+				for (auto i = 0; i < scene->sceneDObjCount; i++)
 				{
-					for (auto i = 0; i < scene->sceneDObjCount; i++)
+					if (scene->sceneDObj[i].obj)
 					{
-						if (scene->sceneDObj[i].obj)
+						for (int j = 0; j < scene->sceneDObj[i].obj->numModels; j++)
 						{
-							for (int j = 0; j < scene->sceneDObj[i].obj->numModels; j++)
-							{
-								Game::R_AddDebugString(dobjsColor, scene->sceneDObj[i].placement.origin, 1.0, scene->sceneDObj[i].obj->models[j]->name);
-							}
+							Game::R_AddDebugString(dobjsColor, scene->sceneDObj[i].placement.origin, 1.0, scene->sceneDObj[i].obj->models[j]->name);
 						}
 					}
 				}
+			}
 
-				else if (val == 3)
+			else if (val == 3)
+			{
+				// Static models
+				for (size_t i = 0; i < world->dpvs.smodelCount; i++)
 				{
-					// Static models
-					for (size_t i = 0; i < world->dpvs.smodelCount; i++)
+					auto staticModel = world->dpvs.smodelDrawInsts[i];
+					if (staticModel.model)
 					{
-						auto staticModel = world->dpvs.smodelDrawInsts[i];
-						if (staticModel.model)
-						{
-							Game::R_AddDebugString(staticModelsColor, staticModel.placement.origin, 1.0, staticModel.model->name);
-						}
+						Game::R_AddDebugString(staticModelsColor, staticModel.placement.origin, 1.0, staticModel.model->name);
 					}
 				}
-			});
+			}
+		});
 
 		Scheduler::OnFrame([]()
 		{
 			if (!Game::CL_IsCgameInitialized() || !Dvar::Var("r_drawSceneModelBoundingBoxes").get<bool>()) return;
 			
-            float red[4] = { 1.0f, 0.0f, 0.0f, 1.0f };
+			float red[4] = { 1.0f, 0.0f, 0.0f, 1.0f };
             float blue[4] = { 0.0f, 0.0f, 1.0f, 1.0f };
 
 			auto* scene = Game::scene;
@@ -1030,7 +1030,8 @@ namespace Components
 
 				if (scene->sceneDObj[i].cull.bounds.halfSize[0] < 0 ||
 					scene->sceneDObj[i].cull.bounds.halfSize[1] < 0 ||
-					scene->sceneDObj[i].cull.bounds.halfSize[2] < 0) {
+					scene->sceneDObj[i].cull.bounds.halfSize[2] < 0)
+				{
 
 					Components::Logger::Print("WARNING: Negative half size for DOBJ %s, this will cause culling issues!", scene->sceneDObj[i].obj->models[0]->name);
 				}
@@ -1040,44 +1041,46 @@ namespace Components
 		});
 
 		Scheduler::OnFrame([]()
+		{
+			if (!Game::CL_IsCgameInitialized()) return;
+			if (!Dvar::Var("r_drawSceneModelCollisions").get<bool>()) return;
+
+			float green[4] = { 0.0f, 1.0f, 0.0f, 1.0f };
+
+			auto* scene = Game::scene;
+
+			for (auto i = 0; i < scene->sceneModelCount; i++)
 			{
-				if (!Game::CL_IsCgameInitialized()) return;
-				if (!Dvar::Var("r_drawSceneModelCollisions").get<bool>()) return;
+				if (!scene->sceneModel[i].model)
+					continue;
 
-				float green[4] = { 0.0f, 1.0f, 0.0f, 1.0f };
-
-				auto* scene = Game::scene;
-
-				for (auto i = 0; i < scene->sceneModelCount; i++)
+				for (auto j = 0; j < scene->sceneModel[i].model->numCollSurfs; j++)
 				{
-					if (!scene->sceneModel[i].model)
-						continue;
+					auto b = scene->sceneModel[i].model->collSurfs[j].bounds;
+					b.midPoint[0] += scene->sceneModel[i].placement.base.origin[0];
+					b.midPoint[1] += scene->sceneModel[i].placement.base.origin[1];
+					b.midPoint[2] += scene->sceneModel[i].placement.base.origin[2];
+					b.halfSize[0] *= scene->sceneModel[i].placement.scale;
+					b.halfSize[1] *= scene->sceneModel[i].placement.scale;
+					b.halfSize[2] *= scene->sceneModel[i].placement.scale;
 
-					for (auto j = 0; j < scene->sceneModel[i].model->numCollSurfs; j++) {
-						auto b = scene->sceneModel[i].model->collSurfs[j].bounds;
-						b.midPoint[0] += scene->sceneModel[i].placement.base.origin[0];
-						b.midPoint[1] += scene->sceneModel[i].placement.base.origin[1];
-						b.midPoint[2] += scene->sceneModel[i].placement.base.origin[2];
-						b.halfSize[0] *= scene->sceneModel[i].placement.scale;
-						b.halfSize[1] *= scene->sceneModel[i].placement.scale;
-						b.halfSize[2] *= scene->sceneModel[i].placement.scale;
-
-						Game::R_AddDebugBounds(green, &b, &scene->sceneModel[i].placement.base.quat);
-					}
+					Game::R_AddDebugBounds(green, &b, &scene->sceneModel[i].placement.base.quat);
 				}
-			});
+			}
+		});
 
 		Scheduler::OnFrame([]()
 		{
 			if (!Game::CL_IsCgameInitialized() || !Dvar::Var("r_drawTriggers").get<bool>()) return;
 
-            float hurt[4] = { 1.0f, 0.0f, 0.0f, 1.0f };
-            float hurtTouch[4] = { 0.75f, 0.0f, 0.0f, 1.0f };
-            float damage[4] = { 0.0f, 0.0f, 1.0f, 1.0f };
-            float once[4] = { 0.0f, 1.0f, 1.0f, 1.0f };
-            float multiple[4] = { 0.0f, 1.0f, 0.0f, 1.0f };
+			float hurt[4] = { 1.0f, 0.0f, 0.0f, 1.0f };
+			float hurtTouch[4] = { 0.75f, 0.0f, 0.0f, 1.0f };
+			float damage[4] = { 0.0f, 0.0f, 1.0f, 1.0f };
+			float once[4] = { 0.0f, 1.0f, 1.0f, 1.0f };
+			float multiple[4] = { 0.0f, 1.0f, 0.0f, 1.0f };
 
 			auto* entities = Game::g_entities;
+
 			for(auto i = 0u; i < 0x800; i++)
 			{
 				auto* ent = &entities[i];
