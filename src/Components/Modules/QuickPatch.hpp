@@ -15,6 +15,7 @@ namespace Components
 
 	private:
 		static int FrameTime;
+		static Game::dvar_t* r_drawModelNames;
 
 		static void SelectStringTableEntryInDvarStub();
 
