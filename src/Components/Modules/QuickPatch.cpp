@@ -1003,7 +1003,7 @@ namespace Components
 			if (!Game::CL_IsCgameInitialized() || !Dvar::Var("r_drawSceneModelBoundingBoxes").get<bool>()) return;
 			
 			float red[4] = { 1.0f, 0.0f, 0.0f, 1.0f };
-            float blue[4] = { 0.0f, 0.0f, 1.0f, 1.0f };
+			float blue[4] = { 0.0f, 0.0f, 1.0f, 1.0f };
 
 			auto* scene = Game::scene;
 
