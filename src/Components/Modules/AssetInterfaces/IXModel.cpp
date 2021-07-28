@@ -136,9 +136,9 @@ namespace Assets
 				{
 					buffer.saveString(asset->materialHandles[i]->info.name);
 
-					auto header = Game::XAssetHeader{};
-					header.material = asset->materialHandles[i];
-					Components::AssetHandler::Dump({ Game::XAssetType::ASSET_TYPE_MATERIAL, header });
+					auto assetHeader = Game::XAssetHeader{};
+					assetHeader.material = asset->materialHandles[i];
+					Components::AssetHandler::Dump({ Game::XAssetType::ASSET_TYPE_MATERIAL, assetHeader });
 				}
 			}
 		}

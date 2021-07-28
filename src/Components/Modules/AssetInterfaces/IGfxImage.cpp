@@ -184,9 +184,9 @@ namespace Assets
 
 			if (img.exists())
 			{
-				Game::GfxImageFileHeader header = *reinterpret_cast<const Game::GfxImageFileHeader*>(img.getBuffer().data());
+				Game::GfxImageFileHeader fileHeader = *reinterpret_cast<const Game::GfxImageFileHeader*>(img.getBuffer().data());
 
-				std::string buffer(reinterpret_cast<char*>(&header), sizeof Game::GfxImageFileHeader);
+				std::string buffer(reinterpret_cast<char*>(&fileHeader), sizeof Game::GfxImageFileHeader);
 				buffer.append(img.getBuffer().data() + (sizeof Game::GfxImageFileHeader), img.getBuffer().size() - (sizeof Game::GfxImageFileHeader));
 
 				Utils::IO::WriteFile(Utils::String::VA("dump/images/%s.iwi", image->name), buffer);

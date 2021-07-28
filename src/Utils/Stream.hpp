@@ -104,7 +104,7 @@ namespace Utils
 			return save(array, sizeof(T), count);
 		}
 
-		template <typename T> inline char* saveObject(T value)
+		template <typename T> inline char* saveObject(const T& value)
 		{
 			return saveArray(&value, 1);
 		}

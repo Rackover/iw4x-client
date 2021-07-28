@@ -3,6 +3,7 @@
 namespace Components
 {
 	int QuickPatch::FrameTime = 0;
+	Game::dvar_t* QuickPatch::r_drawModelNames;
 
 	void QuickPatch::UnlockStats()
 	{
@@ -278,7 +279,7 @@ namespace Components
 			const_cast<char*>("wide 16:10"),
 			const_cast<char*>("wide 16:9"),
 			const_cast<char*>("custom"),
-			nullptr,
+			nullptr
 		};
 
 		// register custom aspect ratio dvar
@@ -928,16 +929,26 @@ namespace Components
 
 		Dvar::OnInit([]
 			{
+				static std::vector < char* > values =
+				{
+					const_cast<char*>("Disabled"),
+					const_cast<char*>("Scene Models"),
+					const_cast<char*>("Scene Dynamic Objects"),
+					const_cast<char*>("GfxWorld Static Models"),
+					nullptr,
+					nullptr
+				};
+
 				Dvar::Register<bool>("r_drawSceneModelBoundingBoxes", false, Game::DVAR_FLAG_CHEAT, "Draw scene model bounding boxes");
 				Dvar::Register<bool>("r_drawSceneModelCollisions", false, Game::DVAR_FLAG_CHEAT, "Draw scene model collisions");
 				Dvar::Register<bool>("r_drawTriggers", false, Game::DVAR_FLAG_CHEAT, "Draw triggers");
-				Dvar::Register<int>("r_drawModelNames", 0, 0, 3, Game::DVAR_FLAG_CHEAT, "Draw all model names\n1 for Scene Models\n2 for Scene Dynamic Objects\n3 for GfxWorld Static Models");
+				r_drawModelNames = Game::Dvar_RegisterEnum("r_drawModelNames", values.data(), 0, Game::DVAR_FLAG_CHEAT, "Draw all model names");
 				Dvar::Register<bool>("r_drawAabbTrees", false, Game::DVAR_FLAG_USERCREATED, "Draw aabb trees");
 			});
 
 		Scheduler::OnFrame([]()
 			{
-				auto val = Dvar::Var("r_drawModelNames").get<int>();
+				auto val = r_drawModelNames->current.integer;
 
 				if (!Game::CL_IsCgameInitialized() || !val) return;
 
@@ -949,7 +960,8 @@ namespace Components
 				auto* scene = Game::scene;
 				auto world = Game::DB_FindXAssetEntry(Game::XAssetType::ASSET_TYPE_GFXWORLD, Utils::String::VA("maps/mp/%s.d3dbsp", mapName))->asset.header.gfxWorld;
 
-				if (val == 1) {
+				if (val == 1)
+				{
 					for (auto i = 0; i < scene->sceneModelCount; i++)
 					{
 						if (!scene->sceneModel[i].model)
@@ -959,10 +971,12 @@ namespace Components
 					}
 				}
 
-				if (val == 2) {
+				else if (val == 2)
+				{
 					for (auto i = 0; i < scene->sceneDObjCount; i++)
 					{
-						if (scene->sceneDObj[i].obj) {
+						if (scene->sceneDObj[i].obj)
+						{
 							for (int j = 0; j < scene->sceneDObj[i].obj->numModels; j++)
 							{
 								Game::R_AddDebugString(dobjsColor, scene->sceneDObj[i].placement.origin, 1.0, scene->sceneDObj[i].obj->models[j]->name);
@@ -971,12 +985,14 @@ namespace Components
 					}
 				}
 
-				if (val == 3) {
+				else if (val == 3)
+				{
 					// Static models
 					for (size_t i = 0; i < world->dpvs.smodelCount; i++)
 					{
 						auto staticModel = world->dpvs.smodelDrawInsts[i];
-						if (staticModel.model) {
+						if (staticModel.model)
+						{
 							Game::R_AddDebugString(staticModelsColor, staticModel.placement.origin, 1.0, staticModel.model->name);
 						}
 					}

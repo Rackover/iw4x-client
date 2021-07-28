@@ -1527,7 +1527,8 @@ namespace Components
 			{
 				int zoneIndex = -1;
 
-				if (params->length() > 1) {
+				if (params->length() > 1)
+				{
 					zoneIndex = std::stoi(params->get(1));
 				}
 
@@ -1552,7 +1553,8 @@ namespace Components
 			{
 				int zoneIndex = -1;
 
-				if (params->length() > 1) {
+				if (params->length() > 1)
+				{
 					zoneIndex = std::stoi(params->get(1));
 				}
 

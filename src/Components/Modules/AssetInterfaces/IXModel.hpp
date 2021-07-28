@@ -12,7 +12,8 @@ namespace Assets
 		virtual void load(Game::XAssetHeader* header, const std::string& name, Components::ZoneBuilder::Zone* builder) override;
 		virtual void dump(Game::XAssetHeader header) override;
 
-		void dump(Game::XModel* xModel) {
+		void dump(Game::XModel* xModel)
+		{
 			auto header = Game::XAssetHeader{};
 			header.model = xModel;
 			dump(header);
