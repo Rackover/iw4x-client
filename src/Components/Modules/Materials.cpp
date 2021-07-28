@@ -289,7 +289,7 @@ namespace Components
 	}
 
 #endif
-	int __cdecl Materials::FindTechniqueSet(const char* a1, int a2)
+	int Materials::FindTechniqueSet(const char* a1, int a2)
 	{
 		std::string techName = a1;
 		if (TechsetSwaps.find(techName) != TechsetSwaps.end())
