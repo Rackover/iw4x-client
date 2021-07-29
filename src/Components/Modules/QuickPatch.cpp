@@ -3,7 +3,6 @@
 namespace Components
 {
 	int QuickPatch::FrameTime = 0;
-	Game::dvar_t* QuickPatch::r_drawModelNames;
 
 	void QuickPatch::UnlockStats()
 	{

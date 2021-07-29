@@ -1384,7 +1384,7 @@ namespace Assets
 							Components::AssetHandler::Dump(xAsset);
 
 							models.emplace_back(modelName);
-							Components::Logger::Print("%s ", modelName.c_str());
+							Components::Logger::Print("%s ", modelName.data());
 						}
 					}
 				}
