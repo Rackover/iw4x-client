@@ -154,20 +154,6 @@ namespace Assets
 
         memcpy(&iw4Decl->routing, &decl->routing, sizeof(Game::MaterialVertexStreamRouting));
 
-        for (int i = 0; i < iw4Decl->streamCount; i++)
-        {
-            // add in depth destination
-            if (iw4Decl->routing.data[i].dest >= 4)
-            {
-                iw4Decl->routing.data[i].dest += 1;
-            }
-
-            if (iw4Decl->routing.data[i].dest > 12 || iw4Decl->routing.data[i].source > 8)
-            {
-                Components::Logger::Print("Warning: routing data is wrong (%d, %d)\n", iw4Decl->routing.data[i].source, iw4Decl->routing.data[i].dest);
-            }
-        }
-
         Utils::Stream buffer;
         buffer.saveArray("IW4xDECL", 8);
         buffer.saveObject(IW4X_TECHSET_VERSION);

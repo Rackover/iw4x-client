@@ -28,7 +28,7 @@ namespace Assets
 		if (asset->techniqueSet)
 		{
 			buffer.saveString(asset->techniqueSet->name);
-			//Components::AssetHandler::Dump({ Game::XAssetType::ASSET_TYPE_TECHNIQUE_SET, { asset->techniqueSet } });
+			Components::AssetHandler::Dump({ Game::XAssetType::ASSET_TYPE_TECHNIQUE_SET, { asset->techniqueSet } });
 		}
 
 		if (asset->textureTable)
@@ -83,18 +83,6 @@ namespace Assets
 			{
 				Game::MaterialConstantDef constantDef;
 				std::memcpy(&constantDef, &asset->constantTable[i], sizeof Game::MaterialConstantDef);
-
-				// This is like the ugliest fix i could come up with.
-				// I'm way to sick to even understand what MaterialConstantDef actually contain
-				// And for now, this shit seems to work
-				if (constantDef.name == "envMapParms"s)
-				{
-					constantDef.literal[0] *= 0.0875f;
-					constantDef.literal[1] *= 0.165f;
-					constantDef.literal[2] *= 1.4f;
-					constantDef.literal[3] *= 3.2f;
-				}
-
 				buffer.saveObject(constantDef);
 			}
 		}
