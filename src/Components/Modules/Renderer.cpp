@@ -379,7 +379,8 @@ namespace Components
 	{
 		if (Dedicated::IsEnabled()) return;
 
-		Scheduler::OnFrame([]() {
+		Scheduler::OnFrame([]()
+		{
 			if (Game::CL_IsCgameInitialized()) 
 			{
 				DebugDrawAABBTrees();
@@ -433,42 +434,42 @@ namespace Components
 
 		// Begin device recovery (not D3D9Ex)
 		Utils::Hook(0x508298, []()
-			{
-				Game::DB_BeginRecoverLostDevice();
-				Renderer::BeginRecoverDeviceSignal();
-			}, HOOK_CALL).install()->quick();
+		{
+			Game::DB_BeginRecoverLostDevice();
+			Renderer::BeginRecoverDeviceSignal();
+		}, HOOK_CALL).install()->quick();
 
 			// End device recovery (not D3D9Ex)
-			Utils::Hook(0x508355, []()
-				{
-					Renderer::EndRecoverDeviceSignal();
-					Game::DB_EndRecoverLostDevice();
-				}, HOOK_CALL).install()->quick();
+		Utils::Hook(0x508355, []()
+		{
+			Renderer::EndRecoverDeviceSignal();
+			Game::DB_EndRecoverLostDevice();
+		}, HOOK_CALL).install()->quick();
 
-				// Begin vid_restart
-				Utils::Hook(0x4CA2FD, Renderer::PreVidRestart, HOOK_CALL).install()->quick();
+		// Begin vid_restart
+		Utils::Hook(0x4CA2FD, Renderer::PreVidRestart, HOOK_CALL).install()->quick();
 
-				// End vid_restart
-				Utils::Hook(0x4CA3A7, Renderer::PostVidRestartStub, HOOK_CALL).install()->quick();
+		// End vid_restart
+		Utils::Hook(0x4CA3A7, Renderer::PostVidRestartStub, HOOK_CALL).install()->quick();
 
 
-				Dvar::OnInit([]
-					{
-						static std::vector < char* > values =
-						{
-							const_cast<char*>("Disabled"),
-							const_cast<char*>("Scene Models"),
-							const_cast<char*>("Scene Dynamic Objects"),
-							const_cast<char*>("GfxWorld Static Models"),
-							nullptr
-						};
+		Dvar::OnInit([]
+		{
+			static std::vector < char* > values =
+			{
+				const_cast<char*>("Disabled"),
+				const_cast<char*>("Scene Models"),
+				const_cast<char*>("Scene Dynamic Objects"),
+				const_cast<char*>("GfxWorld Static Models"),
+				nullptr
+			};
 
-						Renderer::DrawSceneModelBoundingBoxes = Game::Dvar_RegisterBool("r_drawSceneModelBoundingBoxes", false, Game::DVAR_FLAG_CHEAT, "Draw scene model bounding boxes");
-						Renderer::DrawSceneModelCollisions = Game::Dvar_RegisterBool("r_drawSceneModelCollisions", false, Game::DVAR_FLAG_CHEAT, "Draw scene model collisions");
-						Renderer::DrawTriggers = Game::Dvar_RegisterBool("r_drawTriggers", false, Game::DVAR_FLAG_CHEAT, "Draw triggers");
-						Renderer::DrawModelNames = Game::Dvar_RegisterEnum("r_drawModelNames", values.data(), 0, Game::DVAR_FLAG_CHEAT, "Draw all model names");
-						Renderer::DrawAABBTrees = Game::Dvar_RegisterBool("r_drawAabbTrees", false, Game::DVAR_FLAG_CHEAT, "Draw aabb trees");
-					});
+			Renderer::DrawSceneModelBoundingBoxes = Game::Dvar_RegisterBool("r_drawSceneModelBoundingBoxes", false, Game::DVAR_FLAG_CHEAT, "Draw scene model bounding boxes");
+			Renderer::DrawSceneModelCollisions = Game::Dvar_RegisterBool("r_drawSceneModelCollisions", false, Game::DVAR_FLAG_CHEAT, "Draw scene model collisions");
+			Renderer::DrawTriggers = Game::Dvar_RegisterBool("r_drawTriggers", false, Game::DVAR_FLAG_CHEAT, "Draw triggers");
+			Renderer::DrawModelNames = Game::Dvar_RegisterEnum("r_drawModelNames", values.data(), 0, Game::DVAR_FLAG_CHEAT, "Draw all model names");
+			Renderer::DrawAABBTrees = Game::Dvar_RegisterBool("r_drawAabbTrees", false, Game::DVAR_FLAG_CHEAT, "Draw aabb trees");
+		});
 
 	}
 

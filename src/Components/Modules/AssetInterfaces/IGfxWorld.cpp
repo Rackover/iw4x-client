@@ -1352,15 +1352,18 @@ namespace Assets
 		SaveLogExit();
 	}
 
-	IGfxWorld::IGfxWorld() : Components::AssetHandler::IAsset() {
-		Components::Command::Add("dump_gfxworld_smodels", [this](Components::Command::Params* params) {
+	IGfxWorld::IGfxWorld() : Components::AssetHandler::IAsset()
+	{
+		Components::Command::Add("dump_gfxworld_smodels", [this](Components::Command::Params* params)
+		{
 			Game::GfxWorld* world = nullptr;
 			Game::DB_EnumXAssets(Game::XAssetType::ASSET_TYPE_GFXWORLD, [](Game::XAssetHeader header, void* world)
-				{
-					*reinterpret_cast<Game::GfxWorld**>(world) = header.gfxWorld;
-				}, &world, false);
+			{
+				*reinterpret_cast<Game::GfxWorld**>(world) = header.gfxWorld;
+			}, &world, false);
 
-			if (world) {
+			if (world)
+			{
 				Components::Logger::Print("Dumping models for world %s...\n", world->name);
 
 				std::vector<std::string> models{};
@@ -1388,6 +1391,6 @@ namespace Assets
 
 				Components::Logger::Print("\nDone dumping %d unique models!\n", models.size());
 			}
-			});
+		});
 	}
 }
