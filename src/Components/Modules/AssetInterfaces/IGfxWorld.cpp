@@ -1354,7 +1354,7 @@ namespace Assets
 
 	IGfxWorld::IGfxWorld() : Components::AssetHandler::IAsset()
 	{
-		Components::Command::Add("dump_gfxworld_smodels", [this](Components::Command::Params* )
+		Components::Command::Add("dump_gfxworld_smodels", [this](Components::Command::Params*)
 		{
 			Game::GfxWorld* world = nullptr;
 			Game::DB_EnumXAssets(Game::XAssetType::ASSET_TYPE_GFXWORLD, [](Game::XAssetHeader header, void* world)
