@@ -112,10 +112,10 @@ namespace Assets
 
             buffer.saveArray(pass->args, pass->perPrimArgCount + pass->perObjArgCount + pass->stableArgCount);
 
-#define MTL_ARG_LITERAL_PIXEL_CONST	    0x0
-#define MTL_ARG_LITERAL_VERTEX_CONST	0x1
-#define MTL_ARG_CODE_VERTEX_CONST	    0x3
-#define MTL_ARG_CODE_PIXEL_CONST	    0x5
+#define MTL_ARG_LITERAL_PIXEL_CONST     0x0
+#define MTL_ARG_LITERAL_VERTEX_CONST    0x1
+#define MTL_ARG_CODE_VERTEX_CONST       0x3
+#define MTL_ARG_CODE_PIXEL_CONST        0x5
 
             for (int k = 0; k < pass->perPrimArgCount + pass->perObjArgCount + pass->stableArgCount; ++k)
             {
