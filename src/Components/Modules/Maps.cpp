@@ -269,39 +269,6 @@ namespace Components
 			}
 		}
 
-		if (type == Game::XAssetType::ASSET_TYPE_GFXWORLD) 
-		{
-			if (ZoneBuilder::IsEnabled())
-			{
-				if (Flags::HasFlag("dump_gfxworld_smodels"))
-				{
-					auto world = asset.gfxWorld;
-
-					std::vector<std::string> models{};
-
-					// Static models
-					for (size_t i = 0; i < world->dpvs.smodelCount; i++)
-					{
-						auto staticModel = world->dpvs.smodelDrawInsts[i];
-						if (staticModel.model)
-						{
-							auto modelName = std::string(staticModel.model->name);
-							if (std::find(models.begin(), models.end(), modelName) == models.end())
-							{
-								Game::XAsset xAsset{};
-								xAsset.type = Game::XAssetType::ASSET_TYPE_XMODEL;
-								xAsset.header = Game::XAssetHeader{};
-								xAsset.header.model = staticModel.model;
-								AssetHandler::Dump(xAsset);
-
-								models.emplace_back(modelName);
-							}
-						}
-					}
-				}
-			}
-		}
-
 		// This is broken
 		if ((type == Game::XAssetType::ASSET_TYPE_MENU || type == Game::XAssetType::ASSET_TYPE_MENULIST) && Zones::Version() >= 359)
 		{
