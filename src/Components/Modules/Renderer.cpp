@@ -455,7 +455,7 @@ namespace Components
 
 		Dvar::OnInit([]
 		{
-			static std::vector < char* > values =
+			static std::vector < char * > values =
 			{
 				const_cast<char*>("Disabled"),
 				const_cast<char*>("Scene Models"),
