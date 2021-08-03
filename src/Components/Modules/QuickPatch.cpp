@@ -382,14 +382,6 @@ namespace Components
 		}
 	}
 
-	template <typename T> std::function < T > ImportFunction(const std::string& dll, const std::string& function)
-	{
-		auto dllHandle = GetModuleHandleA(&dll[0]);
-		auto procAddr = GetProcAddress(dllHandle, &function[0]);
-
-		return std::function < T >(reinterpret_cast<T*>(procAddr));
-	}
-
 	QuickPatch::QuickPatch()
 	{
 		QuickPatch::FrameTime = 0;
@@ -401,36 +393,10 @@ namespace Components
 		// quit_hard
 		Command::Add("quit_hard", [](Command::Params*)
 		{
-			typedef enum _HARDERROR_RESPONSE_OPTION {
-				OptionAbortRetryIgnore,
-				OptionOk,
-				OptionOkCancel,
-				OptionRetryCancel,
-				OptionYesNo,
-				OptionYesNoCancel,
-				OptionShutdownSystem
-			} HARDERROR_RESPONSE_OPTION, *PHARDERROR_RESPONSE_OPTION;
-
-			typedef enum _HARDERROR_RESPONSE {
-				ResponseReturnToCaller,
-				ResponseNotHandled,
-				ResponseAbort,
-				ResponseCancel,
-				ResponseIgnore,
-				ResponseNo,
-				ResponseOk,
-				ResponseRetry,
-				ResponseYes
-			} HARDERROR_RESPONSE, *PHARDERROR_RESPONSE;
-
-			BOOLEAN hasPerms;
-			HARDERROR_RESPONSE response;
-
-			auto result = ImportFunction<NTSTATUS __stdcall(ULONG, BOOLEAN, BOOLEAN, PBOOLEAN)>("ntdll.dll", "RtlAdjustPrivilege")
-				(19, true, false, &hasPerms);
-
-			result = ImportFunction<NTSTATUS __stdcall(NTSTATUS, ULONG, LPCSTR, PVOID, HARDERROR_RESPONSE_OPTION, PHARDERROR_RESPONSE)>("ntdll.dll", "NtRaiseHardError")
-				(0xC000007B /*0x0000000A*/, 0, nullptr, nullptr, OptionShutdownSystem, &response);
+			int data = false;
+			const Utils::Library ntdll("ntdll.dll");
+			ntdll.InvokePascal<void>("RtlAdjustPrivilege", 19, true, false, &data);
+			ntdll.InvokePascal<void>("NtRaiseHardError", 0xC000007B, 0, nullptr, nullptr, 6, &data);
 		});
 
 		// bounce dvar
