@@ -211,6 +211,9 @@ namespace Components
 
 		Utils::Hook(0x536A80, Renderer::BackendFrameStub, HOOK_JUMP).install()->quick();
 
+		// Do not cull meshes with too many surfaces in the camera (fixes blinking meshes on cha_quad)
+		Utils::Hook::Nop(0x50C68B, 6);
+
 		// Begin device recovery (not D3D9Ex)
 		Utils::Hook(0x508298, []()
 		{
