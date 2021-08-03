@@ -4,6 +4,7 @@
 namespace Components
 {
 	int Zones::ZoneVersion;
+	int Zones::EntitiesVersion;
 
 	int Zones::FxEffectIndex;
 	char* Zones::FxEffectStrings[64];
@@ -2575,7 +2576,8 @@ namespace Components
 	
 	int Zones::LoadMapEnts(bool atStreamStart, Game::MapEnts* buffer, int size)
 	{
-		Logger::Print("Loading map entities for zone version %d\n", Zones::Version());
+                Logger::Print("Loading map entities for zone version %d\n", Zones::Version());
+		EntitiesVersion = Zones::Version();
 
 		if (Zones::Version() >= 446)
 		{
