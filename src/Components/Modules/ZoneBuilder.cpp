@@ -517,7 +517,8 @@ namespace Components
 
 		if (this->findAsset(Game::XAssetType::ASSET_TYPE_RAWFILE, this->branding.name) != -1)
 		{
-			Logger::Error("Unable to add branding. Asset '%s' already exists!", this->branding.name);
+			Logger::Print("Unable to add branding. Asset '%s' already exists!", this->branding.name);
+			return;
 		}
 
 		Game::XAssetHeader header = { &this->branding };

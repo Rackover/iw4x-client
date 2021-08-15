@@ -13,7 +13,12 @@ namespace Assets
 		virtual void dump(Game::XAssetHeader header) override;
 
 		void loadJson(Game::XAssetHeader* header, const std::string& name, Components::ZoneBuilder::Zone* builder);
+		void loadOverride(Game::XAssetHeader* header, const std::string& name, Components::ZoneBuilder::Zone* builder);
 		void loadNative(Game::XAssetHeader* header, const std::string& name, Components::ZoneBuilder::Zone* builder);
 		void loadBinary(Game::XAssetHeader* header, const std::string& name, Components::ZoneBuilder::Zone* builder);
+
+	private:
+		bool findMatchingTechset(Game::Material* asset, std::string name, Components::ZoneBuilder::Zone* builder);
+		bool findSortKey(Game::Material* asset);
 	};
 }
