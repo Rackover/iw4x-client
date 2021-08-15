@@ -60,7 +60,7 @@ namespace Assets
 	{
 		Game::Material* material = header.material;
 
-		Utils::Stream buffer;
+		std::string buffer;
 
 		auto constantTable = json11::Json::array{};
 		for (char i = 0; i < material->constantCount; i++)
@@ -191,7 +191,8 @@ namespace Assets
 			{ "unknown", static_cast<int>(material->info.drawSurf.packed) } // :/ should be unsigned long long but json doesn't let us... maybe we should make it a string?
 		};
 
-		Utils::IO::WriteFile(Utils::String::VA("dump/materials/%s.json", material->info.name), buffer.toBuffer());
+		matData.dump(buffer);
+		Utils::IO::WriteFile(Utils::String::VA("dump/materials/%s.json", material->info.name), buffer);
 	}
 
 	bool IMaterial::findMatchingTechset(Game::Material* asset, std::string techsetName, Components::ZoneBuilder::Zone* builder) {
