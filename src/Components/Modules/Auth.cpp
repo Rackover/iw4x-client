@@ -137,9 +137,7 @@ namespace Components
 
 		// Simply connect, if we're in debug mode, we ignore all security checks
 #ifndef DEBUG
-#ifdef USE_IW4X_PROTOCOL
-		if (address.isLoopback())
-#endif
+		if (address.isLoopback() || !Components::Party::IsUsingIw4xProtocol())
 #endif
 		{
 			if (!connectData.infostring().empty())
@@ -154,8 +152,7 @@ namespace Components
 			}
 		}
 #ifndef DEBUG
-#ifdef USE_IW4X_PROTOCOL
-		else
+		else if (Components::Party::IsUsingIw4xProtocol())
 		{
 			// Validate proto data
 			if (connectData.signature().empty() || connectData.publickey().empty() || connectData.token().empty() || connectData.infostring().empty())
@@ -238,7 +235,6 @@ namespace Components
 			Logger::Print("Verified XUID %llX (%d) from %s\n", xuid, userLevel, address.getCString());
 			Game::SV_DirectConnect(*address.get());
 		}
-#endif
 #endif
 	}
 

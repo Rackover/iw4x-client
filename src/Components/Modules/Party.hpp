@@ -23,6 +23,7 @@ namespace Components
 		static bool IsInLobby();
 
 		static std::string GetMotd();
+		static bool IsUsingIw4xProtocol();
 
 	private:
 		class JoinContainer

@@ -738,6 +738,14 @@ namespace Components
 		Dvar::OnInit([]() {
 			// UI version string
 			static std::string menuVersionString = VERSION"\n";
+
+			if (Components::Party::IsUsingIw4xProtocol()) {
+				menuVersionString += "(IW4X PROTOCOL)\n";
+			}
+			else {
+				menuVersionString += "(STANDARD PROTOCOL)\n";
+			}
+
 			auto verFile = FileSystem::File(RAWFILE_VERSION_FILE);
 			if (verFile.exists()) {
 				menuVersionString += "raw.iwd v" + verFile.getBuffer();
