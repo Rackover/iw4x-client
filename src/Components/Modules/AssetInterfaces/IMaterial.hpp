@@ -17,8 +17,10 @@ namespace Assets
 		void loadNative(Game::XAssetHeader* header, const std::string& name, Components::ZoneBuilder::Zone* builder);
 		void loadBinary(Game::XAssetHeader* header, const std::string& name, Components::ZoneBuilder::Zone* builder);
 
+		IMaterial();
+
 	private:
-		bool findMatchingTechset(Game::Material* asset, std::string name, Components::ZoneBuilder::Zone* builder);
+		Game::MaterialTechniqueSet* findMatchingTechset(std::string materialName, std::string techsetName, Components::ZoneBuilder::Zone* builder);
 		bool findSortKey(Game::Material* asset);
 	};
 }
