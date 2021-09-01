@@ -303,16 +303,16 @@ namespace Components
 			printf("");
 		}
 
-		std::string name = techsetName;
+		std::string name(techsetName);
 		auto entry = TechsetSwaps.find(name);
 
-		if (Zones::Version() >= VERSION_LATEST_CODO && entry != TechsetSwaps.end())
+		if (Zones::GetEntitiesZoneVersion() >= VERSION_LATEST_CODO && entry != TechsetSwaps.end())
 		{
-			auto newTechset = entry->second;
+			const char* newTechset = entry->second.c_str();
 
-			Components::Logger::Print("Swapped techset %s for %s at runtime\n", techsetName, newTechset.c_str());
+			Components::Logger::Print("Swapped techset %s for %s at runtime\n", techsetName, newTechset);
 
-			return Game::DB_FindXAssetHeader(type, newTechset.c_str());
+			techsetName = newTechset;
 		}
 
 		return Game::DB_FindXAssetHeader(type, techsetName);
