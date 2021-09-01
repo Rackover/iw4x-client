@@ -380,6 +380,34 @@ namespace Components
 		}
 	}
 
+	BOOL QuickPatch::IsDynClassnameStub(char* a1) 
+	{
+		auto version = Zones::GetEntitiesZoneVersion();
+		
+		if (version >= VERSION_LATEST_CODO)
+		{
+			for (auto i = 0; i < Game::spawnVars->numSpawnVars; i++)
+			{
+				char** kvPair = Game::spawnVars->spawnVars[i];
+				auto key = kvPair[0];
+				auto val = kvPair[1];
+
+				bool isSpecOps = strncmp(key, "script_specialops", 17) == 0;
+				bool isSpecOpsOnly = val[0] == '1' && val[1] == '\0';
+
+				if (isSpecOps && isSpecOpsOnly)
+				{
+					// This will prevent spawning of any entity that contains "script_specialops: '1'" 
+					// It removes extra hitboxes / meshes on 461+ CODO multiplayer maps
+					return TRUE;
+				}
+			}
+		}
+
+		// Passthrough to the game's own IsDynClassname
+		return Utils::Hook::Call<BOOL(char*)>(0x444810)(a1);
+	}
+  
 	QuickPatch::QuickPatch()
 	{
 		QuickPatch::FrameTime = 0;
@@ -393,9 +421,12 @@ namespace Components
 		{
 			int data = false;
 			const Utils::Library ntdll("ntdll.dll");
-			ntdll.InvokePascal<void>("RtlAdjustPrivilege", 19, true, false, &data);
-			ntdll.InvokePascal<void>("NtRaiseHardError", 0xC000007B, 0, nullptr, nullptr, 6, &data);
+			ntdll.invokePascal<void>("RtlAdjustPrivilege", 19, true, false, &data);
+			ntdll.invokePascal<void>("NtRaiseHardError", 0xC000007B, 0, nullptr, nullptr, 6, &data);
 		});
+
+		// Filtering any mapents that is intended for Spec:Ops gamemode (CODO) and prevent them from spawning
+		Utils::Hook(0x5FBD6E, QuickPatch::IsDynClassnameStub, HOOK_CALL).install()->quick();
 
 		// bounce dvar
 		sv_enableBounces = Game::Dvar_RegisterBool("sv_enableBounces", false, Game::DVAR_FLAG_REPLICATED, "Enables bouncing on the server");

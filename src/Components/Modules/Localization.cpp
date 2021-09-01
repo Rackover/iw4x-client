@@ -186,6 +186,7 @@ namespace Components
 			"Deity",
 			"Dizzy",
 			"Dss0",
+			"FutureRave",
 			"H3X1C",
 			"HardNougat",
 			"Homura",
