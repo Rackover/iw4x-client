@@ -43,6 +43,6 @@ namespace Components
 
 		static void DeleteAll();
 
-		static int FindTechniqueSet(const char* techsetName, int a2);
+		static Game::XAssetHeader FindTechniqueSet(Game::XAssetType type, const char* techsetName);
 	};
 }

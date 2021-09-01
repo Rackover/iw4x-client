@@ -289,16 +289,28 @@ namespace Components
 	}
 
 #endif
-	int Materials::FindTechniqueSet(const char* a1, int a2)
+	Game::XAssetHeader Materials::FindTechniqueSet(Game::XAssetType type, const char* techsetName)
 	{
-		std::string techName = a1;
-		if (TechsetSwaps.find(techName) != TechsetSwaps.end())
-		{
-			a1 = TechsetSwaps[techName].data();
-			Components::Logger::Print("Swapped techset %s for %s at runtime\n", techName.data(), a1);
+		assert(type == Game::XAssetType::ASSET_TYPE_TECHNIQUE_SET);
+		Components::Logger::Print("TECHSET: %s\n", techsetName);
+
+		if (std::strcmp(techsetName, "mc_l_hsm_b0c0s0_em") == 0) {
+			printf("");
 		}
 
-		return Utils::Hook::Call<int(const char*, int)>(0x505C40)(a1, a2);
+		std::string name = techsetName;
+		auto entry = TechsetSwaps.find(name);
+
+		if (Zones::Version() >= VERSION_LATEST_CODO && entry != TechsetSwaps.end())
+		{
+			auto newTechset = entry->second;
+
+			Components::Logger::Print("Swapped techset %s for %s at runtime\n", techsetName, newTechset.c_str());
+
+			return Game::DB_FindXAssetHeader(type, newTechset.c_str());
+		}
+
+		return Game::DB_FindXAssetHeader(type, techsetName);
 	}
 
 
@@ -321,8 +333,8 @@ namespace Components
 		// Resolve preview images to loadscreens
 		Utils::Hook(0x53AC19, Materials::FormatImagePath, HOOK_CALL).install()->quick();
 
-		// Intercept techset finding so we can swap them at runtime (although we should keep it to a minimum)
-		Utils::Hook(0x522CE0, Materials::FindTechniqueSet, HOOK_CALL).install()->quick();
+		// Intercept techset finding (DB_FindXAssetHeader) so we can swap them at runtime (although we should keep it to a minimum)
+		Utils::Hook(0x505C49, Materials::FindTechniqueSet, HOOK_CALL).install()->quick();
 
 		// Debug material comparison
 		Utils::Hook::Set<void*>(0x523894, Materials::MaterialComparePrint);
