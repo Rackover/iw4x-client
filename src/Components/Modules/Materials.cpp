@@ -294,28 +294,25 @@ namespace Components
 	}
 
 #endif
-	Game::XAssetHeader Materials::FindTechniqueSet(Game::XAssetType type, const char* techsetName)
+	void Materials::Load_MaterialTechniqueSetAsset(Game::MaterialTechniqueSet** pptr)
 	{
-		assert(type == Game::XAssetType::ASSET_TYPE_TECHNIQUE_SET);
-		Components::Logger::Print("TECHSET: %s\n", techsetName);
-
-		if (std::strcmp(techsetName, "mc_l_hsm_b0c0s0_em") == 0) {
-			printf("");
-		}
-
-		std::string name(techsetName);
+		auto charName = (*pptr)->name;
+		if (charName[0] == ',') charName = &charName[1];
+		std::string name(charName);
 		auto entry = TechsetSwaps.find(name);
+		Components::Logger::Print("ZONEVER %d ENTITIES %d TECHSET: %s\n", Zones::Version(), Zones::GetEntitiesZoneVersion(), name.c_str());
 
-		if (Zones::GetEntitiesZoneVersion() >= VERSION_LATEST_CODO && entry != TechsetSwaps.end())
+		if (Zones::Version() >= VERSION_LATEST_CODO && entry != TechsetSwaps.end())
 		{
 			const char* newTechset = entry->second.c_str();
 
-			Components::Logger::Print("Swapped techset %s for %s at runtime\n", techsetName, newTechset);
+			Components::Logger::Print("Swapped techset %s for %s at runtime\n", name.c_str(), newTechset);
 
-			techsetName = newTechset;
+			*pptr = Game::DB_FindXAssetEntry(Game::XAssetType::ASSET_TYPE_TECHNIQUE_SET, newTechset)->asset.header.techniqueSet;
+			return;
 		}
 
-		return Game::DB_FindXAssetHeader(type, techsetName);
+		return Utils::Hook::Call<void(Game::MaterialTechniqueSet**)>(0x4BFA80)(pptr);
 	}
 
 
@@ -339,7 +336,7 @@ namespace Components
 		Utils::Hook(0x53AC19, Materials::FormatImagePath, HOOK_CALL).install()->quick();
 
 		// Intercept techset finding (DB_FindXAssetHeader) so we can swap them at runtime (although we should keep it to a minimum)
-		Utils::Hook(0x505C49, Materials::FindTechniqueSet, HOOK_CALL).install()->quick();
+		Utils::Hook(0x4FF10E, Materials::Load_MaterialTechniqueSetAsset, HOOK_CALL).install()->quick();
 
 		// Debug material comparison
 		Utils::Hook::Set<void*>(0x523894, Materials::MaterialComparePrint);
