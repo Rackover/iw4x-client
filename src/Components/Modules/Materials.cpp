@@ -12,11 +12,11 @@ namespace Components
 	{
 		{ "mc_l_hsm_b0c0s0_em", "mc_l_hsm_b0c0s0_custom_growing_ice_cracks" }, // Spotted once on italy_sh as a remapped techset, but not sure it's useful anymore
 		{ "mc_l_sm_b0c0s0_em", "mc_l_sm_b0c0s0_custom_growing_ice_cracks" }, // Car windows in mp_italy_sh
-		{ "mc_l_hsm_t0c0n0s0_fgcb", "mc_l_hsm_t0c0n0s0"},
-		{ "mc_l_hsm_r0c0n0s0_fgcb", "mc_l_hsm_r0c0n0s0"},
-		{ "mc_l_hsm_r0c0n0_fgcb", "mc_l_hsm_r0c0n0"},
-		{ "mc_l_hsm_t0c0_fgcb", "mc_l_hsm_t0c0"},
-		{ "mc_l_hsm_b0c0n0s0p0_fgcb", "mc_l_hsm_b0c0n0s0p0"}
+		{ "mc_l_hsm_t0c0n0s0_fgcb", "mc_l_hsm_t0c0n0s0"},       //
+		{ "mc_l_hsm_r0c0n0s0_fgcb", "mc_l_hsm_r0c0n0s0"},       // Various monkey king elements on mp_abandon_sh_mk
+		{ "mc_l_hsm_r0c0n0_fgcb", "mc_l_hsm_r0c0n0"},           //
+		{ "mc_l_hsm_t0c0_fgcb", "mc_l_hsm_t0c0"},  	            //
+		{ "mc_l_hsm_b0c0n0s0p0_fgcb", "mc_l_hsm_b0c0n0s0p0"} // Ammo crate on mp_arkaden_sh
 	};
 
 	Game::Material* Materials::Create(const std::string& name, Game::GfxImage* image)
