@@ -79,28 +79,26 @@ namespace Assets
 		handler->serialize(reinterpret_cast<void*>(material), "dump");
 	}
 
-	Game::MaterialTechniqueSet* IMaterial::findMatchingTechset(std::string materialName, std::string techsetName, Components::ZoneBuilder::Zone* builder) {
-		
+	bool IMaterial::findMatchingTechset(Game::Material* asset, std::string techsetName, Components::ZoneBuilder::Zone* builder) {
 		if (!techsetName.empty() && techsetName.front() == ',') techsetName.erase(techsetName.begin());
-
-		Game::MaterialTechniqueSet* techset;
-
-		techset = Components::AssetHandler::FindAssetForZone(Game::XAssetType::ASSET_TYPE_TECHNIQUE_SET, techsetName.data(), builder).techniqueSet;
+		asset->techniqueSet = Components::AssetHandler::FindAssetForZone(Game::XAssetType::ASSET_TYPE_TECHNIQUE_SET, techsetName.data(), builder).techniqueSet;
 
 		///
 		/// Case 1: The exact same techset already exists in iw4, we reuse it
 		/// 
-		if (techset)
+		if (asset->techniqueSet)
 		{
 #if DEBUG
-			Components::Logger::Print("Techset %s exists with the same name in iw4, and was mapped 1:1 with %s\n", techsetName.data(), asset->techniqueSet->name);
+			Components::Logger::Print("Techset %s exists with the same name in iw4, and was mapped 1:1 with %s\n", techsetName.data(), techsetName);
 #endif
 			// Do we need to remap the sortkey if the techset is already correct?
 			// ... maybe?
 			//findSortKey(asset, builder);
 
-			return techset;
+			return true;
 		}
+
+		return nullptr;
 
 		///
 		/// Case 2: The name is slightly different (nofog suffix and others)
@@ -118,14 +116,14 @@ namespace Assets
 
 			if (techsetPtr)
 			{
-				techset = techsetPtr;
+				asset->techniqueSet = techsetPtr;
 
-				if (techset->name[0] == ',') continue; // Try to find a better one
-				Components::Logger::Print("Techset '%s' has been mapped to '%s'\n", techsetName.data(), techset->name);
+				if (asset->techniqueSet->name[0] == ',') continue; // Try to find a better one
+				Components::Logger::Print("Techset '%s' has been mapped to '%s'\n", techsetName.data(), asset->techniqueSet->name);
 
 				findSortKey(asset);
 
-				return techset;
+				return true;
 			}
 		}
 
@@ -133,14 +131,14 @@ namespace Assets
 		/// Case 3: We know an equivalent that works well
 		/// 
 		static thread_local bool replacementFound;
-		std::string techName = techset->name;
+		std::string techName = asset->techniqueSet->name;
 		if (techSetCorrespondance.find(techName) != techSetCorrespondance.end()) {
 			auto iw4TechSetName = techSetCorrespondance[techName];
 			Game::XAssetEntry* iw4TechSet = Game::DB_FindXAssetEntry(Game::XAssetType::ASSET_TYPE_TECHNIQUE_SET, iw4TechSetName.data());
 
 			if (iw4TechSet)
 			{
-				Game::DB_EnumXAssetEntries(Game::XAssetType::ASSET_TYPE_MATERIAL, [&techset, materialName, iw4TechSet](Game::XAssetEntry* entry)
+				Game::DB_EnumXAssetEntries(Game::XAssetType::ASSET_TYPE_MATERIAL, [asset, iw4TechSet](Game::XAssetEntry* entry)
 					{
 						if (!replacementFound)
 						{
@@ -148,10 +146,9 @@ namespace Assets
 
 							if (header.material->techniqueSet == iw4TechSet->asset.header.techniqueSet)
 							{
-								Components::Logger::Print("Material %s with techset %s has been mapped to %s (last chance!), taking the sort key of material %s\n", materialName.c_str(), techset->name, header.material->techniqueSet->name, header.material->info.name);
+								Components::Logger::Print("Material %s with techset %s has been mapped to %s (last chance!), taking the sort key of material %s\n", asset->info.name, asset->techniqueSet->name, header.material->techniqueSet->name, header.material->info.name);
 								asset->info.sortKey = header.material->info.sortKey;
-								
-								techset = iw4TechSet->asset.header.techniqueSet;
+								asset->techniqueSet = iw4TechSet->asset.header.techniqueSet;
 
 								// this is terrible!
 								asset->stateBitsCount = header.material->stateBitsCount;
@@ -167,16 +164,16 @@ namespace Assets
 
 				if (replacementFound)
 				{
-					return techset;
+					return true;
 				}
 				else
 				{
-					Components::Logger::Print("Could not find any loaded material with techset %s (in replacement of %s), so I cannot set the sortkey for material %s\n", iw4TechSetName.data(), techset->name, asset->info.name);
+					Components::Logger::Print("Could not find any loaded material with techset %s (in replacement of %s), so I cannot set the sortkey for material %s\n", iw4TechSetName.data(), asset->techniqueSet->name, asset->info.name);
 				}
 			}
 			else
 			{
-				Components::Logger::Print("Could not find any loaded techset with iw4 name %s for iw3 techset %s\n", iw4TechSetName.data(), techset->name);
+				Components::Logger::Print("Could not find any loaded techset with iw4 name %s for iw3 techset %s\n", iw4TechSetName.data(), asset->techniqueSet->name);
 			}
 		}
 		else
@@ -391,7 +388,12 @@ namespace Assets
 
 	IMaterial::IMaterial() : IAsset()
 	{
-
+		Components::Command::Add("dumpMaterial", [this](Components::Command::Params* params)
+			{
+				if (params->length() < 2) return;
+				auto mtlNAme = params->get(1);
+				IMaterial::dump(Game::DB_FindXAssetHeader(Game::XAssetType::ASSET_TYPE_MATERIAL, mtlNAme));
+			});
 	}
 
 	void IMaterial::loadNative(Game::XAssetHeader* header, const std::string& name, Components::ZoneBuilder::Zone* /*builder*/)
@@ -401,145 +403,45 @@ namespace Assets
 
 	void IMaterial::loadJson(Game::XAssetHeader* header, const std::string& name, Components::ZoneBuilder::Zone* builder)
 	{
-		Components::FileSystem::File materialInfo(Utils::String::VA("materials/%s.json", name.data()));
+		auto handler = iw4oa::API::get_handler_for_type(static_cast<uint8_t>(this->getType()));
 
-		if (!materialInfo.exists())
-		{
-			// Zonetool doesn't use the JSON extension, despite the files being JSON :/
-			materialInfo = Components::FileSystem::File(Utils::String::VA("materials/%s", name.data()));
+		Components::FileSystem::File materialFile(Utils::String::VA(handler->get_serialized_file_path(name.c_str())));
 
-			if (!materialInfo.exists())
+		iw4oa::MemoryManager* manager = builder->getAllocator()->allocate<iw4oa::MemoryManager>();
+
+		std::string techniqueSetName;
+
+		const auto lambda = [builder, &techniqueSetName](uint8_t type, const char* assetName) {
+			auto find = Components::AssetHandler::FindAssetForZone(
+				static_cast<Game::XAssetType>(type),
+				assetName,
+				builder
+			);
+
+			if (type == Game::XAssetType::ASSET_TYPE_TECHNIQUE_SET) 
 			{
-				return;
-			}
-		}
-
-		std::string errors;
-		json11::Json jsonMat = json11::Json::parse(materialInfo.getBuffer(), errors);
-
-		if (!jsonMat.is_object())
-		{
-			Components::Logger::Error("Failed to load material information for %s!", name.data());
-			return;
-		}
-
-
-		Game::Material* material = builder->getAllocator()->allocate<Game::Material>();
-
-		if (!material)
-		{
-			Components::Logger::Error("Failed to allocate material structure!");
-			return;
-		}
-
-		material->info.textureAtlasColumnCount = static_cast<char>(jsonMat["animationX"].int_value());
-		material->info.textureAtlasRowCount = static_cast<char>(jsonMat["animationY"].int_value());
-		material->cameraRegion = static_cast<char>(jsonMat["cameraRegion"].int_value());
-
-		json11::Json::array jsonConstantTable = jsonMat["constantTable"].array_items();
-		material->constantCount = static_cast<char>(jsonConstantTable.size());
-		material->constantTable = builder->getAllocator()->allocateArray<Game::MaterialConstantDef>(material->constantCount);
-
-		for (char i = 0; i < material->constantCount; i++)
-		{
-			for (size_t litteralIndex = 0; litteralIndex < 4; litteralIndex++)
-			{
-				material->constantTable[i].literal[litteralIndex] = static_cast<float>(jsonConstantTable[i]["literal"].array_items()[litteralIndex].number_value());
+				techniqueSetName = builder->getAllocator()->duplicateString(assetName);
 			}
 
-			strncpy(material->constantTable[i].name, jsonConstantTable[i]["name"].string_value().c_str(), sizeof(Game::MaterialConstantDef::name));
-			material->constantTable[i].nameHash = jsonConstantTable[i]["nameHash"].int_value();
-		}
+			return *reinterpret_cast<iw4oa::Game::XAssetHeader*>(&find);
+		};
 
-		material->info.gameFlags = static_cast<char>(jsonMat["gameFlags"].int_value());
+		try {
+			Game::Material* material = reinterpret_cast<Game::Material*>(handler->deserialize(name.c_str(), materialFile.exists() ? materialFile.getBuffer() : std::string(), *manager, lambda));
 
-		json11::Json::array jsonMaps = jsonMat["maps"].array_items();
-		material->textureCount = static_cast<char>(jsonMaps.size());
-		material->textureTable = builder->getAllocator()->allocateArray<Game::MaterialTextureDef>(material->textureCount);
-
-		for (char i = 0; i < material->textureCount; i++)
-		{
-			auto imageName = jsonMaps[i]["image"].string_value().c_str();
-			auto texture = &material->textureTable[i];
-			texture->nameStart = static_cast<char>(jsonMaps[i]["firstCharacter"].int_value());
-			texture->nameEnd = static_cast<char>(jsonMaps[i]["lastCharacter"].int_value());
-			texture->u.image = Components::AssetHandler::FindAssetForZone(Game::XAssetType::ASSET_TYPE_IMAGE, imageName, builder).image;
-			texture->samplerState = static_cast<char>(jsonMaps[i]["sampleState"].int_value());
-			texture->semantic = static_cast<char>(jsonMaps[i]["semantic"].int_value());
-			texture->nameHash = jsonMaps[i]["typeHash"].int_value();
-
-			if (texture->semantic == SEMANTIC_WATER_MAP) 
+			if (Components::ZoneBuilder::matchTechsetsDvar.get<bool>())
 			{
-				if (jsonMaps[i]["waterinfo"].is_object()) 
-				{
-					auto jsonWater = jsonMaps[i]["waterinfo"];
-					auto water = builder->getAllocator()->allocate<Game::water_t>();
-
-					water->image->name = imageName;
-
-					water->writable.floatTime = static_cast<float>(jsonWater["floatTime"].number_value());
-					auto codeConstants = json11::Json::array{};
-					for (size_t j = 0; j < 4; j++)
-					{
-						water->codeConstant[j] = static_cast<float>(jsonWater["codeConstant"].array_items()[j].number_value());
-					}
-
-					water->M = jsonWater["M"].int_value();
-					water->N = jsonWater["N"].int_value();
-					water->Lx = static_cast<float>(jsonWater["Lx"].number_value());
-					water->Lz = static_cast<float>(jsonWater["Lz"].number_value());
-					water->gravity = static_cast<float>(jsonWater["gravity"].number_value());
-					water->windvel = static_cast<float>(jsonWater["windvel"].number_value());
-
-					water->winddir[0] = static_cast<float>(jsonWater["winddir"].array_items()[0].number_value());
-					water->winddir[1] = static_cast<float>(jsonWater["winddir"].array_items()[1].number_value());
-
-					water->amplitude = static_cast<float>(jsonWater["amplitude"].number_value());
-
-					auto count = jsonWater["M"].int_value() * jsonWater["N"].int_value();
-
-					water->H0 = builder->getAllocator()->allocateArray<Game::complex_s>(count);
-
-					for (int j = 0; j < count; j++)
-					{
-						water->wTerm[j] = static_cast<float>(jsonWater["wTerm"].array_items()[j].number_value());
-
-						water->H0[j].real = static_cast<float>(jsonWater["complex"].array_items()[j]["real"].number_value());
-						water->H0[j].imag = static_cast<float>(jsonWater["complex"].array_items()[j]["complex"].number_value());
-					}
-
-
-					texture->u.water = water;
-				}
-				else 
-				{
-					Components::Logger::Error("Invalid material! %s is expected to have water info for texture %s, but no 'waterinfo' object is described.", material->info.name, imageName);
-				}
+				// Hack to have it work with iw3
+				Components::Logger::Print("Performing a techset match on techset %s\n", techniqueSetName.c_str());
+				findMatchingTechset(material, techniqueSetName, builder);
 			}
+
+			header->material = material;
 		}
-
-		material->info.name = builder->getAllocator()->duplicateString(jsonMat["name"].string_value());
-		material->info.sortKey = static_cast<char>(jsonMat["sortKey"].int_value());
-		material->stateFlags = static_cast<char>(jsonMat["stateFlags"].number_value());
-
-		json11::Json::array jsonStateMap = jsonMat["stateMap"].array_items();
-		material->stateBitsCount = static_cast<char>(jsonStateMap.size());
-		material->stateBitsTable = builder->getAllocator()->allocateArray<Game::GfxStateBits>(material->stateBitsCount);
-
-		for (char i = 0; i < material->stateBitsCount; i++)
-		{
-			material->stateBitsTable[i].loadBits[0] = jsonStateMap[i][0].int_value();
-			material->stateBitsTable[i].loadBits[1] = jsonStateMap[i][1].int_value();
+		catch (iw4oa::IAssetHandler::MissingFileException) {
+			Components::Logger::Print("Asset %s could not be found on disk, will try to fetch the asset from the pool instead.\n", name.c_str());
+			header->material = Components::AssetHandler::FindOriginalAsset(this->getType(), name.c_str()).material;
 		}
-
-		material->info.surfaceTypeBits = jsonMat["surfaceTypeBits"].int_value();
-
-		auto tsName = jsonMat["techniqueSet->name"].string_value();
-		findMatchingTechset(material, tsName, builder);
-
-		material->info.drawSurf = Game::GfxDrawSurf{ static_cast<unsigned long long>(jsonMat["unknown"].int_value()) }; // i HATE this !  int getting cast at unsigned long long? This should be a string storage in the JSON !!
-
-		header->material = material;
 	}
 
 	void IMaterial::loadOverride(Game::XAssetHeader* header, const std::string& name, Components::ZoneBuilder::Zone* builder)

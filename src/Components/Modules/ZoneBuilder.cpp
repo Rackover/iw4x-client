@@ -10,6 +10,8 @@ namespace Components
 	bool ZoneBuilder::Terminate;
 	std::thread ZoneBuilder::CommandThread;
 
+	Dvar::Var ZoneBuilder::matchTechsetsDvar;
+
 	ZoneBuilder::Zone::Zone(const std::string& name) : indexStart(0), externalSize(0),
 
 		// Reserve 100MB by default.
@@ -1574,6 +1576,8 @@ namespace Components
 					}
 				}, false, true);
 			});
+
+			ZoneBuilder::matchTechsetsDvar = Dvar::Register<bool>("zb_ensure_material_techsets", true, Game::DVAR_FLAG_NONE, "Should zonebuilder match and swap techsets when loading a material?");
 		}
 	}
 

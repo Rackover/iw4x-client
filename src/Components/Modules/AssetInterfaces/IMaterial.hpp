@@ -20,7 +20,7 @@ namespace Assets
 		IMaterial();
 
 	private:
-		Game::MaterialTechniqueSet* findMatchingTechset(std::string materialName, std::string techsetName, Components::ZoneBuilder::Zone* builder);
+		bool findMatchingTechset(Game::Material* asset, std::string techsetName, Components::ZoneBuilder::Zone* builder);
 		bool findSortKey(Game::Material* asset);
 	};
 }
