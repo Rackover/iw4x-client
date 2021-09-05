@@ -133,6 +133,7 @@ namespace Components
 		static Game::XAssetHeader GetEmptyAssetIfCommon(Game::XAssetType type, const std::string& name, Zone* builder);
 
 		static Dvar::Var matchTechsetsDvar;
+		static Dvar::Var PreferDiskAssetsDvar;
 
 	private:
 		static int StoreTexture(Game::GfxImageLoadDef **loadDef, Game::GfxImage *image);

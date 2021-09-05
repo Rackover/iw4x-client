@@ -10,7 +10,8 @@ namespace Components
 	bool ZoneBuilder::Terminate;
 	std::thread ZoneBuilder::CommandThread;
 
-	Dvar::Var ZoneBuilder::matchTechsetsDvar;
+	Dvar::Var ZoneBuilder::MatchTechsetsDvar;
+	Dvar::Var ZoneBuilder::PreferDiskAssetsDvar;
 
 	ZoneBuilder::Zone::Zone(const std::string& name) : indexStart(0), externalSize(0),
 
