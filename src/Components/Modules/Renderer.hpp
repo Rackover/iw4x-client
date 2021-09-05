@@ -37,7 +37,7 @@ namespace Components
 
 		static void DebugDrawTriggers();
 		static void DebugDrawSceneModelCollisions();
-		static void DebugDrawSceneModelBoundingBoxes();
+		static void DebugDrawModelsBoundingBoxes();
 		static void DebugDrawModelNames();
 		static void DebugDrawAABBTrees();
 
@@ -49,8 +49,8 @@ namespace Components
 
 		static Dvar::Var DrawTriggers;
 		static Dvar::Var DrawSceneModelCollisions;
-		static Dvar::Var DrawSceneModelBoundingBoxes;
-		static Dvar::Var DrawModelNames;
+		static Dvar::Var DrawModelsBoundingBoxes;
+		static Dvar::Var DrawModelsNames;
 		static Dvar::Var DrawAABBTrees;
 	};
 }

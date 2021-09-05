@@ -132,7 +132,7 @@ namespace Components
 
 		static Game::XAssetHeader GetEmptyAssetIfCommon(Game::XAssetType type, const std::string& name, Zone* builder);
 
-		static Dvar::Var matchTechsetsDvar;
+		static Dvar::Var MatchTechsetsDvar;
 		static Dvar::Var PreferDiskAssetsDvar;
 
 	private:

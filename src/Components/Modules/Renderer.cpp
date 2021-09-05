@@ -10,8 +10,8 @@ namespace Components
 
 	Dvar::Var Renderer::DrawTriggers;
 	Dvar::Var Renderer::DrawSceneModelCollisions;
-	Dvar::Var Renderer::DrawSceneModelBoundingBoxes;
-	Dvar::Var Renderer::DrawModelNames;
+	Dvar::Var Renderer::DrawModelsBoundingBoxes;
+	Dvar::Var Renderer::DrawModelsNames;
 	Dvar::Var Renderer::DrawAABBTrees;
 
 	__declspec(naked) void Renderer::FrameStub()
@@ -258,61 +258,159 @@ namespace Components
 		}
 	}
 
-	void Renderer::DebugDrawSceneModelBoundingBoxes()
+	void Renderer::DebugDrawModelsBoundingBoxes()
 	{
-		if (!DrawSceneModelBoundingBoxes.get<bool>()) return;
+		auto val = DrawModelsBoundingBoxes.get<Game::dvar_t*>()->current.integer;
 
-		float red[4] = { 1.0f, 0.0f, 0.0f, 1.0f };
-		float blue[4] = { 0.0f, 0.0f, 1.0f, 1.0f };
+		if (!val) return;
 
+
+		float sceneModelsColor[4] = { 1.0f, 1.0f, 0.0f, 1.0f };
+		float dobjsColor[4] = { 0.0f, 1.0f, 1.0f, 1.0f };
+		float staticModelsColor[4] = { 1.0f, 0.0f, 1.0f, 1.0f };
+		float cmStaticsColor[4] = { 0.0f, 1.0f, 1.0f, 1.0f };
+		float cmDynamicsColor[4] = { 1.0f, 0.5f, 0.2f, 1.0f };
+
+		auto mapName = Dvar::Var("mapname").get<const char*>();
 		auto* scene = Game::scene;
+		auto world = Game::DB_FindXAssetEntry(Game::XAssetType::ASSET_TYPE_GFXWORLD, Utils::String::VA("maps/mp/%s.d3dbsp", mapName))->asset.header.gfxWorld;
+		Game::clipMap_t* clipMap = *reinterpret_cast<Game::clipMap_t**>(0x7998E0);
 
-		for (auto i = 0; i < scene->sceneModelCount; i++)
+		if (val == 1)
 		{
-			if (!scene->sceneModel[i].model)
-				continue;
+			for (auto i = 0; i < scene->sceneModelCount; i++)
+			{
+				if (!scene->sceneModel[i].model)
+					continue;
 
-			auto b = scene->sceneModel[i].model->bounds;
-			b.midPoint[0] += scene->sceneModel[i].placement.base.origin[0];
-			b.midPoint[1] += scene->sceneModel[i].placement.base.origin[1];
-			b.midPoint[2] += scene->sceneModel[i].placement.base.origin[2];
-			b.halfSize[0] *= scene->sceneModel[i].placement.scale;
-			b.halfSize[1] *= scene->sceneModel[i].placement.scale;
-			b.halfSize[2] *= scene->sceneModel[i].placement.scale;
-			Game::R_AddDebugBounds(red, &b, &scene->sceneModel[i].placement.base.quat);
+				auto b = scene->sceneModel[i].model->bounds;
+				b.midPoint[0] += scene->sceneModel[i].placement.base.origin[0];
+				b.midPoint[1] += scene->sceneModel[i].placement.base.origin[1];
+				b.midPoint[2] += scene->sceneModel[i].placement.base.origin[2];
+				b.halfSize[0] *= scene->sceneModel[i].placement.scale;
+				b.halfSize[1] *= scene->sceneModel[i].placement.scale;
+				b.halfSize[2] *= scene->sceneModel[i].placement.scale;
+				Game::R_AddDebugBounds(sceneModelsColor, &b, &scene->sceneModel[i].placement.base.quat);
+			}
 		}
 
-		for (auto i = 0; i < scene->sceneDObjCount; i++)
+		else if (val == 2)
 		{
-			scene->sceneDObj[i].cull.bounds.halfSize[0] = std::abs(scene->sceneDObj[i].cull.bounds.halfSize[0]);
-			scene->sceneDObj[i].cull.bounds.halfSize[1] = std::abs(scene->sceneDObj[i].cull.bounds.halfSize[1]);
-			scene->sceneDObj[i].cull.bounds.halfSize[2] = std::abs(scene->sceneDObj[i].cull.bounds.halfSize[2]);
-
-			if (scene->sceneDObj[i].cull.bounds.halfSize[0] < 0 ||
-				scene->sceneDObj[i].cull.bounds.halfSize[1] < 0 ||
-				scene->sceneDObj[i].cull.bounds.halfSize[2] < 0)
+			for (auto i = 0; i < scene->sceneDObjCount; i++)
 			{
-
-				Components::Logger::Print("WARNING: Negative half size for DOBJ %s, this will cause culling issues!", scene->sceneDObj[i].obj->models[0]->name);
+				if (auto obj = scene->sceneDObj[i].obj)
+				{
+					for (int j = 0; j < obj->numModels; j++)
+					{
+						if (auto model = obj->models[j])
+						{
+							auto b = model->bounds;
+							b.midPoint[0] += scene->sceneDObj[i].placement.origin[0];
+							b.midPoint[1] += scene->sceneDObj[i].placement.origin[1];
+							b.midPoint[2] += scene->sceneDObj[i].placement.origin[2];
+							b.halfSize[0] *= model->scale;
+							b.halfSize[1] *= model->scale;
+							b.halfSize[2] *= model->scale;
+							Game::R_AddDebugBounds(dobjsColor, &b, &scene->sceneDObj[i].placement.quat);
+						}
+					}
+				}
 			}
+		}
 
-			Game::R_AddDebugBounds(blue, &scene->sceneDObj[i].cull.bounds);
+		else if (val == 3)
+		{
+			// Static models
+			for (size_t i = 0; i < world->dpvs.smodelCount; i++)
+			{
+				auto staticModel = world->dpvs.smodelDrawInsts[i];
+				if (auto model = staticModel.model)
+				{
+					auto b = model->bounds;
+
+					std::string name(model->name);
+					b.midPoint[0] += staticModel.placement.origin[0];
+					b.midPoint[1] += staticModel.placement.origin[1];
+					b.midPoint[2] += staticModel.placement.origin[2];
+					b.halfSize[0] *= staticModel.placement.scale;
+					b.halfSize[1] *= staticModel.placement.scale;
+					b.halfSize[2] *= staticModel.placement.scale;
+
+					if (name.find("com_cafe_table2") != std::string::npos) {
+						printf("");
+						Game::R_AddDebugBounds(cmDynamicsColor, &b); // Missing quaternion here! Where do I get it from? :(
+					}
+					else {
+						Game::R_AddDebugBounds(staticModelsColor, &b); // Missing quaternion here! Where do I get it from? :(
+					}
+				}
+			}
+		}
+		// Static models
+		else if (val == 4) {
+			for (auto i = 0; i < clipMap->numStaticModels; i++)
+			{
+				if (!clipMap->staticModelList[i].xmodel)
+					continue;
+
+				auto b = clipMap->staticModelList[i].xmodel->bounds;
+				b.midPoint[0] += clipMap->staticModelList[i].origin[0];
+				b.midPoint[1] += clipMap->staticModelList[i].origin[1];
+				b.midPoint[2] += clipMap->staticModelList[i].origin[2];
+				b.halfSize[0] *= clipMap->staticModelList[i].xmodel->scale;
+				b.halfSize[1] *= clipMap->staticModelList[i].xmodel->scale;
+				b.halfSize[2] *= clipMap->staticModelList[i].xmodel->scale;
+				Game::R_AddDebugBounds(cmStaticsColor, &b);
+			}
+		}
+		// Dyanmic entities
+		else if (val == 5) {
+			for (auto a = 0; a < 2; a++) {
+				for (auto i = 0; i < clipMap->dynEntCount[a]; i++)
+				{
+					if (!clipMap->dynEntDefList[a][i].xModel)
+						continue;
+
+					auto entity = clipMap->dynEntDefList[a][i];
+					auto b = entity.xModel->bounds;
+					b.midPoint[0] += entity.pose.origin[0];
+					b.midPoint[1] += entity.pose.origin[1];
+					b.midPoint[2] += entity.pose.origin[2];
+
+					float color[4]{
+						cmDynamicsColor[0],
+						cmDynamicsColor[1],
+						cmDynamicsColor[2],
+						cmDynamicsColor[3]
+					};
+
+					if (a == 0) {
+						color[1] *= 1.2f;
+						color[2] *= 1.2f;
+					}
+					
+					Game::R_AddDebugBounds(color, &b, &entity.pose.quat);
+				}
+			}
 		}
 	}
 
 	void Renderer::DebugDrawModelNames()
 	{
-		auto val = DrawModelNames.get<Game::dvar_t*>()->current.integer;
+		auto val = DrawModelsNames.get<Game::dvar_t*>()->current.integer;
 
 		if (!val) return;
 
 		float sceneModelsColor[4] = { 1.0f, 1.0f, 0.0f, 1.0f };
 		float dobjsColor[4] = { 0.0f, 1.0f, 1.0f, 1.0f };
 		float staticModelsColor[4] = { 1.0f, 0.0f, 1.0f, 1.0f };
+		float cmStaticsColor[4] = { 0.0f, 1.0f, 1.0f, 1.0f };
+		float cmDynamicsColor[4] = { 1.0f, 0.5f, 0.2f, 1.0f };
 
 		auto mapName = Dvar::Var("mapname").get<const char*>();
 		auto* scene = Game::scene;
 		auto world = Game::DB_FindXAssetEntry(Game::XAssetType::ASSET_TYPE_GFXWORLD, Utils::String::VA("maps/mp/%s.d3dbsp", mapName))->asset.header.gfxWorld;
+		Game::clipMap_t* clipMap = *reinterpret_cast<Game::clipMap_t**>(0x7998E0);
 
 		if (val == 1)
 		{
@@ -351,6 +449,38 @@ namespace Components
 				}
 			}
 		}
+		else if (val == 5) {
+			for (auto a = 0; a < 2; a++) {
+				for (auto i = 0; i < clipMap->dynEntCount[a]; i++)
+				{
+					if (!clipMap->dynEntDefList[a][i].xModel)
+						continue;
+
+					auto entity = clipMap->dynEntDefList[a][i];
+
+					std::string name = entity.xModel->name;
+
+					if (name.find("bottle") != std::string::npos) {
+						printf("");
+					}
+
+					if (name.find("plate") != std::string::npos) {
+						printf("");
+					}
+					
+					Game::R_AddDebugString(cmDynamicsColor, entity.pose.origin, 1.0,
+						Utils::String::VA(
+							"%s",
+							entity.xModel->name
+					/*		entity.xModel->flags,
+							entity.physPreset->type,
+							entity.physPreset->mass,
+							entity.physPreset->explosiveForceScale*/
+						)
+					);
+				}
+			}
+		}
 	}
 
 	void Renderer::DebugDrawAABBTrees()
@@ -385,7 +515,7 @@ namespace Components
 			{
 				DebugDrawAABBTrees();
 				DebugDrawModelNames();
-				DebugDrawSceneModelBoundingBoxes();
+				DebugDrawModelsBoundingBoxes();
 				DebugDrawSceneModelCollisions();
 				DebugDrawTriggers();
 			}
@@ -461,13 +591,15 @@ namespace Components
 				const_cast<char*>("Scene Models"),
 				const_cast<char*>("Scene Dynamic Objects"),
 				const_cast<char*>("GfxWorld Static Models"),
+				const_cast<char*>("Clipmap Static Models"),
+				const_cast<char*>("Clipmap Dynamic Entities"),
 				nullptr
 			};
 
-			Renderer::DrawSceneModelBoundingBoxes = Game::Dvar_RegisterBool("r_drawSceneModelBoundingBoxes", false, Game::DVAR_FLAG_CHEAT, "Draw scene model bounding boxes");
+			Renderer::DrawModelsBoundingBoxes = Game::Dvar_RegisterEnum("r_drawModelsBoundingBoxes", values.data(), 0, Game::DVAR_FLAG_CHEAT, "Draw all model bounding boxes");
 			Renderer::DrawSceneModelCollisions = Game::Dvar_RegisterBool("r_drawSceneModelCollisions", false, Game::DVAR_FLAG_CHEAT, "Draw scene model collisions");
 			Renderer::DrawTriggers = Game::Dvar_RegisterBool("r_drawTriggers", false, Game::DVAR_FLAG_CHEAT, "Draw triggers");
-			Renderer::DrawModelNames = Game::Dvar_RegisterEnum("r_drawModelNames", values.data(), 0, Game::DVAR_FLAG_CHEAT, "Draw all model names");
+			Renderer::DrawModelsNames = Game::Dvar_RegisterEnum("r_drawModelsNames", values.data(), 0, Game::DVAR_FLAG_CHEAT, "Draw all model names");
 			Renderer::DrawAABBTrees = Game::Dvar_RegisterBool("r_drawAabbTrees", false, Game::DVAR_FLAG_CHEAT, "Draw aabb trees");
 		});
 

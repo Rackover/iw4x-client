@@ -1577,8 +1577,11 @@ namespace Components
 					}
 				}, false, true);
 			});
+			
+			ZoneBuilder::PreferDiskAssetsDvar = Dvar::Register<bool>("zb_prefer_disk_assets", false, Game::DVAR_FLAG_NONE, "Should zonebuilder prefer in-memory assets (requirements) or disk assets, when both are present?");
+			ZoneBuilder::MatchTechsetsDvar = Dvar::Register<bool>("zb_ensure_material_techsets", false, Game::DVAR_FLAG_NONE, "Should zonebuilder match and swap techsets when loading a material?");
 
-			ZoneBuilder::matchTechsetsDvar = Dvar::Register<bool>("zb_ensure_material_techsets", true, Game::DVAR_FLAG_NONE, "Should zonebuilder match and swap techsets when loading a material?");
+
 		}
 	}
 

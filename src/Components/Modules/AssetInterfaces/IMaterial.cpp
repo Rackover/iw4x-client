@@ -75,7 +75,7 @@ namespace Assets
 		}
 
 
-		auto handler = iw4oa::API::get_handler_for_type(static_cast<uint8_t>(this->getType()));
+		auto handler = iw4oa::API::getHandlerForType(static_cast<uint8_t>(this->getType()));
 		handler->serialize(reinterpret_cast<void*>(material), "dump");
 	}
 
@@ -403,9 +403,9 @@ namespace Assets
 
 	void IMaterial::loadJson(Game::XAssetHeader* header, const std::string& name, Components::ZoneBuilder::Zone* builder)
 	{
-		auto handler = iw4oa::API::get_handler_for_type(static_cast<uint8_t>(this->getType()));
+		auto handler = iw4oa::API::getHandlerForType(static_cast<uint8_t>(this->getType()));
 
-		Components::FileSystem::File materialFile(Utils::String::VA(handler->get_serialized_file_path(name.c_str())));
+		Components::FileSystem::File materialFile(Utils::String::VA(handler->getSerializedFilePath(name.c_str())));
 
 		iw4oa::MemoryManager* manager = builder->getAllocator()->allocate<iw4oa::MemoryManager>();
 
@@ -429,7 +429,7 @@ namespace Assets
 		try {
 			Game::Material* material = reinterpret_cast<Game::Material*>(handler->deserialize(name.c_str(), materialFile.exists() ? materialFile.getBuffer() : std::string(), *manager, lambda));
 
-			if (Components::ZoneBuilder::matchTechsetsDvar.get<bool>())
+			if (Components::ZoneBuilder::MatchTechsetsDvar.get<bool>())
 			{
 				// Hack to have it work with iw3
 				Components::Logger::Print("Performing a techset match on techset %s\n", techniqueSetName.c_str());

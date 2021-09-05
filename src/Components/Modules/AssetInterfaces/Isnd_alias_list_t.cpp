@@ -4,9 +4,9 @@ namespace Assets
 {
 	void Isnd_alias_list_t::load(Game::XAssetHeader* header, const std::string& name, Components::ZoneBuilder::Zone* builder)
 	{
-		auto handler = iw4oa::API::get_handler_for_type(static_cast<uint8_t>(this->getType()));
+		auto handler = iw4oa::API::getHandlerForType(static_cast<uint8_t>(this->getType()));
 
-		Components::FileSystem::File aliasFile(Utils::String::VA(handler->get_serialized_file_path(name.c_str())));
+		Components::FileSystem::File aliasFile(Utils::String::VA(handler->getSerializedFilePath(name.c_str())));
 
 		iw4oa::MemoryManager* manager = builder->getAllocator()->allocate<iw4oa::MemoryManager>();
 
@@ -137,7 +137,7 @@ namespace Assets
 			}
 		}
 
-		auto handler = iw4oa::API::get_handler_for_type(static_cast<uint8_t>(this->getType()));
+		auto handler = iw4oa::API::getHandlerForType(static_cast<uint8_t>(this->getType()));
 		handler->serialize(reinterpret_cast<void*>(ents), "dump");
 	}
 
