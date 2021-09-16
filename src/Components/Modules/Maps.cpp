@@ -560,7 +560,7 @@ namespace Components
 			}
 
 			hasDlc.push_back(hasAllMaps);
-			Dvar::Var(Utils::String::VA("isDlcInstalled_%d", pack.index)).setRaw(hasAllMaps ? 1 : 0);
+			Dvar::Var(Utils::String::VA("isDlcInstalled_%d", pack.index)).set(hasAllMaps ? true : false);
 		}
 
 		// Must have all of dlc 3 to 5 or it causes issues
@@ -571,7 +571,7 @@ namespace Components
 			sentMessage = true;
 		}
 
-		Dvar::Var("isDlcInstalled_All").setRaw(hasAllDlcs ? 1 : 0);
+		Dvar::Var("isDlcInstalled_All").set(hasAllDlcs ? true : false);
 	}
 
 	bool Maps::IsCustomMap()
@@ -771,7 +771,7 @@ namespace Components
 			Maps::AddDlc({ 6, "Freighter", {"mp_cargoship_sh"} });
 			Maps::AddDlc({ 7, "Resurrection Pack", {"mp_shipment_long", "mp_rust_long", "mp_firingrange"} });
 			Maps::AddDlc({ 8, "Recycled Pack", {"mp_bloc_sh", "mp_crash_tropical", "mp_estate_tropical", "mp_fav_tropical", "mp_storm_spring"} });
-			Maps::AddDlc({ 9, "Classics Pack #3", {"mp_farm", "mp_backlot", "mp_pipeline", "mp_countdown", "mp_crash_snow"} });
+			Maps::AddDlc({ 9, "Classics Pack #3", {"mp_farm", "mp_backlot", "mp_pipeline", "mp_countdown", "mp_crash_snow", "mp_carentan"}});
 
 			Maps::UpdateDlcStatus();
 
