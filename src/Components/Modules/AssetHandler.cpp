@@ -263,7 +263,7 @@ namespace Components
 
 		if (Flags::HasFlag("entries"))
 		{
-			Components::Logger::Print(Utils::String::VA("%s: %d: %s\n", FastFiles::Current().data(), type, name));
+			Logger::Print(Utils::String::VA("%s: %d: %s\n", FastFiles::Current().data(), type, name));
 		}
 
 		bool restrict = false;
