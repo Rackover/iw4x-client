@@ -303,7 +303,8 @@ namespace Components
 #endif
 	void Materials::Load_MaterialTechniqueSetAsset(Game::MaterialTechniqueSet** pptr)
 	{
-		if (Zones::GetEntitiesZoneVersion() >= VERSION_LATEST_CODO){
+		if (Zones::GetEntitiesZoneVersion() >= VERSION_LATEST_CODO)
+		{
 			auto charName = (*pptr)->name;
 			if (charName[0] == ',') charName = &charName[1];
 			std::string name(charName);
@@ -311,9 +312,9 @@ namespace Components
 
 			if (entry != TechsetSwaps.end())
 			{
-				const char* newTechset = entry->second.c_str();
+				const char* newTechset = entry->second.data();
 
-				Components::Logger::Print("Swapped techset %s for %s at runtime\n", name.c_str(), newTechset);
+				Components::Logger::Print("Swapped techset %s for %s at runtime\n", name.data(), newTechset);
 
 				*pptr = Game::DB_FindXAssetEntry(Game::XAssetType::ASSET_TYPE_TECHNIQUE_SET, newTechset)->asset.header.techniqueSet;
 				return;
