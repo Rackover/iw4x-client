@@ -554,8 +554,8 @@ namespace Game
 		unsigned __int16 randomDataIntCount;
 		unsigned __int16 numframes;
 		char flags;
-		char boneCount[10];
-		char notifyCount;
+		unsigned char boneCount[10];
+		unsigned char notifyCount;
 		char assetType;
 		bool isDefault;
 		unsigned int randomDataShortCount;
@@ -1469,6 +1469,16 @@ namespace Game
 		char data[1];
 	};
 
+	struct GfxImageLoadDef2 // actually a IDirect3DTexture* but this is easier
+	{
+		char mipLevels;
+		char flags;
+		short dimensions[3];
+		int format; // usually the compression Magic
+		int dataSize; // set to zero to load from IWD
+		char* texture; // texture
+	};
+
 	union GfxTexture
 	{
 		IDirect3DBaseTexture9 *basemap;
@@ -1476,6 +1486,7 @@ namespace Game
 		IDirect3DVolumeTexture9 *volmap;
 		IDirect3DCubeTexture9 *cubemap;
 		GfxImageLoadDef *loadDef;
+		GfxImageLoadDef2* loadDef2;
 	};
 
 	struct Picmip

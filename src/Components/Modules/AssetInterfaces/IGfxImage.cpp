@@ -152,8 +152,26 @@ namespace Assets
 
 		Utils::Stream* buffer = builder->getBuffer();
 		Game::GfxImage* asset = header.image;
+
+		if (Components::Client::CoDo2Iw4_Enabled() || Components::ZoneBuilder::IsEnabled())
+		{
+			auto image = Components::Client::Get_Image(header.image->name);
+			if (image != nullptr)
+			{
+				asset = image;
+			}
+		}
+
 		Game::GfxImage* dest = buffer->dest<Game::GfxImage>();
 		buffer->save(asset);
+
+		std::string name = asset->name;
+		bool isMapImage = (name.size() >= 6)
+			? ((name.substr(0, 6) == "*light" || name.substr(0, 6) == "*refle" ||
+				name == "$outdoor")
+				? true
+				: false)
+			: false;
 
 		buffer->pushBlock(Game::XFILE_BLOCK_VIRTUAL);
 
@@ -162,6 +180,8 @@ namespace Assets
 			buffer->saveString(builder->getAssetName(this->getType(), asset->name));
 			Utils::Stream::ClearPointer(&dest->name);
 		}
+
+		dest->delayLoadPixels = false;
 
 		buffer->pushBlock(Game::XFILE_BLOCK_TEMP);
 
@@ -173,10 +193,15 @@ namespace Assets
 			buffer->save(asset->texture.loadDef, 16, 1);
 
 			builder->incrementExternalSize(asset->texture.loadDef->resourceSize);
-
-			if (destTexture->resourceSize > 0)
+			
+			if (isMapImage && destTexture->resourceSize)
 			{
-				buffer->save(asset->texture.loadDef->data, asset->texture.loadDef->resourceSize);
+				buffer->save(asset->texture.loadDef2->texture, asset->texture.loadDef->resourceSize);
+				dest->delayLoadPixels = true;
+			}
+			else
+			{
+				destTexture->resourceSize = 0;
 			}
 
 			Utils::Stream::ClearPointer(&dest->texture.loadDef);

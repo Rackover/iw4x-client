@@ -110,7 +110,7 @@ namespace Assets
 
 		if (asset->names)
 		{
-			for (char i = 0; i < asset->boneCount[Game::PART_TYPE_ALL]; ++i)
+			for (unsigned char i = 0; i < asset->boneCount[Game::PART_TYPE_ALL]; ++i)
 			{
 				builder->addScriptString(asset->names[i]);
 			}
@@ -118,7 +118,7 @@ namespace Assets
 
 		if (asset->notify)
 		{
-			for (char i = 0; i < asset->notifyCount; ++i)
+			for (unsigned char i = 0; i < asset->notifyCount; ++i)
 			{
 				builder->addScriptString(asset->notify[i].name);
 			}
@@ -261,7 +261,7 @@ namespace Assets
 			unsigned short* destTagnames = buffer->dest<unsigned short>();
 			buffer->saveArray(asset->names, asset->boneCount[Game::PART_TYPE_ALL]);
 
-			for (char i = 0; i < asset->boneCount[Game::PART_TYPE_ALL]; ++i)
+			for (unsigned char i = 0; i < asset->boneCount[Game::PART_TYPE_ALL]; ++i)
 			{
 				builder->mapScriptString(&destTagnames[i]);
 			}
@@ -277,7 +277,7 @@ namespace Assets
 			Game::XAnimNotifyInfo* destNotetracks = buffer->dest<Game::XAnimNotifyInfo>();
 			buffer->saveArray(asset->notify, asset->notifyCount);
 
-			for (char i = 0; i < asset->notifyCount; ++i)
+			for (unsigned char i = 0; i < asset->notifyCount; ++i)
 			{
 				builder->mapScriptString(&destNotetracks[i].name);
 			}

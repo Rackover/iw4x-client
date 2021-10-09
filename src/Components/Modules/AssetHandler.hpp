@@ -22,6 +22,8 @@ namespace Components
 		AssetHandler();
 		~AssetHandler();
 
+		static bool Exists(Game::XAssetType type);
+
 		static void OnFind(Game::XAssetType type, Utils::Slot<Callback> callback);
 		static void OnLoad(Utils::Slot<RestrictCallback> callback);
 

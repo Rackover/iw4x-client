@@ -223,10 +223,23 @@ namespace Components
 			return false;
 		}
 
-		Game::XAssetHeader assetHeader = AssetHandler::FindAssetForZone(type, name, this, isSubAsset);
+		Game::XAssetHeader assetHeader;
+		if (Client::CoDo2Iw4_Enabled() && type == Game::ASSET_TYPE_GAMEWORLD_MP)
+		{
+			assetHeader = AssetHandler::FindAssetForZone(Game::ASSET_TYPE_GAMEWORLD_SP, name, this, isSubAsset);
+			Game::GameWorldMp* glassWorld = Utils::Memory::Allocate<Game::GameWorldMp>();
+			glassWorld->name = assetHeader.gameWorldSp->name;
+			glassWorld->g_glassData = assetHeader.gameWorldSp->g_glassData;
+
+			assetHeader.data = glassWorld;
+		}
+		else
+		{
+			assetHeader = AssetHandler::FindAssetForZone(type, name, this, isSubAsset);
+		}
 
 		if (!assetHeader.data)
-		{		
+		{
 			Logger::Error("Error: Missing asset '%s' of type '%s'\n", name.data(), Game::DB_GetXAssetTypeName(type));
 			return false;
 		}
@@ -519,7 +532,8 @@ namespace Components
 
 		if (this->findAsset(Game::XAssetType::ASSET_TYPE_RAWFILE, this->branding.name) != -1)
 		{
-			Logger::Error("Unable to add branding. Asset '%s' already exists!", this->branding.name);
+			//Logger::Error("Unable to add branding. Asset '%s' already exists!", this->branding.name);
+			return;
 		}
 
 		Game::XAssetHeader header = { &this->branding };

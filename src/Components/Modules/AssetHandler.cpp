@@ -14,6 +14,11 @@ namespace Components
 
 	std::map<std::string, Game::XAssetHeader> AssetHandler::TemporaryAssets[Game::XAssetType::ASSET_TYPE_COUNT];
 
+	bool AssetHandler::Exists(Game::XAssetType type)
+	{
+		return (AssetHandler::AssetInterfaces.find(type) != AssetHandler::AssetInterfaces.end());
+	}
+
 	void AssetHandler::RegisterInterface(IAsset* iAsset)
 	{
 		if (!iAsset) return;
@@ -768,7 +773,8 @@ namespace Components
 			Game::ReallocateAssetPool(Game::XAssetType::ASSET_TYPE_FONT, 32);
 			Game::ReallocateAssetPool(Game::XAssetType::ASSET_TYPE_RAWFILE, 2048);
 			Game::ReallocateAssetPool(Game::XAssetType::ASSET_TYPE_LEADERBOARD, 500);
-
+		}
+		{
 			AssetHandler::RegisterInterface(new Assets::IFont_s());
             AssetHandler::RegisterInterface(new Assets::IWeapon());
 			AssetHandler::RegisterInterface(new Assets::IXModel());
