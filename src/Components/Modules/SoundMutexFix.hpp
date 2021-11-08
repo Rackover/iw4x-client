@@ -1,4 +1,5 @@
 #pragma once
+#include <mutex>
 
 namespace Components
 {
@@ -6,9 +7,9 @@ namespace Components
 	{
 	public:
 		SoundMutexFix();
-		~SoundMutexFix();
-
-		static void SND_StopStreamChannel_hk(int channel);
-		static std::mutex snd_mutex;
+		
+	private:
+		static std::mutex SNDMutex;
+		static void _stdcall LockSoundMutex(int unk);
 	};
 }

@@ -469,8 +469,18 @@ namespace Components
 				server.ping = (Game::Sys_Milliseconds() - i->sendTime);
 				server.addr = address;
 
+				server.hostname = TextRenderer::StripMaterialTextIcons(server.hostname);
+				server.mapname = TextRenderer::StripMaterialTextIcons(server.mapname);
+				server.gametype = TextRenderer::StripMaterialTextIcons(server.gametype);
+				server.mod = TextRenderer::StripMaterialTextIcons(server.mod);
+
 				// Remove server from queue
 				i = ServerList::RefreshContainer.servers.erase(i);
+
+				// Servers with more than 18 players or less than 0 players are faking for sure
+				// So lets ignore those
+				if (server.clients > 18 || server.maxClients > 18 || server.clients < 0 || server.maxClients < 0)
+					return;
 
 				// Check if already inserted and remove
 				auto list = ServerList::GetList();
@@ -582,8 +592,8 @@ namespace Components
 				return info1->clients < info2->clients;
 			}
 
-			std::string text1 = Utils::String::ToLower(Colors::Strip(ServerList::GetServerInfoText(info1, ServerList::SortKey, true)));
-			std::string text2 = Utils::String::ToLower(Colors::Strip(ServerList::GetServerInfoText(info2, ServerList::SortKey, true)));
+			std::string text1 = Utils::String::ToLower(TextRenderer::StripColors(ServerList::GetServerInfoText(info1, ServerList::SortKey, true)));
+			std::string text2 = Utils::String::ToLower(TextRenderer::StripColors(ServerList::GetServerInfoText(info2, ServerList::SortKey, true)));
 
 			// ASCII-based comparison
 			return text1.compare(text2) < 0;

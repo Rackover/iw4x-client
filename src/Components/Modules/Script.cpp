@@ -352,11 +352,9 @@ namespace Components
 		{
 			// execute our hook
 			pushad
-			pusha
 
 			call Script::StoreScriptBaseProgramNum
 
-			popa
 			popad
 
 			// execute overwritten code caused by the jump hook
@@ -532,6 +530,56 @@ namespace Components
 		Script::AddFunction("StorageClear", [](Game::scr_entref_t) // gsc: StorageClear();
 		{
 			Script::ScriptStorage.clear();
+		});
+
+		Script::AddFunction("Noclip", [](Game::scr_entref_t entref)
+		{
+			if (entref >= Game::MAX_GENTITIES || Game::g_entities[entref].client == nullptr)
+			{
+				Game::Scr_Error(Utils::String::VA("^1NoClip: entity %u is not a client\n", entref));
+				return;
+			}
+
+			if (Game::Scr_GetNumParam() == 1 && Game::Scr_GetType(0) == Game::VAR_INTEGER)
+			{
+				if (Game::Scr_GetInt(0))
+				{
+					Game::g_entities[entref].client->flags |= Game::PLAYER_FLAG_NOCLIP;
+				}
+				else
+				{
+					Game::g_entities[entref].client->flags &= ~Game::PLAYER_FLAG_NOCLIP;
+				}
+			}
+			else
+			{
+				Game::g_entities[entref].client->flags ^= Game::PLAYER_FLAG_NOCLIP;
+			}
+		});
+
+		Script::AddFunction("Ufo", [](Game::scr_entref_t entref)
+		{
+			if (entref >= Game::MAX_GENTITIES || Game::g_entities[entref].client == nullptr)
+			{
+				Game::Scr_Error(Utils::String::VA("^1Ufo: entity %u is not a client\n", entref));
+				return;
+			}
+
+			if (Game::Scr_GetNumParam() == 1 && Game::Scr_GetType(0) == Game::VAR_INTEGER)
+			{
+				if (Game::Scr_GetInt(0))
+				{
+					Game::g_entities[entref].client->flags |= Game::PLAYER_FLAG_UFO;
+				}
+				else
+				{
+					Game::g_entities[entref].client->flags &= ~Game::PLAYER_FLAG_UFO;
+				}
+			}
+			else
+			{
+				Game::g_entities[entref].client->flags ^= Game::PLAYER_FLAG_UFO;
+			}			
 		});
 	}
 

@@ -39,7 +39,7 @@ namespace Components
 		Loader::Register(new Dvar());
 		Loader::Register(new Lean());
 		Loader::Register(new Maps());
-		//Loader::Register(new News());
+		////Loader::Register(new News());
 		Loader::Register(new Node());
 		Loader::Register(new RCon());
 		Loader::Register(new Stats());
@@ -102,6 +102,9 @@ namespace Components
 		Loader::Register(new ConnectProtocol());
 		Loader::Register(new StartupMessages());
 		Loader::Register(new SoundMutexFix());
+		Loader::Register(new Gamepad());
+		Loader::Register(new Chat());
+		Loader::Register(new TextRenderer());
 
 		Loader::Register(new Client());
 

@@ -2,11 +2,21 @@
 
 namespace Components
 {
-	int Materials::ImageNameLength;
 	Utils::Hook Materials::ImageVersionCheckHook;
 
 	std::vector<Game::GfxImage*> Materials::ImageTable;
 	std::vector<Game::Material*> Materials::MaterialTable;
+
+	std::map<std::string, std::string> Materials::TechsetSwaps
+	{
+		{ "mc_l_hsm_b0c0s0_em", "mc_l_hsm_b0c0s0_custom_growing_ice_cracks" }, // Spotted once on italy_sh as a remapped techset, but not sure it's useful anymore
+		{ "mc_l_sm_b0c0s0_em", "mc_l_sm_b0c0s0_custom_growing_ice_cracks" }, // Car windows in mp_italy_sh
+		{ "mc_l_hsm_t0c0n0s0_fgcb", "mc_l_hsm_t0c0n0s0"},       //
+		{ "mc_l_hsm_r0c0n0s0_fgcb", "mc_l_hsm_r0c0n0s0"},       // Various monkey king elements on mp_abandon_sh_mk
+		{ "mc_l_hsm_r0c0n0_fgcb", "mc_l_hsm_r0c0n0"},           //
+		{ "mc_l_hsm_t0c0_fgcb", "mc_l_hsm_t0c0"},  	            //
+		{ "mc_l_hsm_b0c0n0s0p0_fgcb", "mc_l_hsm_b0c0n0s0p0"} // Ammo crate on mp_arkaden_sh
+	};
 
 	Game::Material* Materials::Create(const std::string& name, Game::GfxImage* image)
 	{
@@ -151,55 +161,6 @@ namespace Components
 		}
 	}
 
-	Game::Material* Materials::ResolveMaterial(const char* stringPtr)
-	{
-		const char* imagePtr = stringPtr + 4;
-		unsigned int length = static_cast<unsigned int>(stringPtr[3] & 0xFF);
-
-		if (strlen(imagePtr) >= length)
-		{
-			Materials::ImageNameLength = 4 + length;
-			std::string image(imagePtr, length);
-
-			return Game::DB_FindXAssetHeader(Game::XAssetType::ASSET_TYPE_MATERIAL, image.data()).material;
-		}
-
-		Materials::ImageNameLength = 4;
-		return Game::DB_FindXAssetHeader(Game::XAssetType::ASSET_TYPE_MATERIAL, "default").material;
-	}
-
-	__declspec(naked) void Materials::PostDrawMaterialStub()
-	{
-		__asm
-		{
-			mov eax, Materials::ImageNameLength
-			add [esp + 30h], eax
-
-			mov eax, 5358FFh
-			jmp eax
-		}
-	}
-
-	__declspec(naked) void Materials::DrawMaterialStub()
-	{
-		__asm
-		{
-			push eax
-			pushad
-
-			push ecx
-			call Materials::ResolveMaterial
-			add esp, 4h
-
-			mov [esp + 20h], eax
-			popad
-			pop eax
-
-			push 5310F0h
-			retn
-		}
-	}
-
 	int Materials::WriteDeathMessageIcon(char* string, int offset, Game::Material* material)
 	{
 		if (!material)
@@ -279,25 +240,44 @@ namespace Components
 	}
 
 #endif
+	void Materials::Load_MaterialTechniqueSetAsset(Game::MaterialTechniqueSet** pptr)
+	{
+		if (Zones::GetEntitiesZoneVersion() >= VERSION_LATEST_CODO)
+		{
+			auto charName = (*pptr)->name;
+			if (charName[0] == ',') charName = &charName[1];
+			std::string name(charName);
+			auto entry = TechsetSwaps.find(name);
+
+			if (entry != TechsetSwaps.end())
+			{
+				const char* newTechset = entry->second.data();
+
+				Components::Logger::Print("Swapped techset %s for %s at runtime\n", name.data(), newTechset);
+
+				*pptr = Game::DB_FindXAssetEntry(Game::XAssetType::ASSET_TYPE_TECHNIQUE_SET, newTechset)->asset.header.techniqueSet;
+				return;
+			}
+		}
+		
+		// Passthrough
+		return Utils::Hook::Call<void(Game::MaterialTechniqueSet**)>(0x4BFA80)(pptr);
+	}
+
 
 	Materials::Materials()
 	{
-		Materials::ImageNameLength = 7;
-
 		// Allow codo images
 		Materials::ImageVersionCheckHook.initialize(0x53A456, Materials::ImageVersionCheck, HOOK_CALL)->install();
-
-		// Fix material pointer exploit
-		Utils::Hook(0x534E0C, Materials::DrawMaterialStub, HOOK_CALL).install()->quick();
-
-		// Increment string pointer accordingly
-		Utils::Hook(0x5358FA, Materials::PostDrawMaterialStub, HOOK_JUMP).install()->quick();
 
 		// Adapt death message to IW5 material format
 		Utils::Hook(0x5A30D9, Materials::DeathMessageStub, HOOK_JUMP).install()->quick();
 
 		// Resolve preview images to loadscreens
 		Utils::Hook(0x53AC19, Materials::FormatImagePath, HOOK_CALL).install()->quick();
+
+		// Intercept techset finding (DB_FindXAssetHeader) so we can swap them at runtime (although we should keep it to a minimum)
+		Utils::Hook(0x4FF10E, Materials::Load_MaterialTechniqueSetAsset, HOOK_CALL).install()->quick();
 
 		// Debug material comparison
 		Utils::Hook::Set<void*>(0x523894, Materials::MaterialComparePrint);
