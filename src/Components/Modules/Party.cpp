@@ -227,7 +227,7 @@ namespace Components
 		// Force xblive_privatematch 0 and rename it
 		//Utils::Hook::Set<BYTE>(0x420A6A, 4);
 		////Utils::Hook::Set<BYTE>(0x420A6C, 0);
-		////Utils::Hook::Set<const char*>(0x420A6E, "xblive_privateserver");
+		Utils::Hook::Set<const char*>(0x420A6E, "xblive_privateserver");
 
 		// Remove migration shutdown, it causes crashes and will be destroyed when erroring anyways
 		Utils::Hook::Nop(0x5A8E1C, 12);
