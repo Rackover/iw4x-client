@@ -162,9 +162,15 @@ namespace Components
 	Party::Party()
 	{
 		static Game::dvar_t* partyEnable = Dvar::Register<bool>("party_enable", IsUsingIw4xProtocol() ? Dedicated::IsEnabled() : true, Game::dvar_flag::DVAR_FLAG_NONE, "Enable party system").get<Game::dvar_t*>();
-	
+
 		Dvar::Register<bool>("xblive_privatematch", true, Game::dvar_flag::DVAR_FLAG_WRITEPROTECTED, "").get<Game::dvar_t*>();
+
 		Dvar::Register<bool>("sv_lanOnly", true, Game::dvar_flag::DVAR_FLAG_NONE, "Don't act as node");
+
+		if (!IsUsingIw4xProtocol()) 
+		{
+			Dvar::Register<bool>("xblive_privateserver", false, Game::dvar_flag::DVAR_FLAG_WRITEPROTECTED, "").get<Game::dvar_t*>();
+		}
 
 		// Increase timeout instead to 30 seconds (0x7530)
 		Utils::Hook::Set<WORD>(0x4974A7, 30000);
@@ -226,8 +232,8 @@ namespace Components
 
 		// Force xblive_privatematch 0 and rename it
 		//Utils::Hook::Set<BYTE>(0x420A6A, 4);
-		////Utils::Hook::Set<BYTE>(0x420A6C, 0);
-		Utils::Hook::Set<const char*>(0x420A6E, "xblive_privateserver");
+		//Utils::Hook::Set<BYTE>(0x420A6C, 0);
+		////Utils::Hook::Set<const char*>(0x420A6E, "xblive_privateserver");
 
 		// Remove migration shutdown, it causes crashes and will be destroyed when erroring anyways
 		Utils::Hook::Nop(0x5A8E1C, 12);
