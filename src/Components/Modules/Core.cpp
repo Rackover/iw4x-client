@@ -3,7 +3,7 @@
 namespace Components
 {
 	// Vanilla basegame supports up to 1200 weapons
-	constexpr long DEFAULT_WEAPON_LIMIT = 1200;
+	constexpr int DEFAULT_WEAPON_LIMIT = 1200;
 
 	std::unordered_set<std::string> Core::loadedWeapons{};
 
@@ -35,9 +35,10 @@ namespace Components
 		// Asset limits for weapons - iw4x files contains duplicate for weapons, we make sure to only load them once
 		Utils::Hook(0x4A473C, Core::AddUniqueWeaponXAsset, HOOK_CALL).install()->quick(); 
 
-		/////////////
+		////////////////////////////////////
+		///
 		/// various changes to SV_DirectConnect-y stuff to allow non-party joinees
-
+		///
 		// Bypass Session_FindRegisteredUser check
 		Utils::Hook::Set<WORD>(0x460D96, 0x90E9);
 
@@ -49,9 +50,17 @@ namespace Components
 
 		// Bypass "user already registered"  (EXE_TRANSMITERROR)
 		Utils::Hook::Set<BYTE>(0x401C15, 0xEB);
+		///
+		////////////////////////////////////
+		
 
 		// Make sure preDestroy is called when the game shuts down
 		Scheduler::OnShutdown(Loader::PreDestroy);
+
+		// FS_game-specific fixes
+		Utils::Hook::Set<BYTE>(0x4081FD, 0xEB); // defaultweapon fix ("missing default weapon")
+		Utils::Hook::Set<BYTE>(0x452C1D, 0xEB); // LoadObj weaponDefs
+		Utils::Hook::Xor<DWORD>(0x6431EA, Game::dvar_flag::DVAR_WRITEPROTECTED); // remove write protection from fs_game
 	}
 
 	Game::XAssetEntry* Core::AddUniqueWeaponXAsset(Game::XAssetType type, Game::XAssetHeader* asset) 
@@ -68,7 +77,7 @@ namespace Components
 
 			if (loadedWeapons.find(name) != loadedWeapons.end()) 
 			{
-				auto weapon = Game::DB_FindXAssetEntry(type, name.c_str());
+				auto weapon = Game::DB_FindXAssetEntry(type, name.data());
 
 				if (weapon == nullptr)
 				{
@@ -84,6 +93,7 @@ namespace Components
 			else
 			{
 				loadedWeapons.emplace(name);
+				Components::Logger::Print("Loaded weapon %s\n", name.c_str());
 			}
 		}
 
