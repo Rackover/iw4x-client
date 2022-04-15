@@ -44,7 +44,7 @@ namespace Components
 		{
 			for (auto& component : Loader::Components)
 			{
-				if (typeid(*component) == typeid(T))
+				if (std::is_same<T, decltype(component)>::value)
 				{
 					return reinterpret_cast<T*>(component);
 				}
