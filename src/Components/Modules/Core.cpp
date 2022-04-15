@@ -31,7 +31,7 @@ namespace Components
 		// Doing on the fly IWI conversion is not a job for Core component, so we just nop the error for now.
 		Utils::Hook::Set<BYTE>(0x51F59F, 0xEB);
 
-		// Asset limits - instead of erroring when going above, just ignore further loads
+		// Asset limits for weapons - iw4x files contains duplicate for weapons, we make sure to only load them once
 		Utils::Hook(0x4A473C, Core::AddUniqueWeaponXAsset, HOOK_CALL).install()->quick(); 
 
 		/////////////
@@ -48,8 +48,6 @@ namespace Components
 
 		// Bypass "user already registered"  (EXE_TRANSMITERROR)
 		Utils::Hook::Set<BYTE>(0x401C15, 0xEB);
-
-		Utils::Hook(0x5BADFF, Sys_TempPriorityEnd, HOOK_CALL).install()->quick();
 
 		// Make sure preDestroy is called when the game shuts down
 		Scheduler::OnShutdown(Loader::PreDestroy);
