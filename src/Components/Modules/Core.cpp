@@ -53,10 +53,16 @@ namespace Components
 		Scheduler::OnShutdown(Loader::PreDestroy);
 	}
 
-	Game::XAssetEntry* __cdecl Core::AddUniqueWeaponXAsset(Game::XAssetType type, Game::XAssetHeader* asset) {
-		if (Loader::GetInstance<Weapon>() == nullptr && asset && asset->weapon) {
+	Game::XAssetEntry* __cdecl Core::AddUniqueWeaponXAsset(Game::XAssetType type, Game::XAssetHeader* asset) 
+	{
+
+		// If weapon component is present, it will take care of this
+		if (Loader::GetInstance<Weapon>() == nullptr && asset && asset->weapon) 
+		{
 			std::string name = std::string(asset->weapon->szInternalName);
-			if (loadedWeapons.find(name) != loadedWeapons.end()) {
+
+			if (loadedWeapons.find(name) != loadedWeapons.end()) 
+			{
 				auto weapon = Game::DB_FindXAssetEntry(type, name.c_str());
 
 				if (weapon == nullptr)
@@ -75,6 +81,7 @@ namespace Components
 				loadedWeapons.emplace(std::string(asset->weapon->szInternalName));
 			}
 		}
+
 		// Default behaviour, fall through
 		return Game::DB_AddXAsset(type, asset);
 	}
