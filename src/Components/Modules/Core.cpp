@@ -93,7 +93,6 @@ namespace Components
 			else
 			{
 				loadedWeapons.emplace(name);
-				Components::Logger::Print("Loaded weapon %s\n", name.c_str());
 			}
 		}
 
