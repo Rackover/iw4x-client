@@ -83,7 +83,7 @@ namespace Components
 			}
 			else
 			{
-				loadedWeapons.emplace(std::string(asset->weapon->szInternalName));
+				loadedWeapons.emplace(name);
 			}
 		}
 
