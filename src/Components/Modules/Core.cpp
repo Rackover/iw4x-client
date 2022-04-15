@@ -2,7 +2,8 @@
 
 namespace Components
 {
-	const unsigned long DEFAULT_WEAPON_LIMIT = *reinterpret_cast<unsigned long*>(0x403783);
+	// Vanilla basegame supports up to 1200 weapons
+	constexpr long DEFAULT_WEAPON_LIMIT = 1200;
 
 	std::unordered_set<std::string> Core::loadedWeapons{};
 
@@ -53,13 +54,17 @@ namespace Components
 		Scheduler::OnShutdown(Loader::PreDestroy);
 	}
 
-	Game::XAssetEntry* __cdecl Core::AddUniqueWeaponXAsset(Game::XAssetType type, Game::XAssetHeader* asset) 
+	Game::XAssetEntry* Core::AddUniqueWeaponXAsset(Game::XAssetType type, Game::XAssetHeader* asset) 
 	{
 
 		// If weapon component is present, it will take care of this
-		if (Loader::GetInstance<Weapon>() == nullptr && asset && asset->weapon) 
+		if (Loader::GetInstance<Weapon>() == nullptr &&
+			asset != nullptr && 
+			asset->weapon != nullptr &&
+			asset->weapon->szInternalName != nullptr
+			) 
 		{
-			std::string name = std::string(asset->weapon->szInternalName);
+			const std::string name(asset->weapon->szInternalName);
 
 			if (loadedWeapons.find(name) != loadedWeapons.end()) 
 			{

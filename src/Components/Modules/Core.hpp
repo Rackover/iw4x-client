@@ -8,7 +8,7 @@ namespace Components
 		Core();
 
 	private:
-		static Game::XAssetEntry* __cdecl AddUniqueWeaponXAsset(Game::XAssetType type, Game::XAssetHeader* a2);
+		static Game::XAssetEntry* AddUniqueWeaponXAsset(Game::XAssetType type, Game::XAssetHeader* header);
 		static std::unordered_set<std::string> loadedWeapons;
 	};
 }
