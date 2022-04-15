@@ -2,9 +2,9 @@
 
 namespace Components
 {
-	int Core::weaponsLoaded = 0;
-	Game::XAssetEntry* Core::lastWeaponEntry = nullptr;
-	std::unordered_set<std::string> Core::skippedWeapons{};
+	const unsigned long DEFAULT_WEAPON_LIMIT = *reinterpret_cast<unsigned long*>(0x403783);
+
+	std::unordered_set<std::string> Core::loadedWeapons{};
 
 	Core::Core()
 	{
@@ -32,7 +32,7 @@ namespace Components
 		Utils::Hook::Set<BYTE>(0x51F59F, 0xEB);
 
 		// Asset limits - instead of erroring when going above, just ignore further loads
-		Utils::Hook(0x4A473C, Core::AddXAssetIfWeaponUnderLimit, HOOK_CALL).install()->quick(); 
+		Utils::Hook(0x4A473C, Core::AddUniqueWeaponXAsset, HOOK_CALL).install()->quick(); 
 
 		/////////////
 		/// various changes to SV_DirectConnect-y stuff to allow non-party joinees
@@ -51,48 +51,35 @@ namespace Components
 
 		Utils::Hook(0x5BADFF, Sys_TempPriorityEnd, HOOK_CALL).install()->quick();
 
-		// Necessary hook when Weapons component is not loaded, to avoid loading weapons over the limit and crashing
-		Utils::Hook(0x4D4A85, G_GetWeaponIndexForName, HOOK_CALL).install()->quick();
-
 		// Make sure preDestroy is called when the game shuts down
 		Scheduler::OnShutdown(Loader::PreDestroy);
 	}
 
-	Game::XAssetEntry* __cdecl Core::AddXAssetIfWeaponUnderLimit(Game::XAssetType type, Game::XAssetHeader* a2) {
-		const unsigned long DEFAULT_WEAPON_LIMIT = 1200 /* *reinterpret_cast<unsigned long*>(0x403783) */;
+	Game::XAssetEntry* __cdecl Core::AddUniqueWeaponXAsset(Game::XAssetType type, Game::XAssetHeader* asset) {
+		if (Loader::GetInstance<Weapon>() == nullptr && asset && asset->weapon) {
+			std::string name = std::string(asset->weapon->szInternalName);
+			if (loadedWeapons.find(name) != loadedWeapons.end()) {
+				auto weapon = Game::DB_FindXAssetEntry(type, name.c_str());
 
-		if (Loader::GetInstance<Weapon>() == nullptr && weaponsLoaded >= DEFAULT_WEAPON_LIMIT)
-		{
-			Components::Logger::Print("Skipped loading of weapon %s (hit limit of %d weapons)\n", a2->weapon->szInternalName, DEFAULT_WEAPON_LIMIT);
-			skippedWeapons.emplace(std::string(a2->weapon->szInternalName));
-			return lastWeaponEntry;
-		}
-		else 
-		{
-			weaponsLoaded++;
-
-			Components::Logger::Print("Loaded weapon %s (%d/%d)\n", a2->weapon->szInternalName, weaponsLoaded, DEFAULT_WEAPON_LIMIT);
-
-			lastWeaponEntry = Game::DB_AddXAsset(type, a2);
-			return lastWeaponEntry;
-		}
-	}
-
-	BOOL __cdecl Sys_TempPriorityEnd(int a1) {
-		return Utils::Hook::Call<BOOL(int)>(0x4DCF00)(a1);
-	}
-
-	unsigned int __cdecl Core::G_GetWeaponIndexForName(const char* a1)
-	{
-		if (Loader::GetInstance<Weapon>() == nullptr)
-		{
-			if (skippedWeapons.find(std::string(a1)) != skippedWeapons.end()) {
-				Components::Logger::Print("Bypassing index for weapon: %s\n", a1);
-				return 0;
+				if (weapon == nullptr)
+				{
+					// Might have been unloaded in the meantime
+					loadedWeapons.erase(name);
+					return AddUniqueWeaponXAsset(type, asset);
+				}
+				else
+				{
+					Components::Logger::Print("Skipped loading of weapon %s (already loaded)\n", asset->weapon->szInternalName);
+					return weapon;
+				}
+			}
+			else
+			{
+				loadedWeapons.emplace(std::string(asset->weapon->szInternalName));
+				Components::Logger::Print("Loading weapon %s\n", asset->weapon->szInternalName);
 			}
 		}
-
-		return Game::G_GetWeaponIndexForName(a1);
+		// Default behaviour, fall through
+		return Game::DB_AddXAsset(type, asset);
 	}
-
 }
