@@ -67,14 +67,12 @@ namespace Components
 				}
 				else
 				{
-					Components::Logger::Print("Skipped loading of weapon %s (already loaded)\n", asset->weapon->szInternalName);
 					return weapon;
 				}
 			}
 			else
 			{
 				loadedWeapons.emplace(std::string(asset->weapon->szInternalName));
-				Components::Logger::Print("Loading weapon %s\n", asset->weapon->szInternalName);
 			}
 		}
 		// Default behaviour, fall through
