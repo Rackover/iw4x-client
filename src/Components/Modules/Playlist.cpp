@@ -181,9 +181,6 @@ namespace Components
 		{
 			// Custom playlist loading
 			Utils::Hook(0x420B5A, Playlist::LoadPlaylist, HOOK_JUMP).install()->quick();
-
-			// disable playlist.ff loading function
-			Utils::Hook::Set<BYTE>(0x4D6E60, 0xC3);
 		}
 
 		Network::Handle("getPlaylist", PlaylistRequest);

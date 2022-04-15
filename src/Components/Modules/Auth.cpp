@@ -438,13 +438,6 @@ namespace Components
 		Utils::Hook(0x6265F9, Auth::DirectConnectStub, HOOK_JUMP).install()->quick();
 		Utils::Hook(0x41D3E3, Auth::SendConnectDataStub, HOOK_CALL).install()->quick();
 
-		// SteamIDs can only contain 31 bits of actual 'id' data.
-		// The other 33 bits are steam internal data like universe and so on.
-		// Using only 31 bits for fingerprints is pretty insecure.
-		// The function below verifies the integrity steam's part of the SteamID.
-		// Patching that check allows us to use 64 bit for fingerprints.
-		Utils::Hook::Set<DWORD>(0x4D0D60, 0xC301B0);
-
 		// Guid command
 		Command::Add("guid", [](Command::Params*)
 		{

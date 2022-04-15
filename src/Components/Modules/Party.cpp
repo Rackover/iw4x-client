@@ -153,12 +153,6 @@ namespace Components
 		static Game::dvar_t* partyEnable = Dvar::Register<bool>("party_enable", Dedicated::IsEnabled(), Game::dvar_flag::DVAR_NONE, "Enable party system").get<Game::dvar_t*>();
 		Dvar::Register<bool>("xblive_privatematch", true, Game::dvar_flag::DVAR_WRITEPROTECTED, "");
 
-		// various changes to SV_DirectConnect-y stuff to allow non-party joinees
-		Utils::Hook::Set<WORD>(0x460D96, 0x90E9);
-		Utils::Hook::Set<BYTE>(0x460F0A, 0xEB);
-		Utils::Hook::Set<BYTE>(0x401CA4, 0xEB);
-		Utils::Hook::Set<BYTE>(0x401C15, 0xEB);
-
 		// disable configstring checksum matching (it's unreliable at most)
 		Utils::Hook::Set<BYTE>(0x4A75A7, 0xEB); // SV_SpawnServer
 		Utils::Hook::Set<BYTE>(0x5AC2CF, 0xEB); // CL_ParseGamestate

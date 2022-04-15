@@ -199,6 +199,9 @@ namespace Game
 	typedef XAssetHeader (__cdecl * DB_FindXAssetHeader_t)(XAssetType type, const char* name);
 	extern DB_FindXAssetHeader_t DB_FindXAssetHeader;
 
+	typedef XAssetEntry* (__cdecl* DB_AddXAsset_t)(XAssetType type, Game::XAssetHeader* a2);
+	extern DB_AddXAsset_t DB_AddXAsset;
+
 	typedef float(__cdecl * DB_GetLoadedFraction_t)();
 	extern DB_GetLoadedFraction_t DB_GetLoadedFraction;
 

@@ -29,6 +29,8 @@ namespace Components
 		Loader::Uninitializing = false;
 		Utils::Memory::GetAllocator()->clear();
 
+		Loader::Register(new Scheduler());
+		Loader::Register(new Core());
 		Loader::Register(new Flags());
 		Loader::Register(new Singleton());
 		Loader::Register(new Exception()); // install our exception handler as early as posssible to get better debug dumps from startup crashes
@@ -77,7 +79,6 @@ namespace Components
 		Loader::Register(new FrameTime());
 		Loader::Register(new Gametypes());
 		Loader::Register(new Materials());
-		Loader::Register(new Scheduler());
 		Loader::Register(new Threading());
 		Loader::Register(new CardTitles());
 		Loader::Register(new FileSystem());

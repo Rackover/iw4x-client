@@ -388,8 +388,6 @@ namespace Components
 		Utils::Hook(0x51B13B, QuickPatch::Dvar_RegisterAspectRatioDvar, HOOK_CALL).install()->quick();
 		Utils::Hook(0x5063F3, QuickPatch::SetAspectRatioStub, HOOK_JUMP).install()->quick();
 
-		// Make sure preDestroy is called when the game shuts down
-		Scheduler::OnShutdown(Loader::PreDestroy);
 
 		// protocol version (workaround for hacks)
 		Utils::Hook::Set<int>(0x4FB501, PROTOCOL);
