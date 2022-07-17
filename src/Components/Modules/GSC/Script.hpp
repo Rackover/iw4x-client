@@ -8,13 +8,14 @@ namespace Components
 		Script();
 
 		static void AddFunction(const char* name, Game::BuiltinFunction func, int type = 0);
-		static void AddMethod(const char* name, Game::BuiltinMethod func, int type = 0);
+		static void AddMethod(const char* name, Game::BuiltinMethod func, int type = 0, bool addClientPrefix = true);
 
 		static Game::client_t* GetClient(const Game::gentity_t* gentity);
 
 		static const char* GetCodePosForParam(int index);
 
 	private:
+		static std::string ClientPrefix;
 		static std::string ScriptName;
 		static std::unordered_map<std::string, Game::BuiltinFunctionDef> CustomScrFunctions;
 		static std::unordered_map<std::string, Game::BuiltinMethodDef> CustomScrMethods;

@@ -4,6 +4,7 @@
 namespace Components
 {
 	std::string Script::ScriptName;
+	std::string Script::ClientPrefix = "iw4x_";
 	std::unordered_map<std::string, Game::BuiltinFunctionDef> Script::CustomScrFunctions;
 	std::unordered_map<std::string, Game::BuiltinMethodDef> Script::CustomScrMethods;
 	std::vector<std::string> Script::ScriptNameStack;
@@ -283,10 +284,10 @@ namespace Components
 		CustomScrFunctions.insert_or_assign(Utils::String::ToLower(name), toAdd);
 	}
 
-	void Script::AddMethod(const char* name, Game::BuiltinMethod func, int type)
+	void Script::AddMethod(const char* name, Game::BuiltinMethod func, int type, bool addClientPrefix)
 	{
 		Game::BuiltinMethodDef toAdd;
-		toAdd.actionString = name;
+		toAdd.actionString = addClientPrefix ? (Script::ClientPrefix + name).data() : name;
 		toAdd.actionFunc = func;
 		toAdd.type = type;
 

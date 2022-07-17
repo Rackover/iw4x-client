@@ -119,8 +119,8 @@ namespace Components
 
 	void Bots::AddMethods()
 	{
-		Script::AddMethod("IsBot", Bots::GScr_isTestClient); // Usage: self IsBot();
-		Script::AddMethod("IsTestClient", Bots::GScr_isTestClient); // Usage: self IsTestClient();
+		Script::AddMethod("IsBot", Bots::GScr_isTestClient, /*type = */ 0, /*addClientPrefix = */false); // Usage: self IsBot();
+		Script::AddMethod("IsTestClient", Bots::GScr_isTestClient, /*type = */ 0, /*addClientPrefix = */false); // Usage: self IsTestClient();
 
 		Script::AddMethod("BotStop", [](Game::scr_entref_t entref) // Usage: <bot> BotStop();
 		{
@@ -135,7 +135,7 @@ namespace Components
 			g_botai[entref.entnum] = {0};
 			g_botai[entref.entnum].weapon = 1;
 			g_botai[entref.entnum].active = true;
-		});
+		}, /*type = */ 0, /*addClientPrefix = */false);
 
 		Script::AddMethod("BotWeapon", [](Game::scr_entref_t entref) // Usage: <bot> BotWeapon(<str>);
 		{
@@ -158,7 +158,7 @@ namespace Components
 			const auto weapId = Game::G_GetWeaponIndexForName(weapon);
 			g_botai[entref.entnum].weapon = static_cast<uint16_t>(weapId);
 			g_botai[entref.entnum].active = true;
-		});
+		}, /*type = */ 0, /*addClientPrefix = */false);
 
 		Script::AddMethod("BotAction", [](Game::scr_entref_t entref) // Usage: <bot> BotAction(<str action>);
 		{
@@ -199,25 +199,25 @@ namespace Components
 			}
 
 			Game::Scr_ParamError(0, "^1BotAction: Unknown action.\n");
-		});
+		}, /*type = */ 0, /*addClientPrefix = */false);
 
 		Script::AddMethod("BotMovement", [](Game::scr_entref_t entref) // Usage: <bot> BotMovement(<int>, <int>);
-		{
-			const auto* ent = Game::GetPlayerEntity(entref);
-
-			if (Game::SV_IsTestClient(ent->s.number) == 0)
 			{
-				Game::Scr_Error("^1BotMovement: Can only call on a bot!\n");
-				return;
-			}
+				const auto* ent = Game::GetPlayerEntity(entref);
 
-			const auto forwardInt = std::clamp<int>(Game::Scr_GetInt(0), std::numeric_limits<char>::min(), std::numeric_limits<char>::max());
-			const auto rightInt = std::clamp<int>(Game::Scr_GetInt(1), std::numeric_limits<char>::min(), std::numeric_limits<char>::max());
+				if (Game::SV_IsTestClient(ent->s.number) == 0)
+				{
+					Game::Scr_Error("^1BotMovement: Can only call on a bot!\n");
+					return;
+				}
 
-			g_botai[entref.entnum].forward = static_cast<int8_t>(forwardInt);
-			g_botai[entref.entnum].right = static_cast<int8_t>(rightInt);
-			g_botai[entref.entnum].active = true;
-		});
+				const auto forwardInt = std::clamp<int>(Game::Scr_GetInt(0), std::numeric_limits<char>::min(), std::numeric_limits<char>::max());
+				const auto rightInt = std::clamp<int>(Game::Scr_GetInt(1), std::numeric_limits<char>::min(), std::numeric_limits<char>::max());
+
+				g_botai[entref.entnum].forward = static_cast<int8_t>(forwardInt);
+				g_botai[entref.entnum].right = static_cast<int8_t>(rightInt);
+				g_botai[entref.entnum].active = true;
+			}, /*type = */ 0, /*addClientPrefix = */false);
 	}
 
 	void Bots::BotAiAction(Game::client_t* cl)
