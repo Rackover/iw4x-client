@@ -202,22 +202,22 @@ namespace Components
 		});
 
 		Script::AddMethod("BotMovement", [](Game::scr_entref_t entref) // Usage: <bot> iw4x_BotMovement(<int>, <int>);
+		{
+			const auto* ent = Game::GetPlayerEntity(entref);
+
+			if (Game::SV_IsTestClient(ent->s.number) == 0)
 			{
-				const auto* ent = Game::GetPlayerEntity(entref);
+				Game::Scr_Error("^1BotMovement: Can only call on a bot!\n");
+				return;
+			}
 
-				if (Game::SV_IsTestClient(ent->s.number) == 0)
-				{
-					Game::Scr_Error("^1BotMovement: Can only call on a bot!\n");
-					return;
-				}
+			const auto forwardInt = std::clamp<int>(Game::Scr_GetInt(0), std::numeric_limits<char>::min(), std::numeric_limits<char>::max());
+			const auto rightInt = std::clamp<int>(Game::Scr_GetInt(1), std::numeric_limits<char>::min(), std::numeric_limits<char>::max());
 
-				const auto forwardInt = std::clamp<int>(Game::Scr_GetInt(0), std::numeric_limits<char>::min(), std::numeric_limits<char>::max());
-				const auto rightInt = std::clamp<int>(Game::Scr_GetInt(1), std::numeric_limits<char>::min(), std::numeric_limits<char>::max());
-
-				g_botai[entref.entnum].forward = static_cast<int8_t>(forwardInt);
-				g_botai[entref.entnum].right = static_cast<int8_t>(rightInt);
-				g_botai[entref.entnum].active = true;
-			});
+			g_botai[entref.entnum].forward = static_cast<int8_t>(forwardInt);
+			g_botai[entref.entnum].right = static_cast<int8_t>(rightInt);
+			g_botai[entref.entnum].active = true;
+		});
 	}
 
 	void Bots::BotAiAction(Game::client_t* cl)
