@@ -7,6 +7,33 @@ namespace Components
 	std::string Script::ClientPrefix = "iw4x_";
 	std::unordered_map<std::string, Game::BuiltinFunctionDef> Script::CustomScrFunctions;
 	std::unordered_map<std::string, Game::BuiltinMethodDef> Script::CustomScrMethods;
+
+	// This was added on the 17th of July 2022 to help transition current mods to
+	// the new prefixed functions. Look at the clock! If it's more than three months
+	// later than this date... remove this!
+	std::unordered_set<std::string> Script::DeprecatedFunctionsAndMethods = {
+		"isbot",
+		"istestclient",
+		"botstop",
+		"botweapon",
+		"botmovement",
+		"botaction",
+		"onplayersay",
+		"fileread",
+		"filewrite",
+		"fileexists",
+		"getsystemmilliseconds",
+		"exec",
+		"printconsole",
+		"arecontrolsfrozen",
+		"setping",
+		"setname",
+		"getname",
+		"dropallbots",
+		"httpget",
+		"httpcancel"
+	};
+
 	std::vector<std::string> Script::ScriptNameStack;
 	unsigned short Script::FunctionName;
 	std::unordered_map<int, std::string> Script::ScriptBaseProgramNum;
@@ -277,28 +304,45 @@ namespace Components
 	void Script::AddFunction(const char* name, Game::BuiltinFunction func, int type, bool addClientPrefix)
 	{
 		Game::BuiltinFunctionDef toAdd;
-		toAdd.actionString = addClientPrefix ? (Script::ClientPrefix + name).data() : name;
+		std::string prefixedString = Utils::String::ToLower(addClientPrefix ? (Script::ClientPrefix + name).data() : name);
+		toAdd.actionString = nullptr; // We don't need it
 		toAdd.actionFunc = func;
 		toAdd.type = type;
 
-		CustomScrFunctions.insert_or_assign(Utils::String::ToLower(name), toAdd);
+		CustomScrFunctions.insert_or_assign(prefixedString, toAdd);
 	}
 
 	void Script::AddMethod(const char* name, Game::BuiltinMethod func, int type, bool addClientPrefix)
 	{
 		Game::BuiltinMethodDef toAdd;
-		toAdd.actionString = addClientPrefix ? (Script::ClientPrefix + name).data() : name;
+		std::string prefixedString = Utils::String::ToLower(addClientPrefix ? (Script::ClientPrefix + name).data() : name);
+		toAdd.actionString = nullptr; // We don't need it
 		toAdd.actionFunc = func;
 		toAdd.type = type;
 
-		CustomScrMethods.insert_or_assign(Utils::String::ToLower(name), toAdd);
+		CustomScrMethods.insert_or_assign(prefixedString, toAdd);
+	}
+
+	bool Script::IsDeprecated(const std::string& name) {
+		return Script::DeprecatedFunctionsAndMethods.find(name) != Script::DeprecatedFunctionsAndMethods.end();
 	}
 
 	Game::BuiltinFunction Script::BuiltIn_GetFunctionStub(const char** pName, int* type)
 	{
 		if (pName != nullptr)
 		{
-			const auto got = Script::CustomScrFunctions.find(Utils::String::ToLower(*pName));
+			std::string name = Utils::String::ToLower(*pName);
+
+			if (IsDeprecated(name)) {
+				Toast::Show("cardicon_gumby", "WARNING!", Script::ScriptName + " uses the deprecated function " + name, 2048);
+				Logger::Print(Game::CON_CHANNEL_PARSERSCRIPT, "*** DEPRECATION WARNING ***\n");
+				Logger::PrintError(Game::ERR_SCRIPT, "^1Attempted to execute deprecated builtin {} from {}! This method or function should be prefixed with 'iw4x_'. Automatically fixed the function for now, this will not be the case in future releases! Please update your mod!\n", name, Script::ScriptName);
+				Logger::Print(Game::CON_CHANNEL_PARSERSCRIPT, "***************************\n");
+
+				name = Script::ClientPrefix + name; // Fixes it automatically
+			}
+
+			const auto got = Script::CustomScrFunctions.find(name);
 
 			// If no function was found let's call game's function
 			if (got != Script::CustomScrFunctions.end())
@@ -322,7 +366,18 @@ namespace Components
 	{
 		if (pName != nullptr)
 		{
-			const auto got = Script::CustomScrMethods.find(Utils::String::ToLower(*pName));
+			std::string name = Utils::String::ToLower(*pName);
+
+			if (IsDeprecated(name)) {
+				Toast::Show("cardicon_gumby", "WARNING!", Script::ScriptName+" uses the deprecated method " + name, 2048);
+				Logger::Print(Game::CON_CHANNEL_PARSERSCRIPT, "*** DEPRECATION WARNING ***\n");
+				Logger::PrintError(Game::ERR_SCRIPT, "^1Attempted to execute deprecated builtin {} from {}! This function or method should be prefixed with 'iw4x_'. Automatically fixed the function for now, this will not be the case in future releases! Please update your mod!\n", name, Script::ScriptName);
+				Logger::Print(Game::CON_CHANNEL_PARSERSCRIPT, "***************************\n"); 
+				
+				name = Script::ClientPrefix + name; // Fixes it automatically
+
+			}
+			const auto got = Script::CustomScrMethods.find(name);
 
 			// If no method was found let's call game's function
 			if (got != Script::CustomScrMethods.end())

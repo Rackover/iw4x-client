@@ -19,6 +19,7 @@ namespace Components
 		static std::string ScriptName;
 		static std::unordered_map<std::string, Game::BuiltinFunctionDef> CustomScrFunctions;
 		static std::unordered_map<std::string, Game::BuiltinMethodDef> CustomScrMethods;
+		static std::unordered_set<std::string> DeprecatedFunctionsAndMethods;
 		static std::vector<std::string> ScriptNameStack;
 		static unsigned short FunctionName;
 		static std::unordered_map<int, std::string> ScriptBaseProgramNum;
@@ -62,5 +63,6 @@ namespace Components
 		static void VMExecuteInternalStub();
 
 		static void AddFunctions();
+		static bool IsDeprecated(const std::string& name);
 	};
 }
