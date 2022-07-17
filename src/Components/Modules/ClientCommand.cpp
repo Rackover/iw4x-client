@@ -456,7 +456,7 @@ namespace Components
 			}
 		});
 
-		Script::AddFunction("DropAllBots", [] // gsc: DropAllBots();
+		Script::AddFunction("DropAllBots", [] // gsc: iw4x_DropAllBots();
 		{
 			Game::SV_DropAllBots();
 		});

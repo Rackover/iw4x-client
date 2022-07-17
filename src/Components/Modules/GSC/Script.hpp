@@ -7,7 +7,7 @@ namespace Components
 	public:
 		Script();
 
-		static void AddFunction(const char* name, Game::BuiltinFunction func, int type = 0);
+		static void AddFunction(const char* name, Game::BuiltinFunction func, int type = 0, bool addClientPrefix = true);
 		static void AddMethod(const char* name, Game::BuiltinMethod func, int type = 0, bool addClientPrefix = true);
 
 		static Game::client_t* GetClient(const Game::gentity_t* gentity);

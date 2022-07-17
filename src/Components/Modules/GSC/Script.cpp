@@ -274,10 +274,10 @@ namespace Components
 		Game::GScr_LoadGameTypeScript();
 	}
 
-	void Script::AddFunction(const char* name, Game::BuiltinFunction func, int type)
+	void Script::AddFunction(const char* name, Game::BuiltinFunction func, int type, bool addClientPrefix)
 	{
 		Game::BuiltinFunctionDef toAdd;
-		toAdd.actionString = name;
+		toAdd.actionString = addClientPrefix ? (Script::ClientPrefix + name).data() : name;
 		toAdd.actionFunc = func;
 		toAdd.type = type;
 
@@ -539,7 +539,7 @@ namespace Components
 
 	void Script::AddFunctions()
 	{
-		Script::AddFunction("ReplaceFunc", [] // gsc: ReplaceFunc(<function>, <function>)
+		Script::AddFunction("ReplaceFunc", [] // gsc: iw4x_ReplaceFunc(<function>, <function>)
 		{
 			if (Game::Scr_GetNumParam() != 2)
 			{
@@ -554,7 +554,7 @@ namespace Components
 		});
 
 		// System time
-		Script::AddFunction("GetSystemMilliseconds", [] // gsc: GetSystemMilliseconds()
+		Script::AddFunction("GetSystemMilliseconds", [] // gsc: iw4x_GetSystemMilliseconds()
 		{
 			SYSTEMTIME time;
 			GetSystemTime(&time);
@@ -563,7 +563,7 @@ namespace Components
 		});
 
 		// Executes command to the console
-		Script::AddFunction("Exec", [] // gsc: Exec(<string>)
+		Script::AddFunction("Exec", [] // gsc: iw4x_Exec(<string>)
 		{
 			const auto str = Game::Scr_GetString(0);
 
@@ -577,7 +577,7 @@ namespace Components
 		});
 
 		// Allow printing to the console even when developer is 0
-		Script::AddFunction("PrintConsole", [] // gsc: PrintConsole(<string>)
+		Script::AddFunction("PrintConsole", [] // gsc: iw4x_PrintConsole(<string>)
 		{
 			for (std::size_t i = 0; i < Game::Scr_GetNumParam(); ++i)
 			{
