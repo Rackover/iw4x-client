@@ -594,7 +594,7 @@ namespace Components
 		});
 
 		// PlayerCmd_AreControlsFrozen GSC function from Black Ops 2
-		Script::AddMethod("AreControlsFrozen", [](Game::scr_entref_t entref) // Usage: self AreControlsFrozen();
+		Script::AddMethod("AreControlsFrozen", [](Game::scr_entref_t entref) // Usage: self iw4x_AreControlsFrozen();
 		{
 			const auto* ent = Game::GetPlayerEntity(entref);
 

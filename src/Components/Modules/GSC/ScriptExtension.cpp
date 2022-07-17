@@ -211,7 +211,7 @@ namespace Components
 	void ScriptExtension::AddMethods()
 	{
 		// ScriptExtension methods
-		Script::AddMethod("GetIp", [](Game::scr_entref_t entref) // gsc: self GetIp()
+		Script::AddMethod("GetIp", [](Game::scr_entref_t entref) // gsc: self iw4x_GetIp()
 		{
 			const auto* ent = Game::GetPlayerEntity(entref);
 			const auto* client = Script::GetClient(ent);
@@ -224,7 +224,7 @@ namespace Components
 			Game::Scr_AddString(ip.data());
 		});
 
-		Script::AddMethod("GetPing", [](Game::scr_entref_t entref) // gsc: self GetPing()
+		Script::AddMethod("GetPing", [](Game::scr_entref_t entref) // gsc: self iw4x_GetPing()
 		{
 			const auto* ent = Game::GetPlayerEntity(entref);
 			const auto* client = Script::GetClient(ent);
@@ -232,7 +232,7 @@ namespace Components
 			Game::Scr_AddInt(client->ping);
 		});
 
-		Script::AddMethod("SetPing", [](Game::scr_entref_t entref) // gsc: self SetPing(<int>)
+		Script::AddMethod("SetPing", [](Game::scr_entref_t entref) // gsc: self iw4x_SetPing(<int>)
 		{
 			auto ping = Game::Scr_GetInt(0);
 
