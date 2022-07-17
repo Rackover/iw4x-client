@@ -119,10 +119,10 @@ namespace Components
 
 	void Bots::AddMethods()
 	{
-		Script::AddMethod("IsBot", Bots::GScr_isTestClient, /*type = */ 0, /*addClientPrefix = */false); // Usage: self IsBot();
-		Script::AddMethod("IsTestClient", Bots::GScr_isTestClient, /*type = */ 0, /*addClientPrefix = */false); // Usage: self IsTestClient();
+		Script::AddMethod("IsBot", Bots::GScr_isTestClient); // Usage: self iw4x_IsBot();
+		Script::AddMethod("IsTestClient", Bots::GScr_isTestClient); // Usage: self iw4x_IsTestClient();
 
-		Script::AddMethod("BotStop", [](Game::scr_entref_t entref) // Usage: <bot> BotStop();
+		Script::AddMethod("BotStop", [](Game::scr_entref_t entref) // Usage: <bot> iw4x_BotStop();
 		{
 			const auto* ent = Game::GetPlayerEntity(entref);
 
@@ -135,9 +135,9 @@ namespace Components
 			g_botai[entref.entnum] = {0};
 			g_botai[entref.entnum].weapon = 1;
 			g_botai[entref.entnum].active = true;
-		}, /*type = */ 0, /*addClientPrefix = */false);
+		});
 
-		Script::AddMethod("BotWeapon", [](Game::scr_entref_t entref) // Usage: <bot> BotWeapon(<str>);
+		Script::AddMethod("BotWeapon", [](Game::scr_entref_t entref) // Usage: <bot> iw4x_BotWeapon(<str>);
 		{
 			const auto* ent = Game::GetPlayerEntity(entref);
 
@@ -158,9 +158,9 @@ namespace Components
 			const auto weapId = Game::G_GetWeaponIndexForName(weapon);
 			g_botai[entref.entnum].weapon = static_cast<uint16_t>(weapId);
 			g_botai[entref.entnum].active = true;
-		}, /*type = */ 0, /*addClientPrefix = */false);
+		});
 
-		Script::AddMethod("BotAction", [](Game::scr_entref_t entref) // Usage: <bot> BotAction(<str action>);
+		Script::AddMethod("BotAction", [](Game::scr_entref_t entref) // Usage: <bot> iw4x_BotAction(<str action>);
 		{
 			const auto* ent = Game::GetPlayerEntity(entref);
 
@@ -199,9 +199,9 @@ namespace Components
 			}
 
 			Game::Scr_ParamError(0, "^1BotAction: Unknown action.\n");
-		}, /*type = */ 0, /*addClientPrefix = */false);
+		});
 
-		Script::AddMethod("BotMovement", [](Game::scr_entref_t entref) // Usage: <bot> BotMovement(<int>, <int>);
+		Script::AddMethod("BotMovement", [](Game::scr_entref_t entref) // Usage: <bot> iw4x_BotMovement(<int>, <int>);
 			{
 				const auto* ent = Game::GetPlayerEntity(entref);
 
@@ -217,7 +217,7 @@ namespace Components
 				g_botai[entref.entnum].forward = static_cast<int8_t>(forwardInt);
 				g_botai[entref.entnum].right = static_cast<int8_t>(rightInt);
 				g_botai[entref.entnum].active = true;
-			}, /*type = */ 0, /*addClientPrefix = */false);
+			});
 	}
 
 	void Bots::BotAiAction(Game::client_t* cl)
