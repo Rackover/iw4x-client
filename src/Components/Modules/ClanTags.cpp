@@ -76,37 +76,31 @@ namespace Components
 		auto* saneName = saneNameBuf;
 		
 		assert(ClanName);
-		if (ClanName) 
+		const auto* currentName = ClanName->current.string;
+		if (currentName)
 		{
-			const auto* currentName = ClanName->current.string;
-			if (currentName)
+			auto nameLen = std::strlen(currentName);
+			for (std::size_t i = 0; (i < nameLen) && (i < sizeof(saneNameBuf)); ++i)
 			{
-				auto nameLen = std::strlen(currentName);
-				for (std::size_t i = 0; (i < nameLen) && (i < sizeof(saneNameBuf)); ++i)
+				auto curChar = CL_FilterChar(static_cast<unsigned char>(currentName[i]));
+				if (curChar > 0)
 				{
-					auto curChar = CL_FilterChar(static_cast<unsigned char>(currentName[i]));
-					if (curChar > 0)
-					{
-						*saneName++ = (curChar & 0xFF);
-					}
+					*saneName++ = (curChar & 0xFF);
 				}
-
-				saneNameBuf[sizeof(saneNameBuf) - 1] = '\0';
-				Game::Dvar_SetString(ClanName, saneNameBuf);
 			}
+
+			saneNameBuf[sizeof(saneNameBuf) - 1] = '\0';
+			Game::Dvar_SetString(ClanName, saneNameBuf);
 		}
 	}
 
 	char* ClanTags::GamerProfile_GetClanName(int controllerIndex)
 	{
 		assert(static_cast<std::size_t>(controllerIndex) < Game::MAX_LOCAL_CLIENTS);
-
 		assert(ClanName);
 
-		if (ClanName) {
-			CL_SanitizeClanName();
-			Game::I_strncpyz(Game::gamerSettings[controllerIndex].exeConfig.clanPrefix, ClanName->current.string, sizeof(Game::GamerSettingExeConfig::clanPrefix));
-		}
+		CL_SanitizeClanName();
+		Game::I_strncpyz(Game::gamerSettings[controllerIndex].exeConfig.clanPrefix, ClanName->current.string, sizeof(Game::GamerSettingExeConfig::clanPrefix));
 
 		return Game::gamerSettings[controllerIndex].exeConfig.clanPrefix;
 	}
