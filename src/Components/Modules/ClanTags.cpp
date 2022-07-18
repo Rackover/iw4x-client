@@ -74,21 +74,26 @@ namespace Components
 		std::memset(saneNameBuf, 0, sizeof(saneNameBuf));
 
 		auto* saneName = saneNameBuf;
-		const auto* currentName = ClanName->current.string;
-		if (currentName)
+		
+		assert(ClanName);
+		if (ClanName) 
 		{
-			auto nameLen = std::strlen(currentName);
-			for (std::size_t i = 0; (i < nameLen) && (i < sizeof(saneNameBuf)); ++i)
+			const auto* currentName = ClanName->current.string;
+			if (currentName)
 			{
-				auto curChar = CL_FilterChar(static_cast<unsigned char>(currentName[i]));
-				if (curChar > 0)
+				auto nameLen = std::strlen(currentName);
+				for (std::size_t i = 0; (i < nameLen) && (i < sizeof(saneNameBuf)); ++i)
 				{
-					*saneName++ = (curChar & 0xFF);
+					auto curChar = CL_FilterChar(static_cast<unsigned char>(currentName[i]));
+					if (curChar > 0)
+					{
+						*saneName++ = (curChar & 0xFF);
+					}
 				}
-			}
 
-			saneNameBuf[sizeof(saneNameBuf) - 1] = '\0';
-			Game::Dvar_SetString(ClanName, saneNameBuf);
+				saneNameBuf[sizeof(saneNameBuf) - 1] = '\0';
+				Game::Dvar_SetString(ClanName, saneNameBuf);
+			}
 		}
 	}
 
@@ -96,8 +101,12 @@ namespace Components
 	{
 		assert(static_cast<std::size_t>(controllerIndex) < Game::MAX_LOCAL_CLIENTS);
 
-		CL_SanitizeClanName();
-		Game::I_strncpyz(Game::gamerSettings[0].exeConfig.clanPrefix, ClanName->current.string, sizeof(Game::GamerSettingExeConfig::clanPrefix));
+		assert(ClanName);
+
+		if (ClanName) {
+			CL_SanitizeClanName();
+			Game::I_strncpyz(Game::gamerSettings[controllerIndex].exeConfig.clanPrefix, ClanName->current.string, sizeof(Game::GamerSettingExeConfig::clanPrefix));
+		}
 
 		return Game::gamerSettings[controllerIndex].exeConfig.clanPrefix;
 	}
@@ -237,11 +246,11 @@ namespace Components
 
 	ClanTags::ClanTags()
 	{
-		Scheduler::Once([]
+		Events::OnClientInit([]
 		{
 			ClanName = Game::Dvar_RegisterString("clanName", "", Game::DVAR_ARCHIVE,
 				"Your clan abbreviation");
-		}, Scheduler::Pipeline::MAIN);
+		});
 
 		std::memset(&ClientState, 0, sizeof(char[Game::MAX_CLIENTS][5]));
 
