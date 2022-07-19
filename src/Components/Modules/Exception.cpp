@@ -137,10 +137,6 @@ namespace Components
 		Utils::IO::CreateDir("minidumps");
 		PathCombineA(filename, "minidumps\\", Utils::String::VA("%s-" VERSION "-%s.dmp", exeFileName, filenameFriendlyTime));
 
-#ifndef DISABLE_ANTICHEAT
-		AntiCheat::UninstallLibHook();
-#endif
-
 		DWORD fileShare = FILE_SHARE_READ | FILE_SHARE_WRITE;
 		HANDLE hFile = CreateFileA(filename, GENERIC_WRITE | GENERIC_READ, fileShare, nullptr, (fileShare & FILE_SHARE_WRITE) > 0 ? OPEN_ALWAYS : OPEN_EXISTING, NULL, nullptr);
 		MINIDUMP_EXCEPTION_INFORMATION ex = { GetCurrentThreadId(), ExceptionInfo, FALSE };
@@ -156,10 +152,6 @@ namespace Components
 		{
 			TerminateProcess(GetCurrentProcess(), ExceptionInfo->ExceptionRecord->ExceptionCode);
 		}
-
-#ifndef DISABLE_ANTICHEAT
-		AntiCheat::InstallLibHook();
-#endif
 
 		return EXCEPTION_CONTINUE_SEARCH;
 	}
@@ -201,24 +193,6 @@ namespace Components
 	{
 		Exception::SetMiniDumpType(Flags::HasFlag("bigminidumps"), Flags::HasFlag("reallybigminidumps"));
 
-#ifdef DEBUG
-		// Display DEBUG branding, so we know we're on a debug build
-		Scheduler::OnFrame([]()
-		{
-			auto* font = Game::R_RegisterFont("fonts/normalFont", 0);
-			Game::vec4_t color = { 1.0f, 1.0f, 1.0f, 1.0f };
-
-			// Change the color when attaching a debugger
-			if (IsDebuggerPresent())
-			{
-				color[0] = 0.6588f;
-				color[1] = 1.0000f;
-				color[2] = 0.0000f;
-			}
-
-			Game::R_AddCmdDrawText("DEBUG-BUILD", 0x7FFFFFFF, font, 15.0f, 10.0f + Game::R_TextHeight(font), 1.0f, 1.0f, 0.0f, color, Game::ITEM_TEXTSTYLE_SHADOWED);
-		}, true);
-#endif
 #if !defined(DEBUG) || defined(FORCE_EXCEPTION_HANDLER)
 		Exception::SetFilterHook.initialize(SetUnhandledExceptionFilter, Exception::SetUnhandledExceptionFilterStub, HOOK_JUMP);
 		Exception::SetFilterHook.install();
@@ -229,6 +203,7 @@ namespace Components
 		//Utils::Hook(0x4B241F, Exception::ErrorLongJmp, HOOK_CALL).install()->quick();
 		Utils::Hook(0x6B8898, Exception::LongJmp, HOOK_JUMP).install()->quick();
 
+#ifdef _DEBUG
 		Command::Add("mapTest", [](Command::Params* params)
 		{
 			Game::UI_UpdateArenas();
@@ -236,22 +211,16 @@ namespace Components
 			std::string command;
 			for (auto i = 0; i < (params->size() >= 2 ? atoi(params->get(1)) : *Game::arenaCount); ++i)
 			{
-				const auto* mapname = ArenaLength::NewArenas[i % *Game::arenaCount].mapName;
+				const auto* mapName = ArenaLength::NewArenas[i % *Game::arenaCount].mapName;
 
 				if (!(i % 2)) command.append("wait 250;disconnect;wait 750;"); // Test a disconnect
 				else command.append("wait 500;"); // Test direct map switch
-				command.append(Utils::String::VA("map %s;", mapname));
+				command.append(Utils::String::VA("map %s;", mapName));
 			}
 
 			Command::Execute(command, false);
 		});
-
-		Command::Add("debug_exceptionhandler", [](Command::Params*)
-		{
-			Logger::Print("Rerunning SetUnhandledExceptionHandler...\n");
-			auto oldHandler = Exception::Hook();
-			Logger::Print("Old exception handler was 0x%010X.\n", oldHandler);
-		});
+#endif
 	}
 
 	Exception::~Exception()

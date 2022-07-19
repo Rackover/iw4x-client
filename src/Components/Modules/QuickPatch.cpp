@@ -47,62 +47,6 @@ namespace Components
 		}
 	}
 
-	int QuickPatch::MsgReadBitsCompressCheckSV(const char *from, char *to, int size)
-	{
-		static char buffer[0x8000];
-
-		if (size > 0x800) return 0;
-		size = Game::MSG_ReadBitsCompress(from, buffer, size);
-
-		if (size > 0x800) return 0;
-		std::memcpy(to, buffer, size);
-
-		return size;
-	}
-
-	int QuickPatch::MsgReadBitsCompressCheckCL(const char *from, char *to, int size)
-	{
-		static char buffer[0x100000];
-
-		if (size > 0x20000) return 0;
-		size = Game::MSG_ReadBitsCompress(from, buffer, size);
-
-		if (size > 0x20000) return 0;
-		std::memcpy(to, buffer, size);
-
-		return size;
-	}
-
-	int QuickPatch::SVCanReplaceServerCommand(Game::client_t* /*client*/, const char* /*cmd*/)
-	{
-		// This is a fix copied from V2. As I don't have time to investigate, let's simply trust them
-		return -1;
-	}
-
-	long QuickPatch::AtolAdjustPlayerLimit(const char* string)
-	{
-		return std::min(atol(string), 18l);
-	}
-
-	void QuickPatch::SelectStringTableEntryInDvarStub()
-	{
-		Command::ClientParams params;
-
-		if (params.size() >= 4)
-		{
-			const auto* dvarName = params[3];
-			const auto* dvar = Game::Dvar_FindVar(dvarName);
-
-			if (Command::Find(dvarName) ||
-				(dvar != nullptr && dvar->flags & (Game::DVAR_WRITEPROTECTED | Game::DVAR_CHEAT | Game::DVAR_READONLY)))
-			{
-				return;
-			}
-		}
-
-		Game::CL_SelectStringTableEntryInDvar_f();
-	}
-
 	__declspec(naked) void QuickPatch::JavelinResetHookStub()
 	{
 		__asm
@@ -113,69 +57,6 @@ namespace Components
 			mov dword ptr [esi+34h], 0;
 			pop esi;
 			pop ebx;
-			retn;
-		}
-	}
-
-	__declspec(naked) int QuickPatch::G_GetClientScore()
-	{
-		__asm
-		{
-			mov eax, [esp + 4]		// index
-			mov ecx, ds : 1A831A8h	// level: &g_clients
-
-			test ecx, ecx;
-			jz invalid_ptr;
-			
-			imul eax, 366Ch
-			mov eax, [eax + ecx + 3134h]
-			ret
-			
-		invalid_ptr:
-			xor eax, eax
-			ret
-		}
-	}
-
-	bool QuickPatch::InvalidNameCheck(char* dest, const char* source, int size)
-	{
-		Utils::Hook::Call<void(char*, const char*, int)>(0x4D6F80)(dest, source, size); // I_strncpyz
-
-		for (int i = 0; i < size - 1; i++)
-		{
-			if (!dest[i]) break;
-
-			if (dest[i] > 125 || dest[i] < 32 || dest[i] == '%')
-			{
-				return false;
-			}
-		}
-
-		return true;
-	}
-
-	__declspec(naked) void QuickPatch::InvalidNameStub()
-	{
-		static const char* kick_reason = "Invalid name detected.";
-
-		__asm
-		{
-			call InvalidNameCheck;
-			test al, al
-
-			jnz returnSafe;
-
-			pushad;
-			push 1;
-			push kick_reason;
-			push edi;
-			mov eax, 0x004D1600; // SV_DropClientInternal
-			call eax;
-			add esp, 12;
-			popad;
-
-		returnSafe:
-			push 0x00401988;
 			retn;
 		}
 	}
@@ -348,23 +229,18 @@ namespace Components
 		}
 	}
 
-	Game::dvar_t* QuickPatch::Dvar_RegisterUIBuildLocation(const char* dvarName,
-		float /*x*/, float /*y*/, float min, float max, int /*flags*/, const char* description)
+	Game::dvar_t* QuickPatch::Dvar_RegisterConMinicon(const char* dvarName, [[maybe_unused]] bool value, unsigned __int16 flags, const char* description)
 	{
-		return Game::Dvar_RegisterVec2(dvarName, -60.0f, 474.0f, min, max, Game::DVAR_READONLY, description);
+#ifdef _DEBUG
+		constexpr auto value_ = true;
+#else
+		constexpr auto value_ = false;
+#endif
+		return Game::Dvar_RegisterBool(dvarName, value_, flags, description);
 	}
 
 	QuickPatch::QuickPatch()
 	{
-		// quitHard
-		Command::Add("quitHard", [](Command::Params*)
-		{
-			int data = false;
-			const Utils::Library ntdll("ntdll.dll");
-			ntdll.invokePascal<void>("RtlAdjustPrivilege", 19, true, false, &data);
-			ntdll.invokePascal<void>("NtRaiseHardError", 0xC000007B, 0, nullptr, nullptr, 6, &data);
-		});
-
 		// Filtering any mapents that is intended for Spec:Ops gamemode (CODO) and prevent them from spawning
 		Utils::Hook(0x5FBD6E, QuickPatch::IsDynClassnameStub, HOOK_CALL).install()->quick();
 
@@ -372,14 +248,11 @@ namespace Components
 		Utils::Hook(0x4F66A3, CL_KeyEvent_ConsoleEscape_Stub, HOOK_JUMP).install()->quick();
 
 		// Intermission time dvar
-		Game::Dvar_RegisterFloat("scr_intermissionTime", 10, 0, 120, Game::dvar_flag::DVAR_NONE, "Time in seconds before match server loads the next map");
+		Game::Dvar_RegisterFloat("scr_intermissionTime", 10, 0, 120, Game::DVAR_NONE, "Time in seconds before match server loads the next map");
 
 		g_antilag = Game::Dvar_RegisterBool("g_antilag", true, Game::DVAR_CODINFO, "Perform antilag");
 		Utils::Hook(0x5D6D56, QuickPatch::ClientEventsFireWeaponStub, HOOK_JUMP).install()->quick();
 		Utils::Hook(0x5D6D6A, QuickPatch::ClientEventsFireWeaponMeleeStub, HOOK_JUMP).install()->quick();
-
-		// Disallow invalid player names
-		Utils::Hook(0x401983, QuickPatch::InvalidNameStub, HOOK_JUMP).install()->quick();
 
 		// Javelin fix
 		Utils::Hook(0x578F52, QuickPatch::JavelinResetHookStub, HOOK_JUMP).install()->quick();
@@ -388,6 +261,7 @@ namespace Components
 		Utils::Hook(0x51B13B, QuickPatch::Dvar_RegisterAspectRatioDvar, HOOK_CALL).install()->quick();
 		Utils::Hook(0x5063F3, QuickPatch::SetAspectRatioStub, HOOK_JUMP).install()->quick();
 
+		Utils::Hook(0x4FA448, QuickPatch::Dvar_RegisterConMinicon, HOOK_CALL).install()->quick();
 
 		// protocol version (workaround for hacks)
 		Utils::Hook::Set<int>(0x4FB501, PROTOCOL);
@@ -424,22 +298,6 @@ namespace Components
 		// fs_basegame
 		Utils::Hook::Set<const char*>(0x6431D1, BASEGAME);
 
-		// UI version string
-		Utils::Hook::Set<const char*>(0x43F73B, "IW4x: " VERSION);
-
-		// console version string
-		Utils::Hook::Set<const char*>(0x4B12BB, "IW4x " VERSION " (built " __DATE__ " " __TIME__ ")");
-
-		// version string
-		Utils::Hook::Set<const char*>(0x60BD56, "IW4x (" VERSION ")");
-
-		// version string color
-		static Game::vec4_t buildLocColor = { 1.0f, 1.0f, 1.0f, 0.8f };
-		Utils::Hook::Set<float*>(0x43F710, buildLocColor);
-
-		// Shift ui version string to the left (ui_buildlocation)
-		Utils::Hook(0x6310A0, QuickPatch::Dvar_RegisterUIBuildLocation, HOOK_CALL).install()->quick();
-
 		// console title
 		if (ZoneBuilder::IsEnabled())
 		{
@@ -460,9 +318,6 @@ namespace Components
 		// sv_hostname
 		Utils::Hook::Set<const char*>(0x4D378B, "IW4Host");
 
-		// shortversion
-		Utils::Hook::Set<const char*>(0x60BD91, SHORTVERSION);
-
 		// console logo
 		Utils::Hook::Set<const char*>(0x428A66, BASEGAME "/images/logo.bmp");
 
@@ -473,7 +328,7 @@ namespace Components
 
 		// Numerical ping (cg_scoreboardPingText 1)
 		Utils::Hook::Set<BYTE>(0x45888E, 1);
-		Utils::Hook::Set<BYTE>(0x45888C, Game::dvar_flag::DVAR_CHEAT);
+		Utils::Hook::Set<BYTE>(0x45888C, Game::DVAR_CHEAT);
 
 		// increase font sizes for chat on higher resolutions
 		static float float13 = 13.0f;
@@ -545,6 +400,10 @@ namespace Components
 
 		// allow joining 'developer 1' servers
 		Utils::Hook::Set<BYTE>(0x478BA2, 0xEB);
+
+		// fs_game fixes
+		Utils::Hook::Nop(0x4A5D74, 2); // remove fs_game profiles
+		Utils::Hook::Set<BYTE>(0x4081FD, 0xEB); // defaultweapon
 
 		// filesystem init default_mp.cfg check
 		Utils::Hook::Nop(0x461A9E, 5);
@@ -618,10 +477,10 @@ namespace Components
 
 		// Fix mouse lag
 		Utils::Hook::Nop(0x4731F5, 8);
-		Scheduler::OnFrame([]()
+		Scheduler::Loop([]
 		{
 			SetThreadExecutionState(ES_DISPLAY_REQUIRED);
-		});
+		}, Scheduler::Pipeline::RENDERER);
 
 		// Fix mouse pitch adjustments
 		Dvar::Register<bool>("ui_mousePitch", false, Game::DVAR_ARCHIVE, "");
@@ -637,28 +496,10 @@ namespace Components
 			}
 		});
 
-		// Exploit fixes
-		Utils::Hook::Set<BYTE>(0x412370, 0xC3);                                                      // SV_SteamAuthClient
-		Utils::Hook::Set<BYTE>(0x5A8C70, 0xC3);                                                      // CL_HandleRelayPacket
-		Utils::Hook(0x414D92, QuickPatch::MsgReadBitsCompressCheckSV, HOOK_CALL).install()->quick(); // SV_ExecuteClientCommands
-		Utils::Hook(0x4A9F56, QuickPatch::MsgReadBitsCompressCheckCL, HOOK_CALL).install()->quick(); // CL_ParseServerMessage
-		Utils::Hook(0x407376, QuickPatch::SVCanReplaceServerCommand , HOOK_CALL).install()->quick(); // SV_CanReplaceServerCommand
-		Utils::Hook(0x5B67ED, QuickPatch::AtolAdjustPlayerLimit     , HOOK_CALL).install()->quick(); // PartyHost_HandleJoinPartyRequest
-		Utils::Hook::Nop(0x41698E, 5); // Disable Svcmd_EntityList_f
-
-		// Patch selectStringTableEntryInDvar
-		Utils::Hook::Set(0x405959, QuickPatch::SelectStringTableEntryInDvarStub);
-
-		// Patch G_GetClientScore for uninitialised game
-		Utils::Hook(0x469AC0, QuickPatch::G_GetClientScore, HOOK_JUMP).install()->quick();
-
 		// Ignore call to print 'Offhand class mismatch when giving weapon...'
 		Utils::Hook(0x5D9047, 0x4BB9B0, HOOK_CALL).install()->quick();
 
-		Command::Add("unlockstats", [](Command::Params*)
-		{
-			QuickPatch::UnlockStats();
-		});
+		Command::Add("unlockstats", QuickPatch::UnlockStats);
 
 		Command::Add("dumptechsets", [](Command::Params* param)
 		{
@@ -667,23 +508,26 @@ namespace Components
 				Logger::Print("usage: dumptechsets <fastfile> | all\n");
 				return;
 			}
-			std::vector<std::string> fastfiles;
+
+			std::vector<std::string> fastFiles;
 
 			if (param->get(1) == "all"s)
 			{
-				for (std::string f : Utils::IO::ListFiles("zone/english"))
-					fastfiles.push_back(f.substr(7, f.length() - 10));
-				for (std::string f : Utils::IO::ListFiles("zone/dlc"))
-					fastfiles.push_back(f.substr(3, f.length() - 6));
-				for (std::string f : Utils::IO::ListFiles("zone/patch"))
-					fastfiles.push_back(f.substr(5, f.length() - 8));
+				for (const auto& f : Utils::IO::ListFiles("zone/english"))
+					fastFiles.emplace_back(f.substr(7, f.length() - 10));
+
+				for (const auto& f : Utils::IO::ListFiles("zone/dlc"))
+					fastFiles.emplace_back(f.substr(3, f.length() - 6));
+
+				for (const auto& f : Utils::IO::ListFiles("zone/patch"))
+					fastFiles.emplace_back(f.substr(5, f.length() - 8));
 			}
 			else
 			{
-				fastfiles.push_back(param->get(1));
+				fastFiles.emplace_back(param->get(1));
 			}
 
-			int count = 0;
+			auto count = 0;
 
 			AssetHandler::OnLoad([](Game::XAssetType type, Game::XAssetHeader asset, const std::string& name, bool* /*restrict*/)
 			{
@@ -705,7 +549,7 @@ namespace Components
 					if (Utils::IO::FileExists(Utils::String::VA(formatString, name.data()))) return;
 
 					Utils::Stream buffer(0x1000);
-					Game::MaterialPixelShader* dest = buffer.dest<Game::MaterialPixelShader>();
+					auto* dest = buffer.dest<Game::MaterialPixelShader>();
 					buffer.save(asset.pixelShader);
 
 					if (asset.pixelShader->prog.loadDef.program)
@@ -716,31 +560,6 @@ namespace Components
 
 					Utils::IO::WriteFile(Utils::String::VA(formatString, name.data()), buffer.toBuffer());
 				}
-
-				static std::map<const void*, unsigned int> pointerMap;
-
-				// Check if the given pointer has already been mapped
-				std::function<bool(const void*)> hasPointer = [](const void* pointer)
-				{
-					return (pointerMap.find(pointer) != pointerMap.end());
-				};
-
-				// Get stored offset for given file pointer
-				std::function<unsigned int(const void*)> getPointer = [hasPointer](const void* pointer)
-				{
-					if (hasPointer(pointer))
-					{
-						return pointerMap[pointer];
-					}
-
-					return 0U;
-				};
-
-				std::function<void(const void*, unsigned int)> storePointer = [hasPointer](const void* ptr, unsigned int offset)
-				{
-					if (hasPointer(ptr)) return;
-					pointerMap[ptr] = offset;
-				};
 
 				if (type == Game::ASSET_TYPE_TECHNIQUE_SET)
 				{
@@ -761,59 +580,54 @@ namespace Components
 
 						if (technique)
 						{
-							dest->techniques[i] = reinterpret_cast<Game::MaterialTechnique*>(getPointer(technique));
-							if (!dest->techniques)
+							// Size-check is obsolete, as the structure is dynamic
+							buffer.align(Utils::Stream::ALIGN_4);
+
+							Game::MaterialTechnique* destTechnique = buffer.dest<Game::MaterialTechnique>();
+							buffer.save(technique, 8);
+
+							// Save_MaterialPassArray
+							Game::MaterialPass* destPasses = buffer.dest<Game::MaterialPass>();
+							buffer.saveArray(technique->passArray, technique->passCount);
+
+							for (std::uint16_t j = 0; j < technique->passCount; ++j)
 							{
-								// Size-check is obsolete, as the structure is dynamic
-								buffer.align(Utils::Stream::ALIGN_4);
-								//storePointer(technique, buffer->);
+								AssertSize(Game::MaterialPass, 20);
 
-								Game::MaterialTechnique* destTechnique = buffer.dest<Game::MaterialTechnique>();
-								buffer.save(technique, 8);
+								Game::MaterialPass* destPass = &destPasses[j];
+								Game::MaterialPass* pass = &technique->passArray[j];
 
-								// Save_MaterialPassArray
-								Game::MaterialPass* destPasses = buffer.dest<Game::MaterialPass>();
-								buffer.saveArray(technique->passArray, technique->passCount);
-
-								for (short j = 0; j < technique->passCount; ++j)
+								if (pass->vertexDecl)
 								{
-									AssertSize(Game::MaterialPass, 20);
 
-									Game::MaterialPass* destPass = &destPasses[j];
-									Game::MaterialPass* pass = &technique->passArray[j];
-
-									if (pass->vertexDecl)
-									{
-
-									}
-
-									if (pass->args)
-									{
-										buffer.align(Utils::Stream::ALIGN_4);
-										buffer.saveArray(pass->args, pass->perPrimArgCount + pass->perObjArgCount + pass->stableArgCount);
-										Utils::Stream::ClearPointer(&destPass->args);
-									}
 								}
 
-								if (technique->name)
+								if (pass->args)
 								{
-									buffer.saveString(technique->name);
-									Utils::Stream::ClearPointer(&destTechnique->name);
+									buffer.align(Utils::Stream::ALIGN_4);
+									buffer.saveArray(pass->args, pass->perPrimArgCount + pass->perObjArgCount + pass->stableArgCount);
+									Utils::Stream::ClearPointer(&destPass->args);
 								}
-
-								Utils::Stream::ClearPointer(&dest->techniques[i]);
 							}
+
+							if (technique->name)
+							{
+								buffer.saveString(technique->name);
+								Utils::Stream::ClearPointer(&destTechnique->name);
+							}
+
+							Utils::Stream::ClearPointer(&dest->techniques[i]);
 						}
 					}
 				}
 			});
 
-			for (std::string fastfile : fastfiles)
+			for (const auto& fastFile : fastFiles)
 			{
-				if (!Game::DB_IsZoneLoaded(fastfile.data()))
+				if (!Game::DB_IsZoneLoaded(fastFile.data()))
 				{
 					Game::XZoneInfo info;
-					info.name = fastfile.data();
+					info.name = fastFile.data();
 					info.allocFlags = 0x20;
 					info.freeFlags = 0;
 
@@ -868,18 +682,7 @@ namespace Components
 		Utils::Hook::Set<bool>(0x60AE2B, true);
 
 		// Disable cheat protection for dvars
-		Utils::Hook::Set<BYTE>(0x647682, 0xEB);
-
-		// Constantly draw the mini console
-		Utils::Hook::Set<BYTE>(0x412A45, 0xEB);
-
-		Scheduler::OnFrame([]()
-		{
-			if (*reinterpret_cast<Game::Font_s**>(0x62E4BAC))
-			{
-				Game::Con_DrawMiniConsole(0, 2, 4, (Game::CL_IsCgameInitialized() ? 1.0f : 0.4f));
-			}
-		}, true);
+		Utils::Hook::Set<BYTE>(0x646515, 0xEB); // Dvar_IsCheatProtected
 #else
 		// Remove missing tag message
 		Utils::Hook::Nop(0x4EBF1A, 5);
@@ -894,9 +697,9 @@ namespace Components
 	bool QuickPatch::unitTest()
 	{
 		uint32_t randIntCount = 4'000'000;
-		printf("Generating %d random integers...", randIntCount);
+		Logger::Debug("Generating {} random integers...", randIntCount);
 
-		auto startTime = std::chrono::high_resolution_clock::now();
+		const auto startTime = std::chrono::high_resolution_clock::now();
 
 		for (uint32_t i = 0; i < randIntCount; ++i)
 		{
@@ -904,9 +707,9 @@ namespace Components
 		}
 
 		auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - startTime).count();
-		Logger::Print("took %llims\n", duration);
+		Logger::Debug("took {}ms", duration);
 
-		printf("Testing ZLib compression...");
+		Logger::Debug("Testing ZLib compression...");
 
 		std::string test = Utils::String::VA("%c", Utils::Cryptography::Rand::GenerateInt());
 
@@ -917,21 +720,20 @@ namespace Components
 
 			if (test != decompressed)
 			{
-				printf("Error\n");
-				printf("Compressing %d bytes and decompressing failed!\n", test.size());
+				Logger::PrintError(Game::CON_CHANNEL_ERROR, "Compressing {} bytes and decompressing failed!\n", test.size());
 				return false;
 			}
 
-			auto size = test.size();
+			const auto size = test.size();
 			for (unsigned int j = 0; j < size; ++j)
 			{
 				test.append(Utils::String::VA("%c", Utils::Cryptography::Rand::GenerateInt()));
 			}
 		}
 
-		printf("Success\n");
+		Logger::Debug("Success");
 
-		printf("Testing trimming...");
+		Logger::Debug("Testing trimming...");
 		std::string trim1 = " 1 ";
 		std::string trim2 = "   1";
 		std::string trim3 = "1   ";
@@ -944,7 +746,7 @@ namespace Components
 		if (trim2 != "1") return false;
 		if (trim3 != "1") return false;
 
-		printf("Success\n");
+		Logger::Debug("Success");
 		return true;
 	}
 }

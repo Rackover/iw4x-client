@@ -39,7 +39,7 @@ namespace Main
 			popad
 
 			push 6BAA2Fh // Continue init routine
-			push 6CA062h // ___security_init_cookie
+			push 6CA062h // __security_init_cookie
 			retn
 		}
 	}
@@ -54,8 +54,9 @@ BOOL APIENTRY DllMain(HMODULE /*hModule*/, DWORD  ul_reason_for_call, LPVOID /*l
 
 		Steam::Proxy::RunMod();
 
+#ifndef DISABLE_BINARY_CHECK
 		// Ensure we're working with our desired binary
-		char* _module = reinterpret_cast<char*>(0x400000);
+		auto* _module = reinterpret_cast<char*>(0x400000);
 		auto hash1 = Utils::Cryptography::JenkinsOneAtATime::Compute(_module + 0x1000, 0x2D531F);  // .text
 		auto hash2 = Utils::Cryptography::JenkinsOneAtATime::Compute(_module + 0x2D75FC, 0xBDA04); // .rdata
 		if ((hash1 != 0x54684DBE
@@ -67,19 +68,9 @@ BOOL APIENTRY DllMain(HMODULE /*hModule*/, DWORD  ul_reason_for_call, LPVOID /*l
 			return FALSE;
 		}
 
-#ifndef DISABLE_ANTICHEAT
-		[]()
-		{
-			if (!Components::Dedicated::IsEnabled() && !Components::Loader::IsPerformingUnitTests())
-			{
-				Components::AntiCheat::ProtectProcess();
-				Components::AntiCheat::PatchThreadCreation();
-			}
-		}();
-#endif
-
 		DWORD oldProtect;
 		VirtualProtect(_module + 0x1000, 0x2D6000, PAGE_EXECUTE_READ, &oldProtect); // Protect the .text segment
+#endif
 
 		// Install entry point hook
 		Utils::Hook(0x6BAC0F, Main::EntryPoint, HOOK_JUMP).install()->quick();
@@ -87,18 +78,6 @@ BOOL APIENTRY DllMain(HMODULE /*hModule*/, DWORD  ul_reason_for_call, LPVOID /*l
 	else if (ul_reason_for_call == DLL_PROCESS_DETACH)
 	{
 		Main::Uninitialize();
-	}
-	else if (ul_reason_for_call == DLL_THREAD_ATTACH)
-	{
-#ifndef DISABLE_ANTICHEAT
-		[]()
-		{
-			if (!Components::Dedicated::IsEnabled() && !Components::Loader::IsPerformingUnitTests())
-			{
-				Components::AntiCheat::VerifyThreadIntegrity();
-			}
-		}();
-#endif
 	}
 
 	return TRUE;

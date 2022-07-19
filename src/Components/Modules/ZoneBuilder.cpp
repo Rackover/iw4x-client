@@ -7,13 +7,12 @@ namespace Components
 
 	bool ZoneBuilder::MainThreadInterrupted;
 	DWORD ZoneBuilder::InterruptingThreadId;
-	bool ZoneBuilder::Terminate;
+	volatile bool ZoneBuilder::Terminate = false;
 	std::thread ZoneBuilder::CommandThread;
 
 	Dvar::Var ZoneBuilder::PreferDiskAssetsDvar;
 
 	ZoneBuilder::Zone::Zone(const std::string& name) : indexStart(0), externalSize(0),
-
 		// Reserve 100MB by default.
 		// That's totally fine, as the dedi doesn't load images and therefore doesn't need much memory.
 		// That way we can be sure it won't need to reallocate memory.
@@ -21,11 +20,8 @@ namespace Components
 		// Well, decompressed maps can get way larger than 100MB, so let's increase that.
 		buffer(0xC800000),
 		zoneName(name), dataMap("zone_source/" + name + ".csv"), branding{ nullptr }, assetDepth(0)
-	{}
-
-	ZoneBuilder::Zone::Zone() : indexStart(0), externalSize(0), buffer(0xC800000), zoneName("null_zone"),
-		dataMap(), branding{ nullptr }, assetDepth(0)
-	{}
+	{
+	}
 
 	ZoneBuilder::Zone::~Zone()
 	{
@@ -46,7 +42,7 @@ namespace Components
 
 			if (!found)
 			{
-				Logger::Print("Asset %s of type %s was loaded, but not written!", name.data(), Game::DB_GetXAssetTypeName(subAsset.type));
+				Logger::Print("Asset {} of type {} was loaded, but not written!", name, Game::DB_GetXAssetTypeName(subAsset.type));
 			}
 		}
 
@@ -66,7 +62,7 @@ namespace Components
 
 			if (!found)
 			{
-				Logger::Error("Asset %s of type %s was written, but not loaded!", name.data(), Game::DB_GetXAssetTypeName(alias.first.type));
+				Logger::Error(Game::ERR_FATAL, "Asset {} of type {} was written, but not loaded!", name, Game::DB_GetXAssetTypeName(alias.first.type));
 			}
 		}
 #endif
@@ -95,9 +91,9 @@ namespace Components
 
 	void ZoneBuilder::Zone::Zone::build()
 	{
-		if(!this->dataMap.isValid())
+		if (!this->dataMap.isValid())
 		{
-			Logger::Print("Unable to load CSV for '%s'!\n", this->zoneName.data());
+			Logger::Print("Unable to load CSV for '{}'!\n", this->zoneName);
 			return;
 		}
 
@@ -111,9 +107,9 @@ namespace Components
 		Logger::Print("Saving...\n");
 		this->saveData();
 
-		if(this->buffer.hasBlock())
+		if (this->buffer.hasBlock())
 		{
-			Logger::Error("Non-popped blocks left!\n");
+			Logger::Error(Game::ERR_FATAL, "Non-popped blocks left!\n");
 		}
 
 		Logger::Print("Compressing...\n");
@@ -124,7 +120,7 @@ namespace Components
 	{
 		Logger::Print("Loading required FastFiles...\n");
 
-		for (int i = 0; i < this->dataMap.getRows(); ++i)
+		for (std::size_t i = 0; i < this->dataMap.getRows(); ++i)
 		{
 			if (this->dataMap.getElementAt(i, 0) == "require")
 			{
@@ -141,7 +137,7 @@ namespace Components
 				}
 				else
 				{
-					Logger::Print("Zone '%s' already loaded\n", fastfile.data());
+					Logger::Print("Zone '{}' already loaded\n", fastfile);
 				}
 			}
 		}
@@ -149,7 +145,7 @@ namespace Components
 
 	bool ZoneBuilder::Zone::loadAssets()
 	{
-		for (int i = 0; i < this->dataMap.getRows(); ++i)
+		for (std::size_t i = 0; i < this->dataMap.getRows(); ++i)
 		{
 			if (this->dataMap.getElementAt(i, 0) != "require")
 			{
@@ -175,7 +171,8 @@ namespace Components
 						}
 						else
 						{
-							Logger::Error("Unable to rename '%s' to '%s' as the asset type '%s' is invalid!", oldName.data(), newName.data(), typeName.data());
+							Logger::Error(Game::ERR_FATAL, "Unable to rename '{}' to '{}' as the asset type '{}' is invalid!",
+								oldName, newName, typeName);
 						}
 					}
 				}
@@ -209,8 +206,11 @@ namespace Components
 	{
 		Game::XAssetType type = Game::DB_GetXAssetNameType(typeName.data());
 
-        if (name.find(" ", 0) != std::string::npos)
-            Logger::Print("Warning: asset with name '%s' contains spaces. Check your zone source file to ensure this is correct!\n", name.data());
+		if (name.find(" ", 0) != std::string::npos)
+		{
+			Logger::Warning(Game::CON_CHANNEL_DONT_FILTER,
+				"Asset with name '{}' contains spaces. Check your zone source file to ensure this is correct!\n", name);
+		}
 
 		// Sanitize name for empty assets
 		if (name[0] == ',') name.erase(name.begin());
@@ -219,7 +219,7 @@ namespace Components
 
 		if (type == Game::XAssetType::ASSET_TYPE_INVALID || type >= Game::XAssetType::ASSET_TYPE_COUNT)
 		{
-			Logger::Error("Error: Invalid asset type '%s'\n", typeName.data());
+			Logger::Error(Game::ERR_FATAL, "Invalid asset type '{}'\n", typeName);
 			return false;
 		}
 
@@ -227,7 +227,7 @@ namespace Components
 
 		if (!assetHeader.data)
 		{		
-			Logger::Error("Error: Missing asset '%s' of type '%s'\n", name.data(), Game::DB_GetXAssetTypeName(type));
+			Logger::Error(Game::ERR_FATAL, "Missing asset '{}' of type '{}'\n", name, Game::DB_GetXAssetTypeName(type));
 			return false;
 		}
 
@@ -263,7 +263,7 @@ namespace Components
 			const char* assetName = Game::DB_GetXAssetName(asset);
 			if (assetName[0] == ',') ++assetName;
 
-			if(this->getAssetName(type, assetName) == name)
+			if (this->getAssetName(type, assetName) == name)
 			{
 				return i;
 			}
@@ -332,7 +332,7 @@ namespace Components
 		if (assetIndex == -1) // nested asset
 		{
 			// already written. find alias and store in ptr
-			if(this->hasAlias(asset))
+			if (this->hasAlias(asset))
 			{
 				header.data = reinterpret_cast<void*>(this->getAlias(asset));
 			}
@@ -341,12 +341,10 @@ namespace Components
 				asset.header = this->findSubAsset(type, name);
 				if (!asset.header.data)
 				{
-					Logger::Error("Missing required asset '%s' (%s). Export failed!", name.data(), Game::DB_GetXAssetTypeName(type));
+					Logger::Error(Game::ERR_FATAL, "Missing required asset '{}' ({}). Export failed!", name, Game::DB_GetXAssetTypeName(type));
 				}
 
-#ifdef DEBUG
-				Components::Logger::Print("Saving require (%s): %s\n", Game::DB_GetXAssetTypeName(type), Game::DB_GetXAssetNameHandlers[type](&header));
-#endif
+				Logger::Debug("Saving require ({}): {}", Game::DB_GetXAssetTypeName(type), Game::DB_GetXAssetNameHandlers[type](&header));
 
 				// we alias the next 4 (aligned) bytes of the stream b/c DB_InsertPointer gives us a nice pointer to use as the alias
 				// otherwise it would be a fuckfest trying to figure out where the alias is in the stream
@@ -413,7 +411,7 @@ namespace Components
 		}
 #endif
 
-        Utils::IO::WriteFile("uncompressed", zoneBuffer);
+		Utils::IO::WriteFile("uncompressed", zoneBuffer);
 
 		zoneBuffer = Utils::Compression::ZLib::Compress(zoneBuffer);
 		outBuffer.append(zoneBuffer);
@@ -422,7 +420,8 @@ namespace Components
 		Utils::IO::WriteFile(outFile, outBuffer);
 
 		Logger::Print("done.\n");
-		Logger::Print("Zone '%s' written with %d assets and %d script strings\n", outFile.data(), (this->aliasList.size() + this->loadedAssets.size()), this->scriptStrings.size());
+		Logger::Print("Zone '{}' written with {} assets and {} script strings\n",
+			outFile, (this->aliasList.size() + this->loadedAssets.size()), this->scriptStrings.size());
 	}
 
 	void ZoneBuilder::Zone::saveData()
@@ -446,10 +445,11 @@ namespace Components
 		// Write ScriptStrings, if available
 		if (!this->scriptStrings.empty())
 		{
-			this->buffer.saveNull(4); // Empty script string?
-                                      // This actually represents a NULL string, but as scriptString.
-                                      // So scriptString loading for NULL scriptStrings from fastfile results in a NULL scriptString.
-									  // That's the reason why the count is incremented by 1, if scriptStrings are available.
+			this->buffer.saveNull(4);
+			// Empty script string?
+			// This actually represents a NULL string, but as scriptString.
+			// So scriptString loading for NULL scriptStrings from fastfile results in a NULL scriptString.
+			// That's the reason why the count is incremented by 1, if scriptStrings are available.
 
 			// Write ScriptString pointer table
 			for (size_t i = 0; i < this->scriptStrings.size(); ++i)
@@ -485,9 +485,7 @@ namespace Components
 			this->buffer.pushBlock(Game::XFILE_BLOCK_TEMP);
 			this->buffer.align(Utils::Stream::ALIGN_4);
 
-#ifdef DEBUG
-			Components::Logger::Print("Saving (%s): %s\n", Game::DB_GetXAssetTypeName(asset.type), Game::DB_GetXAssetNameHandlers[asset.type](&asset.header));
-#endif
+			Logger::Debug("Saving ({}): {}", Game::DB_GetXAssetTypeName(asset.type), Game::DB_GetXAssetNameHandlers[asset.type](&asset.header));
 
 			this->store(asset.header);
 			AssetHandler::ZoneSave(asset, this);
@@ -519,7 +517,7 @@ namespace Components
 
 		if (this->findAsset(Game::XAssetType::ASSET_TYPE_RAWFILE, this->branding.name) != -1)
 		{
-			Logger::Error("Unable to add branding. Asset '%s' already exists!", this->branding.name);
+			Logger::Error(Game::ERR_FATAL, "Unable to add branding. Asset '{}' already exists!", this->branding.name);
 		}
 
 		Game::XAssetHeader header = { &this->branding };
@@ -530,7 +528,7 @@ namespace Components
 	// Check if the given pointer has already been mapped
 	bool ZoneBuilder::Zone::hasPointer(const void* pointer)
 	{
-		return (this->pointerMap.find(pointer) != this->pointerMap.end());
+		return this->pointerMap.contains(pointer);
 	}
 
 	// Get stored offset for given file pointer
@@ -635,7 +633,7 @@ namespace Components
 		}
 		else
 		{
-			Logger::Error("Unable to rename '%s' to '%s' as the asset type is invalid!", asset.data(), newName.data());
+			Logger::Error(Game::ERR_FATAL, "Unable to rename '{}' to '{}' as the asset type is invalid!", asset, newName);
 		}
 	}
 
@@ -644,14 +642,14 @@ namespace Components
 	{
 		if (type < Game::XAssetType::ASSET_TYPE_COUNT && type >= 0)
 		{
-			if (this->renameMap[type].find(asset) != this->renameMap[type].end())
+			if (this->renameMap[type].contains(asset))
 			{
 				return this->renameMap[type][asset];
 			}
 		}
 		else
 		{
-			Logger::Error("Unable to get name for '%s' as the asset type is invalid!", asset.data());
+			Logger::Error(Game::ERR_FATAL, "Unable to get name for '{}' as the asset type is invalid!", asset);
 		}
 
 		return asset;
@@ -709,20 +707,20 @@ namespace Components
 
 			if (zoneIndex > 0)
 			{
-                Game::XAssetEntry* entry = Game::DB_FindXAssetEntry(type, name.data());
+				Game::XAssetEntry* entry = Game::DB_FindXAssetEntry(type, name.data());
 
-                if (entry && entry->zoneIndex == zoneIndex)
-                {
-                    // Allocate an empty asset (filled with zeros)
-                    header.data = builder->getAllocator()->allocate(Game::DB_GetXAssetSizeHandlers[type]());
+				if (entry && entry->zoneIndex == zoneIndex)
+				{
+					// Allocate an empty asset (filled with zeros)
+					header.data = builder->getAllocator()->allocate(Game::DB_GetXAssetSizeHandlers[type]());
 
-                    // Set the name to the original name, so it can be stored
-                    Game::DB_SetXAssetNameHandlers[type](&header, name.data());
-                    AssetHandler::StoreTemporaryAsset(type, header);
+					// Set the name to the original name, so it can be stored
+					Game::DB_SetXAssetNameHandlers[type](&header, name.data());
+					AssetHandler::StoreTemporaryAsset(type, header);
 
-                    // Set the name to the empty name
-                    Game::DB_SetXAssetNameHandlers[type](&header, builder->getAllocator()->duplicateString("," + name));
-                }
+					// Set the name to the empty name
+					Game::DB_SetXAssetNameHandlers[type](&header, builder->getAllocator()->duplicateString("," + name));
+				}
 			}
 		}
 
@@ -798,7 +796,12 @@ namespace Components
 		{ "localized_ui_mp",  Game::DB_ZONE_GAME, 0 }
 	};
 
-	int __stdcall ZoneBuilder::EntryPoint(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, LPSTR /*lpCmdLine*/, int /*nShowCmd*/)
+	void ZoneBuilder::Com_Quitf_t()
+	{
+		ExitProcess(0);
+	}
+
+	int APIENTRY ZoneBuilder::EntryPoint(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, LPSTR /*lpCmdLine*/, int /*nShowCmd*/)
 	{
 		Utils::Hook::Call<void()>(0x42F0A0)();	// Com_InitCriticalSections
 		Utils::Hook::Call<void()>(0x4301B0)();  // Com_InitMainThread
@@ -832,8 +835,7 @@ namespace Components
 		//Utils::Hook::Call<void()>(0x464A90)();  // Com_ParseCommandLine
 		Utils::Hook::Call<void()>(0x43D140)(); // Com_EventLoop
 
-		ZoneBuilder::Terminate = false;
-		ZoneBuilder::CommandThread = std::thread([]()
+		ZoneBuilder::CommandThread = std::thread([]
 		{
 			while (!ZoneBuilder::Terminate)
 			{
@@ -844,15 +846,7 @@ namespace Components
 			}
 		});
 
-		Command::Add("quit", [](Command::Params*)
-		{
-			Game::Com_Quitf_t();
-		});
-
-		Command::Add("error", [](Command::Params*)
-		{
-			Game::Com_Error(Game::ERR_FATAL, "This is a test %s\n", "error");
-		});
+		Command::Add("quit", ZoneBuilder::Com_Quitf_t);
 
 		// now load default assets and shaders
 		if (FastFiles::Exists("defaults") && FastFiles::Exists("techsets"))
@@ -861,7 +855,8 @@ namespace Components
 		}
 		else
 		{
-			Logger::Print("Warning: Missing new init zones (defaults.ff & techsets.ff). You will need to load fastfiles to manually obtain techsets.\n");
+			Logger::Warning(Game::CON_CHANNEL_DONT_FILTER,
+				"Missing new init zones (defaults.ff & techsets.ff). You will need to load fastfiles to manually obtain techsets.\n");
 			Game::DB_LoadXAssets(baseZones_old, ARRAYSIZE(baseZones_old), 0);
 		}
 
@@ -875,10 +870,10 @@ namespace Components
 
 		// defaults need to load before we do this
 		Utils::Hook::Call<void()>(0x4E1F30)();  // G_SetupWeaponDef
-        Utils::Hook::Call<void()>(0x4454C0)();  // Item_SetupKeywordHash (for loading menus)
-        Utils::Hook::Call<void()>(0x501BC0)();  // Menu_SetupKeywordHash (for loading menus)
-        Utils::Hook::Call<void()>(0x4A1280)();  // something related to uiInfoArray
-        
+		Utils::Hook::Call<void()>(0x4454C0)();  // Item_SetupKeywordHash (for loading menus)
+		Utils::Hook::Call<void()>(0x501BC0)();  // Menu_SetupKeywordHash (for loading menus)
+		Utils::Hook::Call<void()>(0x4A1280)();  // something related to uiInfoArray
+		
 
 		Utils::Hook::Call<void(const char*)>(0x464A90)(GetCommandLineA()); // Com_ParseCommandLine
 		Utils::Hook::Call<void()>(0x60C3D0)(); // Com_AddStartupCommands
@@ -923,12 +918,13 @@ namespace Components
 		return 0;
 	}
 
-	void ZoneBuilder::HandleError(int level, const char* format, ...)
+	void ZoneBuilder::HandleError(Game::errorParm_t code, const char* fmt, ...)
 	{
-		char buffer[256] = { 0 };
+		char buffer[4096] = {0};
 		va_list args;
-		va_start(args, format);
-		vsnprintf_s(buffer, 256, format, args);
+		va_start(args, fmt);
+		_vsnprintf_s(buffer, _TRUNCATE, fmt, args);
+		va_end(args);
 
 		if (!Flags::HasFlag("stdout"))
 		{
@@ -940,9 +936,10 @@ namespace Components
 			fflush(stderr);
 		}
 
-		va_end(args);
-
-		if (!level) ExitProcess(1);
+		if (code == Game::ERR_FATAL)
+		{
+			ExitProcess(1);
+		}	
 	}
 
 	__declspec(naked) void ZoneBuilder::SoftErrorAssetOverflow()
@@ -1053,7 +1050,7 @@ namespace Components
 			AssetHandler::OnLoad([](Game::XAssetType type, Game::XAssetHeader, const std::string&, bool* restrict)
 			{
 				//if (*static_cast<int*>(Game::DB_XAssetPool[type].data) == 0)
-				if(Game::g_poolSize[type] == 0)
+				if (Game::g_poolSize[type] == 0)
 				{
 					*restrict = true;
 				}
@@ -1069,9 +1066,9 @@ namespace Components
 			{
 				int result = Utils::Hook::Call<int(Game::dvar_t*, Game::DvarValue)>(0x642FC0)(dvar, value);
 
-				if(result)
+				if (result)
 				{
-					if(std::string(value.string) != dvar->current.string)
+					if (std::string(value.string) != dvar->current.string)
 					{
 						dvar->current.string = value.string;
 						Game::FS_Restart(0, 0);
@@ -1084,8 +1081,11 @@ namespace Components
 			// set new entry point
 			Utils::Hook(0x4513DA, ZoneBuilder::EntryPoint, HOOK_JUMP).install()->quick();
 
-			// handle com_error calls
-			Utils::Hook(0x4B22D0, ZoneBuilder::HandleError, HOOK_JUMP).install()->quick();
+			// set quit handler
+			Utils::Hook(0x4D4000, ZoneBuilder::Com_Quitf_t, HOOK_JUMP).install()->quick();
+
+			// handle Com_error Calls
+			Utils::Hook(Game::Com_Error, ZoneBuilder::HandleError, HOOK_JUMP).install()->quick();
 
 			// thread fuckery hooks
 			Utils::Hook(0x4C37D0, ZoneBuilder::IsThreadMainThreadHook, HOOK_JUMP).install()->quick();
@@ -1104,29 +1104,30 @@ namespace Components
 				if (!ZoneBuilder::TraceZone.empty() && ZoneBuilder::TraceZone == FastFiles::Current())
 				{
 					ZoneBuilder::TraceAssets.push_back({ type, name });
-                    OutputDebugStringA((name + "\n").data());
+					OutputDebugStringA((name + "\n").data());
 				}
 			});
 
 			Command::Add("verifyzone", [](Command::Params* params)
 			{
 				if (params->size() < 2) return;
-                /*
-                Utils::Hook(0x4AE9C2, [] {
-                    Game::WeaponCompleteDef** varPtr = (Game::WeaponCompleteDef**)0x112A9F4;
-                    Game::WeaponCompleteDef* var = *varPtr;
-                    OutputDebugStringA("");
-                    Utils::Hook::Call<void()>(0x4D1D60)(); // DB_PopStreamPos
-                }, HOOK_JUMP).install()->quick();
+				/*
+				Utils::Hook(0x4AE9C2, []
+				{
+					Game::WeaponCompleteDef** varPtr = (Game::WeaponCompleteDef**)0x112A9F4;
+					Game::WeaponCompleteDef* var = *varPtr;
+					OutputDebugStringA("");
+					Utils::Hook::Call<void()>(0x4D1D60)(); // DB_PopStreamPos
+				}, HOOK_JUMP).install()->quick();
 
-
-                Utils::Hook(0x4AE9B4, [] {
-                    Game::WeaponCompleteDef** varPtr = (Game::WeaponCompleteDef**)0x112A9F4;
-                    Game::WeaponCompleteDef* var = *varPtr;
-                    OutputDebugStringA("");
-                    Utils::Hook::Call<void()>(0x4D1D60)(); // DB_PopStreamPos
-                }, HOOK_JUMP).install()->quick();
-                */
+				Utils::Hook(0x4AE9B4, []
+				{
+					Game::WeaponCompleteDef** varPtr = (Game::WeaponCompleteDef**)0x112A9F4;
+					Game::WeaponCompleteDef* var = *varPtr;
+					OutputDebugStringA("");
+					Utils::Hook::Call<void()>(0x4D1D60)(); // DB_PopStreamPos
+				}, HOOK_JUMP).install()->quick();
+				*/
 
 				std::string zone = params->get(1);
 
@@ -1137,14 +1138,14 @@ namespace Components
 				info.allocFlags = Game::DB_ZONE_MOD;
 				info.freeFlags = 0;
 
-				Logger::Print("Loading zone '%s'...\n", zone.data());
+				Logger::Print("Loading zone '{}'...\n", zone);
 
 				Game::DB_LoadXAssets(&info, 1, true);
 				AssetHandler::FindOriginalAsset(Game::XAssetType::ASSET_TYPE_RAWFILE, zone.data()); // Lock until zone is loaded
 
 				auto assets = ZoneBuilder::EndAssetTrace();
 
-				Logger::Print("Unloading zone '%s'...\n", zone.data());
+				Logger::Print("Unloading zone '{}'...\n", zone);
 				info.freeFlags = Game::DB_ZONE_MOD;
 				info.allocFlags = 0;
 				info.name = nullptr;
@@ -1152,12 +1153,12 @@ namespace Components
 				Game::DB_LoadXAssets(&info, 1, true);
 				AssetHandler::FindOriginalAsset(Game::XAssetType::ASSET_TYPE_RAWFILE, "default"); // Lock until zone is unloaded
 
-				Logger::Print("Zone '%s' loaded with %d assets:\n", zone.data(), assets.size());
+				Logger::Print("Zone '{}' loaded with {} assets:\n", zone, assets.size());
 
 				int count = 0;
 				for (auto i = assets.begin(); i != assets.end(); ++i, ++count)
 				{
-					Logger::Print(" %d: %s: %s\n", count, Game::DB_GetXAssetTypeName(i->first), i->second.data());
+					Logger::Print(" {}: {}: {}\n", count, Game::DB_GetXAssetTypeName(i->first), i->second);
 				}
 
 				Logger::Print("\n");
@@ -1168,7 +1169,7 @@ namespace Components
 				if (params->size() < 2) return;
 
 				std::string zoneName = params->get(1);
-				Logger::Print("Building zone '%s'...\n", zoneName.data());
+				Logger::Print("Building zone '{}'...\n", zoneName);
 
 				Zone(zoneName).build();
 			});
@@ -1219,13 +1220,13 @@ namespace Components
 
 					if (Utils::IO::FileExists("zone/techsets/" + zone + "_techsets.ff"))
 					{
-						Logger::Print("Skipping previously generated zone %s\n", zone.data());
+						Logger::Print("Skipping previously generated zone {}\n", zone);
 						continue;
 					}
 
 					if (zone.find("_load") != std::string::npos)
 					{
-						Logger::Print("Skipping loadscreen zone %s\n", zone.data());
+						Logger::Print("Skipping loadscreen zone {}\n", zone);
 						continue;
 					}
 
@@ -1249,7 +1250,7 @@ namespace Components
 
 					if (curTechsets_list.size() == 0)
 					{
-						Logger::Print("Skipping empty zone %s\n", zone.data());
+						Logger::Print("Skipping empty zone {}\n", zone);
 						// unload zone
 						info.name = nullptr;
 						info.allocFlags = 0x0;
@@ -1278,7 +1279,7 @@ namespace Components
 
 					// build the techset zone
 					std::string zoneName = "techsets/" + zone + "_techsets";
-					Logger::Print("Building zone '%s'...\n", zoneName.data());
+					Logger::Print("Building zone '{}'...\n", zoneName);
 					Zone(zoneName).build();
 
 					// unload original zone
@@ -1326,7 +1327,7 @@ namespace Components
 					}
 					else
 					{
-						Logger::Print("Zone '%s' already loaded\n", it.data());
+						Logger::Print("Zone '{}' already loaded\n", it);
 					}
 
 					if (i == 20) // cap at 20 just to be safe
@@ -1351,7 +1352,7 @@ namespace Components
 
 						Utils::IO::WriteFile(tempZoneFile, csvStr.data());
 
-						Logger::Print("Building zone '%s'...\n", tempZone.data());
+						Logger::Print("Building zone '{}'...\n", tempZone);
 						Zone(tempZone).build();
 
 						// unload all zones
@@ -1382,7 +1383,7 @@ namespace Components
 						std::string mat = ZoneBuilder::FindMaterialByTechnique(tech);
 						if (mat.length() == 0)
 						{
-							Logger::Print("Couldn't find a material for techset %s. Sort Keys will be incorrect.\n", tech.c_str());
+							Logger::Print("Couldn't find a material for techset {}. Sort Keys will be incorrect.\n", tech);
 							csvStr.append("techset," + tech + "\n");
 						}
 						else
@@ -1396,7 +1397,7 @@ namespace Components
 
 					Utils::IO::WriteFile(tempZoneFile, csvStr.data());
 
-					Logger::Print("Building zone '%s'...\n", tempZone.data());
+					Logger::Print("Building zone '{}'...\n", tempZone);
 					Zone(tempZone).build();
 
 					// unload all zones
@@ -1412,7 +1413,7 @@ namespace Components
 				// build final techsets fastfile
 				if (subCount > 24)
 				{
-					Logger::ErrorPrint(Game::ERR_DROP, "How did you have 576 fastfiles?\n");
+					Logger::Error(Game::ERR_DROP, "How did you have 576 fastfiles?\n");
 				}
 
 				curTechsets_list.clear();
@@ -1463,7 +1464,7 @@ namespace Components
 					Game::DB_EnumXAssets(type, [](Game::XAssetHeader header, void* data)
 					{
 						Game::XAsset asset = { *reinterpret_cast<Game::XAssetType*>(data), header };
-						Logger::Print("%s\n", Game::DB_GetXAssetName(&asset));
+						Logger::Print("{}\n", Game::DB_GetXAssetName(&asset));
 					}, &type, false);
 				}
 			});
@@ -1496,7 +1497,8 @@ namespace Components
 			{
 				Game::DB_EnumXAssets(Game::ASSET_TYPE_MATERIAL, [](Game::XAssetHeader header, void*)
 				{
-					Logger::Print("%s: %X %X %X\n", header.material->info.name, header.material->info.sortKey & 0xFF, header.material->info.gameFlags & 0xFF, header.material->stateFlags & 0xFF);
+					Logger::Print("{}: {:#X} {:#X} {:#X}\n",
+						header.material->info.name, header.material->info.sortKey & 0xFF, header.material->info.gameFlags & 0xFF, header.material->stateFlags & 0xFF);
 				}, nullptr, false);
 			});
 
@@ -1511,7 +1513,7 @@ namespace Components
 				{
 					*i = Utils::String::VA("images/%s", i->data());
 
-					if(FileSystem::File(*i).exists())
+					if (FileSystem::File(*i).exists())
 					{
 						i = images.erase(i);
 						continue;
@@ -1521,7 +1523,7 @@ namespace Components
 				}
 
 				Logger::Print("------------------- BEGIN IWI DUMP -------------------\n");
-				Logger::Print("%s\n", json11::Json(images).dump().data());
+				Logger::Print("{}\n", json11::Json(images).dump());
 				Logger::Print("------------------- END IWI DUMP -------------------\n");
 			});
 
@@ -1532,7 +1534,7 @@ namespace Components
 	ZoneBuilder::~ZoneBuilder()
 	{
 		ZoneBuilder::Terminate = true;
-		if(ZoneBuilder::CommandThread.joinable())
+		if (ZoneBuilder::CommandThread.joinable())
 		{
 			ZoneBuilder::CommandThread.join();
 		}
@@ -1546,7 +1548,7 @@ namespace Components
 		unsigned int integer = 0x80000000;
 		Utils::RotLeft(integer, 1);
 
-		if(integer != 1)
+		if (integer != 1)
 		{
 			printf("Error\n");
 			printf("Bit shifting failed: %X\n", integer);

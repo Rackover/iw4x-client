@@ -19,17 +19,19 @@ namespace Components
 	Dvar::Var ServerList::NETServerQueryLimit;
 	Dvar::Var ServerList::NETServerFrames;
 
+	bool ServerList::useMasterServer = true;
+
 	std::vector<ServerList::ServerInfo>* ServerList::GetList()
 	{
 		if (ServerList::IsOnlineList())
 		{
 			return &ServerList::OnlineList;
 		}
-		else if (ServerList::IsOfflineList())
+		if (ServerList::IsOfflineList())
 		{
 			return &ServerList::OfflineList;
 		}
-		else if (ServerList::IsFavouriteList())
+		if (ServerList::IsFavouriteList())
 		{
 			return &ServerList::FavouriteList;
 		}
@@ -198,6 +200,11 @@ namespace Components
 
 	void ServerList::RefreshVisibleList(UIScript::Token)
 	{
+		ServerList::RefreshVisibleListInternal(UIScript::Token());
+	}
+
+	void ServerList::RefreshVisibleListInternal(UIScript::Token, bool refresh)
+	{
 		Dvar::Var("ui_serverSelected").set(false);
 
 		ServerList::VisibleList.clear();
@@ -205,8 +212,7 @@ namespace Components
 		auto list = ServerList::GetList();
 		if (!list) return;
 
-		// Refresh entirely, if there is no entry in the list
-		if (list->empty())
+		if (refresh)
 		{
 			ServerList::Refresh(UIScript::Token());
 			return;
@@ -274,22 +280,29 @@ namespace Components
 		}
 		else if (ServerList::IsOnlineList())
 		{
-#ifdef USE_LEGACY_SERVER_LIST
+			const auto masterPort = Dvar::Var("masterPort").get<int>();
+			const auto masterServerName = Dvar::Var("masterServerName").get<const char*>();
+
+			// Check if our dvars can properly convert to a address
+			Game::netadr_t masterServerAddr;
+			if (!ServerList::GetMasterServer(masterServerName, masterPort, masterServerAddr))
+			{
+				Logger::Print("Could not resolve address for {}:{}", masterServerName, masterPort);
+				Toast::Show("cardicon_headshot", "^1Error", Utils::String::VA("Could not resolve address for %s:%u", masterServerName, masterPort), 5000);
+				useMasterServer = false;
+				return;
+			}
+
+			Toast::Show("cardicon_headshot", "Server Browser", "Fetching servers...", 3000);
+
+			useMasterServer = true;
+
 			ServerList::RefreshContainer.awatingList = true;
 			ServerList::RefreshContainer.awaitTime = Game::Sys_Milliseconds();
-
-			int masterPort = Dvar::Var("masterPort").get<int>();
-			const char* masterServerName = Dvar::Var("masterServerName").get<const char*>();
-
 			ServerList::RefreshContainer.host = Network::Address(Utils::String::VA("%s:%u", masterServerName, masterPort));
 
-			Logger::Print("Sending serverlist request to master: %s:%u\n", masterServerName, masterPort);
-
+			Logger::Print("Sending serverlist request to master\n");
 			Network::SendCommand(ServerList::RefreshContainer.host, "getservers", Utils::String::VA("IW4 %i full empty", PROTOCOL));
-			//Network::SendCommand(ServerList::RefreshContainer.Host, "getservers", "0 full empty");
-#else
-			Node::Synchronize();
-#endif
 		}
 		else if (ServerList::IsFavouriteList())
 		{
@@ -367,7 +380,7 @@ namespace Components
 		auto list = ServerList::GetList();
 		if (list) list->clear();
 		
-		ServerList::RefreshVisibleList(UIScript::Token());
+		ServerList::RefreshVisibleListInternal(UIScript::Token());
 		
 		Game::ShowMessageBox("Server removed from favourites.", "Success");
 	}
@@ -439,7 +452,7 @@ namespace Components
 		}
 	}
 
-	void ServerList::Insert(Network::Address address, Utils::InfoString info)
+	void ServerList::Insert(const Network::Address& address, const Utils::InfoString& info)
 	{
 		std::lock_guard<std::recursive_mutex> _(ServerList::RefreshContainer.mutex);
 
@@ -529,7 +542,7 @@ namespace Components
 					if (lList)
 					{
 						lList->push_back(server);
-						ServerList::RefreshVisibleList(UIScript::Token());
+						ServerList::RefreshVisibleListInternal(UIScript::Token());
 					}
 				}
 
@@ -570,8 +583,7 @@ namespace Components
 	void ServerList::SortList()
 	{
 		// Only sort when the serverlist is open
-		Game::menuDef_t* menu = Game::Menus_FindByName(Game::uiContext, "pc_join_unranked");
-		if (!menu || !Game::Menu_IsVisible(Game::uiContext, menu)) return;
+		if (!ServerList::IsServerListOpen()) return;
 
 		std::stable_sort(ServerList::VisibleList.begin(), ServerList::VisibleList.end(), [](const unsigned int &server1, const unsigned int &server2) -> bool
 		{
@@ -637,12 +649,22 @@ namespace Components
 
 		if (ServerList::RefreshContainer.awatingList)
 		{
-			// Check if we haven't got a response within 10 seconds
+			// Stop counting if we are out of the server browser menu
+			if (!ServerList::IsServerListOpen())
+			{
+				ServerList::RefreshContainer.awatingList = false;
+			}
+
+			// Check if we haven't got a response within 5 seconds
 			if (Game::Sys_Milliseconds() - ServerList::RefreshContainer.awaitTime > 5000)
 			{
 				ServerList::RefreshContainer.awatingList = false;
 
-				Logger::Print("We haven't received a response from the master within %d seconds!\n", (Game::Sys_Milliseconds() - ServerList::RefreshContainer.awaitTime) / 1000);
+				Logger::Print("We haven't received a response from the master within {} seconds!\n", (Game::Sys_Milliseconds() - ServerList::RefreshContainer.awaitTime) / 1000);
+				Toast::Show("cardicon_headshot", "^1Error", "Failed to reach master server, using node servers instead.", 5000);
+
+				useMasterServer = false;
+				Node::Synchronize();
 			}
 		}
 
@@ -683,7 +705,7 @@ namespace Components
 
 		netSource.set(source);
 
-		ServerList::RefreshVisibleList(UIScript::Token());
+		ServerList::RefreshVisibleListInternal(UIScript::Token(), true);
 	}
 
 	void ServerList::UpdateGameType()
@@ -699,7 +721,7 @@ namespace Components
 
 		joinGametype.set(gametype);
 
-		ServerList::RefreshVisibleList(UIScript::Token());
+		ServerList::RefreshVisibleListInternal(UIScript::Token());
 	}
 
 	void ServerList::UpdateVisibleInfo()
@@ -733,6 +755,20 @@ namespace Components
 		}
 	}
 
+	bool ServerList::GetMasterServer(const char* ip, int port, Game::netadr_t& address)
+	{
+		return Game::NET_StringToAdr(Utils::String::VA("%s:%u", ip, port), &address);
+	}
+
+	bool ServerList::IsServerListOpen()
+	{
+		auto* menu = Game::Menus_FindByName(Game::uiContext, "pc_join_unranked");
+		if (!menu) 
+			return false;
+
+		return Game::Menu_IsVisible(Game::uiContext, menu);
+	}
+
 	ServerList::ServerList()
 	{
 		ServerList::OnlineList.clear();
@@ -740,18 +776,18 @@ namespace Components
 		ServerList::FavouriteList.clear();
 		ServerList::VisibleList.clear();
 
-		Dvar::OnInit([]()
+		Scheduler::Once([]
 		{
 			ServerList::UIServerSelected = Dvar::Register<bool>("ui_serverSelected", false,
-				Game::dvar_flag::DVAR_NONE, "Whether a server has been selected in the serverlist");
+				Game::DVAR_NONE, "Whether a server has been selected in the serverlist");
 			ServerList::UIServerSelectedMap = Dvar::Register<const char*>("ui_serverSelectedMap", "mp_afghan",
-				Game::dvar_flag::DVAR_NONE, "Map of the selected server");
+				Game::DVAR_NONE, "Map of the selected server");
 
 			ServerList::NETServerQueryLimit = Dvar::Register<int>("net_serverQueryLimit", 1,
-				1, 10, Dedicated::IsEnabled() ? Game::dvar_flag::DVAR_NONE : Game::dvar_flag::DVAR_ARCHIVE, "Amount of server queries per frame");
+				1, 10, Dedicated::IsEnabled() ? Game::DVAR_NONE : Game::DVAR_ARCHIVE, "Amount of server queries per frame");
 			ServerList::NETServerFrames = Dvar::Register<int>("net_serverFrames", 30,
-				1, 60, Dedicated::IsEnabled() ? Game::dvar_flag::DVAR_NONE : Game::dvar_flag::DVAR_ARCHIVE, "Amount of server query frames per second");
-		});
+				1, 60, Dedicated::IsEnabled() ? Game::DVAR_NONE : Game::DVAR_ARCHIVE, "Amount of server query frames per second");
+		}, Scheduler::Pipeline::MAIN);
 
 		// Fix ui_netsource dvar
 		Utils::Hook::Nop(0x4CDEEC, 5); // Don't reset the netsource when gametypes aren't loaded
@@ -760,7 +796,7 @@ namespace Components
 		//Localization::Set("MPUI_SERVERQUERIED", "Sent requests: 0/0");
 		Localization::Set("MPUI_SERVERQUERIED", "Servers: 0\nPlayers: 0 (0)");
 
-		Network::Handle("getServersResponse", [](Network::Address address, const std::string& data)
+		Network::OnPacket("getServersResponse", [](const Network::Address& address, [[maybe_unused]] const std::string& data)
 		{
 			if (ServerList::RefreshContainer.host != address) return; // Only parse from host we sent to
 
@@ -788,15 +824,13 @@ namespace Components
 				ServerList::InsertRequest(serverAddr);
 			}
 
-			Logger::Print("Parsed %d servers from master\n", ServerList::RefreshContainer.servers.size() - count);
+			Logger::Print("Parsed {} servers from master\n", ServerList::RefreshContainer.servers.size() - count);
 		});
 
 		// Set default masterServerName + port and save it 
-#ifdef USE_LEGACY_SERVER_LIST
-		Utils::Hook::Set<char*>(0x60AD92, "127.0.0.1");
-		Utils::Hook::Set<BYTE>(0x60AD90, Game::dvar_flag::DVAR_ARCHIVE); // masterServerName
-		Utils::Hook::Set<BYTE>(0x60ADC6, Game::dvar_flag::DVAR_ARCHIVE); // masterPort
-#endif
+		Utils::Hook::Set<const char*>(0x60AD92, "master.xlabs.dev");
+		Utils::Hook::Set<BYTE>(0x60AD90, Game::DVAR_NONE); // masterServerName
+		Utils::Hook::Set<BYTE>(0x60ADC6, Game::DVAR_NONE); // masterPort
 
 		// Add server list feeder
 		UIFeeder::Add(2.0f, ServerList::GetServerCount, ServerList::GetServerText, ServerList::SelectServer);
@@ -831,7 +865,7 @@ namespace Components
 				ServerList::SortAsc = true;
 			}
 
-			Logger::Print("Sorting server list by token: %d\n", ServerList::SortKey);
+			Logger::Print("Sorting server list by token: {}\n", ServerList::SortKey);
 			ServerList::SortList();
 		});
 
@@ -881,7 +915,7 @@ namespace Components
 				count += server.clients;
 			}
 
-			Logger::Print("There are %d players playing.\n", count);
+			Logger::Debug("There are {} players playing", count);
 		});
 #endif
 		// Add required ownerDraws
@@ -889,12 +923,7 @@ namespace Components
 		UIScript::AddOwnerDraw(253, ServerList::UpdateGameType);
 
 		// Add frame callback
-		Scheduler::OnFrame(ServerList::Frame);
-
-		// This is placed here in case the anticheat has been disabled!
-#if !defined(DISABLE_ANTICHEAT) && defined(PROCTECT_PROCESS)
-		Scheduler::OnFrame(AntiCheat::ReadIntegrityCheck, true);
-#endif
+		Scheduler::Loop(ServerList::Frame, Scheduler::Pipeline::CLIENT);
 	}
 
 	ServerList::~ServerList()

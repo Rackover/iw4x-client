@@ -1,4 +1,5 @@
 #include <STDInclude.hpp>
+#include "GSC/Script.hpp"
 
 namespace Components
 {
@@ -10,15 +11,15 @@ namespace Components
 
 		if (!Dvar::Var("sv_cheats").get<bool>())
 		{
-			Logger::Print("CheatsOk: cheats are disabled!\n");
-			Game::SV_GameSendServerCommand(entNum, 0, Utils::String::VA("%c \"GAME_CHEATSNOTENABLED\"", 0x65));
+			Logger::Debug("Cheats are disabled!");
+			Game::SV_GameSendServerCommand(entNum, Game::SV_CMD_CAN_IGNORE, Utils::String::VA("%c \"GAME_CHEATSNOTENABLED\"", 0x65));
 			return false;
 		}
 
 		if (ent->health < 1)
 		{
-			Logger::Print("CheatsOk: entity %i must be alive to use this command!\n", entNum);
-			Game::SV_GameSendServerCommand(entNum, 0, Utils::String::VA("%c \"GAME_MUSTBEALIVECOMMAND\"", 0x65));
+			Logger::Debug("Entity {} must be alive to use this command!", entNum);
+			Game::SV_GameSendServerCommand(entNum, Game::SV_CMD_CAN_IGNORE, Utils::String::VA("%c \"GAME_MUSTBEALIVECOMMAND\"", 0x65));
 			return false;
 		}
 
@@ -38,7 +39,7 @@ namespace Components
 
 		if (ent->client == nullptr)
 		{
-			Logger::Print("ClientCommand: client %d is not fully in game yet\n", clientNum);
+			Logger::Debug("ClientCommand: client {} is not fully in game yet", clientNum);
 			return;
 		}
 
@@ -64,9 +65,9 @@ namespace Components
 			ent->client->flags ^= Game::PLAYER_FLAG_NOCLIP;
 
 			const auto entNum = ent->s.number;
-			Logger::Print("Noclip toggled for entity %i\n", entNum);
+			Logger::Debug("Noclip toggled for entity {}", entNum);
 
-			Game::SV_GameSendServerCommand(entNum, 0, Utils::String::VA("%c \"%s\"", 0x65,
+			Game::SV_GameSendServerCommand(entNum, Game::SV_CMD_CAN_IGNORE, Utils::String::VA("%c \"%s\"", 0x65,
 				(ent->client->flags & Game::PLAYER_FLAG_NOCLIP) ? "GAME_NOCLIPON" : "GAME_NOCLIPOFF"));
 		});
 
@@ -78,9 +79,9 @@ namespace Components
 			ent->client->flags ^= Game::PLAYER_FLAG_UFO;
 
 			const auto entNum = ent->s.number;
-			Logger::Print("UFO toggled for entity %i\n", entNum);
+			Logger::Debug("UFO toggled for entity {}", entNum);
 
-			Game::SV_GameSendServerCommand(entNum, 0, Utils::String::VA("%c \"%s\"", 0x65,
+			Game::SV_GameSendServerCommand(entNum, Game::SV_CMD_CAN_IGNORE, Utils::String::VA("%c \"%s\"", 0x65,
 				(ent->client->flags & Game::PLAYER_FLAG_UFO) ? "GAME_UFOON" : "GAME_UFOOFF"));
 		});
 
@@ -92,9 +93,9 @@ namespace Components
 			ent->flags ^= Game::FL_GODMODE;
 
 			const auto entNum = ent->s.number;
-			Logger::Print("God toggled for entity %i\n", entNum);
+			Logger::Debug("God toggled for entity {}", entNum);
 
-			Game::SV_GameSendServerCommand(entNum, 0, Utils::String::VA("%c \"%s\"", 0x65,
+			Game::SV_GameSendServerCommand(entNum, Game::SV_CMD_CAN_IGNORE, Utils::String::VA("%c \"%s\"", 0x65,
 				(ent->flags & Game::FL_GODMODE) ? "GAME_GODMODE_ON" : "GAME_GODMODE_OFF"));
 		});
 
@@ -106,9 +107,9 @@ namespace Components
 			ent->flags ^= Game::FL_DEMI_GODMODE;
 
 			const auto entNum = ent->s.number;
-			Logger::Print("Demigod toggled for entity %i\n", entNum);
+			Logger::Debug("Demigod toggled for entity {}", entNum);
 
-			Game::SV_GameSendServerCommand(entNum, 0, Utils::String::VA("%c \"%s\"", 0x65,
+			Game::SV_GameSendServerCommand(entNum, Game::SV_CMD_CAN_IGNORE, Utils::String::VA("%c \"%s\"", 0x65,
 				(ent->flags & Game::FL_DEMI_GODMODE) ? "GAME_DEMI_GODMODE_ON" : "GAME_DEMI_GODMODE_OFF"));
 		});
 
@@ -120,9 +121,9 @@ namespace Components
 			ent->flags ^= Game::FL_NOTARGET;
 
 			const auto entNum = ent->s.number;
-			Logger::Print("Notarget toggled for entity %i\n", entNum);
+			Logger::Debug("Notarget toggled for entity {}", entNum);
 
-			Game::SV_GameSendServerCommand(entNum, 0, Utils::String::VA("%c \"%s\"", 0x65,
+			Game::SV_GameSendServerCommand(entNum, Game::SV_CMD_CAN_IGNORE, Utils::String::VA("%c \"%s\"", 0x65,
 				(ent->flags & Game::FL_NOTARGET) ? "GAME_NOTARGETON" : "GAME_NOTARGETOFF"));
 		});
 
@@ -137,7 +138,7 @@ namespace Components
 
 			if (params->size() < 4 || params->size() > 6)
 			{
-				Game::SV_GameSendServerCommand(ent->s.number, 0,
+				Game::SV_GameSendServerCommand(ent->s.number, Game::SV_CMD_CAN_IGNORE,
 					Utils::String::VA("%c \"GAME_USAGE\x15: setviewpos x y z [yaw] [pitch]\n\"", 0x65));
 				return;
 			}
@@ -157,7 +158,89 @@ namespace Components
 				angles[0] = std::strtof(params->get(5), nullptr); // Pitch
 			}
 
+			Logger::Debug("Teleported entity {} to {:f} {:f} {:f}\nviewpos {:f} {:f}", ent->s.number,
+				origin[0], origin[1], origin[2], angles[0], angles[2]);
 			Game::TeleportPlayer(ent, origin, angles);
+		});
+
+		ClientCommand::Add("give", [](Game::gentity_s* ent, [[maybe_unused]] Command::ServerParams* params)
+		{
+			if (!ClientCommand::CheatsOk(ent))
+				return;
+
+			if (params->size() < 2)
+			{
+				Game::SV_GameSendServerCommand(ent->s.number, Game::SV_CMD_CAN_IGNORE,
+					Utils::String::VA("%c \"GAME_USAGE\x15: give <weapon name>\"", 0x65));
+				return;
+			}
+
+			Game::level->initializing = 1;
+			const auto* weaponName = params->get(1);
+			Logger::Debug("Giving weapon {} to entity {}", weaponName, ent->s.number);
+			const auto weaponIndex = Game::G_GetWeaponIndexForName(weaponName);
+
+			if (weaponIndex == 0)
+			{
+				Game::level->initializing = 0;
+				return;
+			}
+
+			if (Game::BG_GetWeaponDef(weaponIndex)->inventoryType == Game::weapInventoryType_t::WEAPINVENTORY_ALTMODE)
+			{
+				Logger::PrintError(Game::CON_CHANNEL_ERROR,
+					"You can't directly spawn the altfire weapon '{}'. Spawn a weapon that has this altmode instead.\n", weaponName);
+				Game::level->initializing = 0;
+				return;
+			}
+
+			auto* weapEnt = Game::G_Spawn();
+			std::memcpy(weapEnt->r.currentOrigin, ent->r.currentOrigin, sizeof(std::float_t[3]));
+			Game::G_GetItemClassname(static_cast<int>(weaponIndex), weapEnt);
+			Game::G_SpawnItem(weapEnt, static_cast<int>(weaponIndex));
+
+			weapEnt->active = 1;
+			const auto offHandClass = Game::BG_GetWeaponDef(weaponIndex)->offhandClass;
+			if (offHandClass != Game::OFFHAND_CLASS_NONE)
+			{
+				auto* client = ent->client;
+				if ((client->ps.weapCommon.offhandPrimary != offHandClass) && (client->ps.weapCommon.offhandSecondary != offHandClass))
+				{
+					switch (offHandClass)
+					{
+					case Game::OFFHAND_CLASS_FRAG_GRENADE:
+					case Game::OFFHAND_CLASS_THROWINGKNIFE:
+					case Game::OFFHAND_CLASS_OTHER:
+						Logger::Debug("Setting offhandPrimary");
+						client->ps.weapCommon.offhandPrimary = offHandClass;
+						break;
+					default:
+						Logger::Debug("Setting offhandSecondary");
+						client->ps.weapCommon.offhandSecondary = offHandClass;
+						break;
+					}
+				}
+			}
+
+			Game::Touch_Item(weapEnt, ent, 0);
+			weapEnt->active = 0;
+
+			if (weapEnt->r.isInUse)
+			{
+				Logger::Debug("Freeing up entity {}", weapEnt->s.number);
+				Game::G_FreeEntity(weapEnt);
+			}
+
+			Game::level->initializing = 0;
+
+			for (std::size_t i = 0; i < std::extent_v<decltype(Game::playerState_s::weaponsEquipped)>; ++i)
+			{
+				const auto index = ent->client->ps.weaponsEquipped[i];
+				if (index != 0)
+				{
+					Game::Add_Ammo(ent, index, 0, 998, 1);
+				}
+			}
 		});
 	}
 
@@ -180,7 +263,7 @@ namespace Components
 
 		ClientCommand::Add("entitycount", []([[maybe_unused]] Game::gentity_s* ent, [[maybe_unused]] Command::ServerParams* params)
 		{
-			Logger::Print("Entity count = %i\n", *Game::level_num_entities);
+			Logger::Print("Entity count = {}\n", Game::level->num_entities);
 		});
 
 		// Also known as: "vis"
@@ -208,7 +291,7 @@ namespace Components
 			strncpy_s(ent->client->visionName[visMode],
 				sizeof(Game::gclient_t::visionName[0]) / sizeof(char), name, _TRUNCATE);
 
-			Game::SV_GameSendServerCommand(ent->s.number, 1,
+			Game::SV_GameSendServerCommand(ent->s.number, Game::SV_CMD_RELIABLE,
 				Utils::String::VA("%c \"%s\" %i", Game::MY_CMDS[visMode], name, duration));
 		});
 
@@ -236,20 +319,39 @@ namespace Components
 			strncpy_s(ent->client->visionName[visMode],
 				sizeof(Game::gclient_t::visionName[0]) / sizeof(char), name, _TRUNCATE);
 
-			Game::SV_GameSendServerCommand(ent->s.number, 1,
+			Game::SV_GameSendServerCommand(ent->s.number, Game::SV_CMD_RELIABLE,
 				Utils::String::VA("%c \"%s\" %i", Game::MY_CMDS[visMode], name, duration));
 		});
 
 		ClientCommand::Add("g_testCmd", []([[maybe_unused]] Game::gentity_s* ent, [[maybe_unused]] Command::ServerParams* params)
 		{
 			assert(ent != nullptr);
-			ent->client->ps.stunTime = 1000 + *Game::level_time; // 1000 is the default test stun time
+
+			ent->client->ps.stunTime = 1000 + Game::level->time; // 1000 is the default test stun time
+			Logger::Debug("playerState_s.stunTime is {}", ent->client->ps.stunTime);
+		});
+
+		ClientCommand::Add("kill", []([[maybe_unused]] Game::gentity_s* ent, [[maybe_unused]] Command::ServerParams* params)
+		{
+			assert(ent->client != nullptr);
+			assert(ent->client->sess.connected != Game::CON_DISCONNECTED);
+
+			if (ent->client->sess.sessionState != Game::SESS_STATE_PLAYING || !ClientCommand::CheatsOk(ent))
+				return;
+
+			Scheduler::Once([ent]
+			{
+				ent->flags &= ~(Game::FL_GODMODE | Game::FL_DEMI_GODMODE);
+				ent->health = 0;
+				ent->client->ps.stats[0] = 0;
+				Game::player_die(ent, ent, ent, 100000, 12, 0, nullptr, Game::HITLOC_NONE, 0);
+			}, Scheduler::Pipeline::SERVER);
 		});
 	}
 
 	void ClientCommand::AddScriptFunctions()
 	{
-		Script::AddMethod("Noclip", [](Game::scr_entref_t entref) // gsc: Noclip(<optional int toggle>);
+		Script::AddMethod("Noclip", [](Game::scr_entref_t entref) // gsc: iw4x_Noclip(<optional int toggle>);
 		{
 			const auto* ent = Game::GetPlayerEntity(entref);
 
@@ -270,7 +372,7 @@ namespace Components
 			}
 		});
 
-		Script::AddMethod("Ufo", [](Game::scr_entref_t entref) // gsc: Ufo(<optional int toggle>);
+		Script::AddMethod("Ufo", [](Game::scr_entref_t entref) // gsc: iw4x_Ufo(<optional int toggle>);
 		{
 			const auto* ent = Game::GetPlayerEntity(entref);
 
@@ -291,7 +393,7 @@ namespace Components
 			}
 		});
 
-		Script::AddMethod("God", [](Game::scr_entref_t entref) // gsc: God(<optional int toggle>);
+		Script::AddMethod("God", [](Game::scr_entref_t entref) // gsc: iw4x_God(<optional int toggle>);
 		{
 			auto* ent = Game::GetEntity(entref);
 
@@ -312,7 +414,7 @@ namespace Components
 			}
 		});
 
-		Script::AddMethod("Demigod", [](Game::scr_entref_t entref) // gsc: Demigod(<optional int toggle>);
+		Script::AddMethod("Demigod", [](Game::scr_entref_t entref) // gsc: iw4x_Demigod(<optional int toggle>);
 		{
 			auto* ent = Game::GetEntity(entref);
 
@@ -333,7 +435,7 @@ namespace Components
 			}
 		});
 
-		Script::AddMethod("Notarget", [](Game::scr_entref_t entref) // gsc: Notarget(<optional int toggle>);
+		Script::AddMethod("Notarget", [](Game::scr_entref_t entref) // gsc: iw4x_Notarget(<optional int toggle>);
 		{
 			auto* ent = Game::GetEntity(entref);
 
@@ -354,7 +456,7 @@ namespace Components
 			}
 		});
 
-		Script::AddFunction("DropAllBots", []() // gsc: DropAllBots();
+		Script::AddFunction("DropAllBots", [] // gsc: iw4x_DropAllBots();
 		{
 			Game::SV_DropAllBots();
 		});

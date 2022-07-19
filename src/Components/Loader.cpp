@@ -33,8 +33,8 @@ namespace Components
 		Loader::Register(new Core());
 		Loader::Register(new Flags());
 		Loader::Register(new Singleton());
-		Loader::Register(new Exception()); // install our exception handler as early as posssible to get better debug dumps from startup crashes
-
+		// Install our exception handler as early as posssible to get better debug dumps from startup crashes
+		Loader::Register(new Exception());
 		Loader::Register(new Auth());
 		Loader::Register(new Bans());
 		Loader::Register(new Bots());
@@ -51,7 +51,6 @@ namespace Components
 		Loader::Register(new Zones());
 		Loader::Register(new D3D9Ex());
 		Loader::Register(new Logger());
-		Loader::Register(new Script());
 		Loader::Register(new Weapon());
 		Loader::Register(new Window());
 		Loader::Register(new Command());
@@ -64,14 +63,13 @@ namespace Components
 		Loader::Register(new Network());
 		Loader::Register(new Session());
 		Loader::Register(new Theatre());
-		//Loader::Register(new ClanTags());
+		Loader::Register(new ClanTags());
 		Loader::Register(new Download());
 		Loader::Register(new Playlist());
 		Loader::Register(new RawFiles());
 		Loader::Register(new Renderer());
 		Loader::Register(new UIFeeder());
 		Loader::Register(new UIScript());
-		Loader::Register(new AntiCheat());
 		Loader::Register(new Changelog());
 		Loader::Register(new Dedicated());
 		Loader::Register(new Discovery());
@@ -85,6 +83,7 @@ namespace Components
 		Loader::Register(new ModelSurfs());
 		Loader::Register(new PlayerName());
 		Loader::Register(new QuickPatch());
+		Loader::Register(new Security());
 		Loader::Register(new ServerInfo());
 		Loader::Register(new ServerList());
 		Loader::Register(new SlowMotion());
@@ -105,9 +104,22 @@ namespace Components
 		Loader::Register(new Movement());
 		Loader::Register(new Elevators());
 		Loader::Register(new ClientCommand());
-		Loader::Register(new ScriptExtension());
+		Loader::Register(new VisionFile());
+		Loader::Register(new Branding());
+		Loader::Register(new Debug());
+		Loader::Register(new RawMouse());
+		Loader::Register(new Bullet());
+		Loader::Register(new MapRotation());
+		Loader::Register(new Ceg());
+		Loader::Register(new UserInfo());
+		Loader::Register(new Events());
+
+		Loader::Register(new GSC());
 
 		Loader::Pregame = false;
+
+		// Make sure preDestroy is called when the game shuts down
+		Scheduler::OnGameShutdown(Loader::PreDestroy);
 	}
 
 	void Loader::Uninitialize()
@@ -121,7 +133,7 @@ namespace Components
 #ifdef DEBUG
 			if (!Loader::IsPerformingUnitTests())
 			{
-				Logger::Print("Unregistering component: %s\n", component->getName().data());
+				Logger::Print("Unregister component: {}\n", component->getName());
 			}
 #endif
 			delete component;
@@ -170,15 +182,15 @@ namespace Components
 
 		Logger::Print("Performing unit tests for components:\n");
 
-		for (auto component : Loader::Components)
+		for (const auto component : Loader::Components)
 		{
-#if defined(DEBUG) || defined(FORCE_UNIT_TESTS)
-			Logger::Print("Testing '%s'...\n", component->getName().data());
+#if defined(FORCE_UNIT_TESTS)
+			Logger::Debug("Testing '{}'...\n", component->getName());
 #endif
 			auto startTime = std::chrono::high_resolution_clock::now();
-			bool testRes = component->unitTest();
+			auto testRes = component->unitTest();
 			auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - startTime).count();
-			Logger::Print("Test done (%llims): %s\n\n", duration, (testRes ? "Success" : "Error"));
+			Logger::Print("Test done ({}ms): {}\n\n", duration, (testRes ? "Success" : "Error"));
 			result &= testRes;
 		}
 
@@ -201,7 +213,7 @@ namespace Components
 #if defined(DEBUG) || defined(FORCE_UNIT_TESTS)
 			if (!Loader::IsPerformingUnitTests())
 			{
-				Logger::Print("Component registered: %s\n", component->getName().data());
+				Logger::Print("Component registered: {}\n", component->getName());
 			}
 #endif
 			Loader::Components.push_back(component);

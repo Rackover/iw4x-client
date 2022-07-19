@@ -1,4 +1,37 @@
-#include <StdInclude.hpp>
+#include <STDInclude.hpp>
+
+#include "AssetInterfaces/IFont_s.hpp"
+#include "AssetInterfaces/IWeapon.hpp"
+#include "AssetInterfaces/IXModel.hpp"
+#include "AssetInterfaces/IFxWorld.hpp"
+#include "AssetInterfaces/IMapEnts.hpp"
+#include "AssetInterfaces/IRawFile.hpp"
+#include "AssetInterfaces/IComWorld.hpp"
+#include "AssetInterfaces/IGfxImage.hpp"
+#include "AssetInterfaces/IGfxWorld.hpp"
+#include "AssetInterfaces/IMaterial.hpp"
+#include "AssetInterfaces/ISndCurve.hpp"
+#include "AssetInterfaces/IMenuList.hpp"
+#include "AssetInterfaces/IclipMap_t.hpp"
+#include "AssetInterfaces/ImenuDef_t.hpp"
+#include "AssetInterfaces/ITracerDef.hpp"
+#include "AssetInterfaces/IPhysPreset.hpp"
+#include "AssetInterfaces/IXAnimParts.hpp"
+#include "AssetInterfaces/IFxEffectDef.hpp"
+#include "AssetInterfaces/IGameWorldMp.hpp"
+#include "AssetInterfaces/IGameWorldSp.hpp"
+#include "AssetInterfaces/IGfxLightDef.hpp"
+#include "AssetInterfaces/ILoadedSound.hpp"
+#include "AssetInterfaces/IPhysCollmap.hpp"
+#include "AssetInterfaces/IStringTable.hpp"
+#include "AssetInterfaces/IXModelSurfs.hpp"
+#include "AssetInterfaces/ILocalizeEntry.hpp"
+#include "AssetInterfaces/Isnd_alias_list_t.hpp"
+#include "AssetInterfaces/IMaterialPixelShader.hpp"
+#include "AssetInterfaces/IMaterialTechniqueSet.hpp"
+#include "AssetInterfaces/IMaterialVertexShader.hpp"
+#include "AssetInterfaces/IStructuredDataDefSet.hpp"
+#include "AssetInterfaces/IMaterialVertexDeclaration.hpp"
 
 namespace Components
 {
@@ -23,14 +56,14 @@ namespace Components
 			return;
 		}
 
-		if (AssetHandler::AssetInterfaces.find(iAsset->getType()) != AssetHandler::AssetInterfaces.end())
+		if (AssetHandler::AssetInterfaces.contains(iAsset->getType()))
 		{
-			Logger::Print("Duplicate asset interface: %s\n", Game::DB_GetXAssetTypeName(iAsset->getType()));
+			Logger::Print("Duplicate asset interface: {}\n", Game::DB_GetXAssetTypeName(iAsset->getType()));
 			delete AssetHandler::AssetInterfaces[iAsset->getType()];
 		}
 		else
 		{
-			Logger::Print("Asset interface registered: %s\n", Game::DB_GetXAssetTypeName(iAsset->getType()));
+			Logger::Print("Asset interface registered: {}\n", Game::DB_GetXAssetTypeName(iAsset->getType()));
 		}
 
 		AssetHandler::AssetInterfaces[iAsset->getType()] = iAsset;
@@ -58,7 +91,7 @@ namespace Components
 			// Allow call DB_FindXAssetHeader within the hook
 			AssetHandler::SetBypassState(true);
 
-			if (AssetHandler::TypeCallbacks.find(type) != AssetHandler::TypeCallbacks.end())
+			if (AssetHandler::TypeCallbacks.contains(type))
 			{
 				header = AssetHandler::TypeCallbacks[type](type, filename);
 			}
@@ -96,7 +129,7 @@ namespace Components
 		if (AssetHandler::BypassState < 0)
 		{
 			AssetHandler::BypassState = 0;
-			Logger::Error("Bypass state is below 0!");
+			Logger::Error(Game::ERR_FATAL, "Bypass state is below 0!");
 		}
 	}
 
@@ -236,6 +269,13 @@ namespace Components
 				}
 			}
 		}
+
+		if (type == Game::XAssetType::ASSET_TYPE_GFXWORLD && Zones::Version() >= 316)
+		{
+			asset.gfxWorld->sortKeyEffectDecal = 39;
+			asset.gfxWorld->sortKeyEffectAuto = 48;
+			asset.gfxWorld->sortKeyDistortion = 43;
+		}
 	}
 
 	bool AssetHandler::IsAssetEligible(Game::XAssetType type, Game::XAssetHeader *asset)
@@ -329,35 +369,35 @@ namespace Components
 	{
 		void* pointer = (*Game::g_streamBlocks)[offset->getUnpackedBlock()].data + offset->getUnpackedOffset();
 
-		if (AssetHandler::Relocations.find(pointer) != AssetHandler::Relocations.end())
+		if (AssetHandler::Relocations.contains(pointer))
 		{
 			pointer = AssetHandler::Relocations[pointer];
 		}
 
-		offset->pointer = *reinterpret_cast<void**>(pointer);
+		offset->pointer = *static_cast<void**>(pointer);
 	}
 
 	void AssetHandler::ZoneSave(Game::XAsset asset, ZoneBuilder::Zone* builder)
 	{
-		if (AssetHandler::AssetInterfaces.find(asset.type) != AssetHandler::AssetInterfaces.end())
+		if (AssetHandler::AssetInterfaces.contains(asset.type))
 		{
 			AssetHandler::AssetInterfaces[asset.type]->save(asset.header, builder);
 		}
 		else
 		{
-			Logger::Error("No interface for type '%s'!", Game::DB_GetXAssetTypeName(asset.type));
+			Logger::Error(Game::ERR_FATAL, "No interface for type '{}'!", Game::DB_GetXAssetTypeName(asset.type));
 		}
 	}
 
 	void AssetHandler::ZoneMark(Game::XAsset asset, ZoneBuilder::Zone* builder)
 	{
-		if (AssetHandler::AssetInterfaces.find(asset.type) != AssetHandler::AssetInterfaces.end())
+		if (AssetHandler::AssetInterfaces.contains(asset.type))
 		{
 			AssetHandler::AssetInterfaces[asset.type]->mark(asset.header, builder);
 		}
 		else
 		{
-			Logger::Error("No interface for type '%s'!", Game::DB_GetXAssetTypeName(asset.type));
+			Logger::Error(Game::ERR_FATAL, "No interface for type '{}'!", Game::DB_GetXAssetTypeName(asset.type));
 		}
 	}
 
@@ -375,7 +415,7 @@ namespace Components
 			return { entry->second };
 		}
 
-		if (AssetHandler::AssetInterfaces.find(type) != AssetHandler::AssetInterfaces.end())
+		if (AssetHandler::AssetInterfaces.contains(type))
 		{
 			AssetHandler::AssetInterfaces[type]->load(&header, filename, builder);
 
@@ -485,10 +525,10 @@ namespace Components
 		Utils::Hook::Set<Game::XAssetEntry*>(0x5BAEA2, entryPool + 1);
 	}
 
-    void AssetHandler::ExposeTemporaryAssets(bool expose)
-    {
-        AssetHandler::ShouldSearchTempAssets = expose;
-    }
+	void AssetHandler::ExposeTemporaryAssets(bool expose)
+	{
+		AssetHandler::ShouldSearchTempAssets = expose;
+	}
 
 	AssetHandler::AssetHandler()
 	{
@@ -514,18 +554,18 @@ namespace Components
 		if (!ZoneBuilder::IsEnabled()) Utils::Hook(0x5BB3F2, AssetHandler::MissingAssetError, HOOK_CALL).install()->quick();
 
 		// Log missing empty assets
-		Scheduler::OnFrame([]()
+		Scheduler::Loop([]
 		{
 			if (FastFiles::Ready() && !AssetHandler::EmptyAssets.empty())
 			{
 				for (auto& asset : AssetHandler::EmptyAssets)
 				{
-					Game::Com_PrintWarning(25, reinterpret_cast<const char*>(0x724428), Game::DB_GetXAssetTypeName(asset.first), asset.second.data());
+					Logger::Warning(Game::CON_CHANNEL_FILES, "Could not load {} \"{}\".\n", Game::DB_GetXAssetTypeName(asset.first), asset.second);
 				}
 
 				AssetHandler::EmptyAssets.clear();
 			}
-		});
+		}, Scheduler::Pipeline::MAIN);
 
 		AssetHandler::OnLoad([](Game::XAssetType type, Game::XAssetHeader asset, std::string name, bool*)
 		{

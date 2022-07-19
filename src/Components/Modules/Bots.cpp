@@ -1,4 +1,5 @@
 #include <STDInclude.hpp>
+#include "GSC/Script.hpp"
 
 namespace Components
 {
@@ -83,65 +84,49 @@ namespace Components
 
 	void Bots::Spawn(unsigned int count)
 	{
-		for (auto i = 0u; i < count; ++i)
+		for (std::size_t i = 0; i < count; ++i)
 		{
-			Scheduler::OnDelay([]()
+			Scheduler::Once([]
 			{
 				auto* ent = Game::SV_AddTestClient();
 				if (ent == nullptr)
 					return;
 
-				Scheduler::OnDelay([ent]()
+				Scheduler::Once([ent]
 				{
 					Game::Scr_AddString("autoassign");
 					Game::Scr_AddString("team_marinesopfor");
 					Game::Scr_Notify(ent, Game::SL_GetString("menuresponse", 0), 2);
 
-					Scheduler::OnDelay([ent]()
+					Scheduler::Once([ent]
 					{
 						Game::Scr_AddString(Utils::String::VA("class%u", Utils::Cryptography::Rand::GenerateInt() % 5u));
 						Game::Scr_AddString("changeclass");
 						Game::Scr_Notify(ent, Game::SL_GetString("menuresponse", 0), 2);
-					}, 1s);
-				}, 1s);
-			}, 500ms * (i + 1));
+					}, Scheduler::Pipeline::SERVER, 1s);
+
+				}, Scheduler::Pipeline::SERVER, 1s);
+
+			}, Scheduler::Pipeline::SERVER, 500ms * (i + 1));
 		}
+	}
+
+	void Bots::GScr_isTestClient(Game::scr_entref_t entref)
+	{
+		const auto* ent = Game::GetPlayerEntity(entref);
+		Game::Scr_AddBool(Game::SV_IsTestClient(ent->s.number) != 0);
 	}
 
 	void Bots::AddMethods()
 	{
-		Script::AddMethod("SetPing", [](Game::scr_entref_t entref) // gsc: self SetPing(<int>)
-		{
-			auto ping = Game::Scr_GetInt(0);
+		Script::AddMethod("IsBot", Bots::GScr_isTestClient); // Usage: self iw4x_IsBot();
+		Script::AddMethod("IsTestClient", Bots::GScr_isTestClient); // Usage: self iw4x_IsTestClient();
 
-			ping = std::clamp(ping, 0, 999);
-
-			const auto* ent = Game::GetPlayerEntity(entref);
-			auto* client = Script::GetClient(ent);
-
-			if (!client->bIsTestClient)
-			{
-				Game::Scr_Error("^1SetPing: Can only call on a bot!\n");
-				return;
-			}
-
-			client->ping = static_cast<int16_t>(ping);
-		});
-
-		Script::AddMethod("IsTestClient", [](Game::scr_entref_t entref) // Usage: <bot> IsTestClient();
-		{
-			const auto* gentity = Game::GetPlayerEntity(entref);
-			const auto* client = Script::GetClient(gentity);
-
-			Game::Scr_AddBool(client->bIsTestClient == 1);
-		});
-
-		Script::AddMethod("BotStop", [](Game::scr_entref_t entref) // Usage: <bot> BotStop();
+		Script::AddMethod("BotStop", [](Game::scr_entref_t entref) // Usage: <bot> iw4x_BotStop();
 		{
 			const auto* ent = Game::GetPlayerEntity(entref);
-			const auto* client = Script::GetClient(ent);
 
-			if (!client->bIsTestClient)
+			if (Game::SV_IsTestClient(ent->s.number) == 0)
 			{
 				Game::Scr_Error("^1BotStop: Can only call on a bot!\n");
 				return;
@@ -152,18 +137,17 @@ namespace Components
 			g_botai[entref.entnum].active = true;
 		});
 
-		Script::AddMethod("BotWeapon", [](Game::scr_entref_t entref) // Usage: <bot> BotWeapon(<str>);
+		Script::AddMethod("BotWeapon", [](Game::scr_entref_t entref) // Usage: <bot> iw4x_BotWeapon(<str>);
 		{
-			const auto* weapon = Game::Scr_GetString(0);
-
 			const auto* ent = Game::GetPlayerEntity(entref);
-			const auto* client = Script::GetClient(ent);
 
-			if (!client->bIsTestClient)
+			if (Game::SV_IsTestClient(ent->s.number) == 0)
 			{
 				Game::Scr_Error("^1BotWeapon: Can only call on a bot!\n");
 				return;
 			}
+
+			const auto* weapon = Game::Scr_GetString(0);
 
 			if (weapon == nullptr || weapon[0] == '\0')
 			{
@@ -176,22 +160,21 @@ namespace Components
 			g_botai[entref.entnum].active = true;
 		});
 
-		Script::AddMethod("BotAction", [](Game::scr_entref_t entref) // Usage: <bot> BotAction(<str action>);
+		Script::AddMethod("BotAction", [](Game::scr_entref_t entref) // Usage: <bot> iw4x_BotAction(<str action>);
 		{
+			const auto* ent = Game::GetPlayerEntity(entref);
+
+			if (Game::SV_IsTestClient(ent->s.number) == 0)
+			{
+				Game::Scr_Error("^1BotAction: Can only call on a bot!\n");
+				return;
+			}
+
 			const auto* action = Game::Scr_GetString(0);
 
 			if (action == nullptr)
 			{
 				Game::Scr_ParamError(0, "^1BotAction: Illegal parameter!\n");
-				return;
-			}
-
-			const auto* ent = Game::GetPlayerEntity(entref);
-			const auto* client = Script::GetClient(ent);
-
-			if (!client->bIsTestClient)
-			{
-				Game::Scr_Error("^1BotAction: Can only call on a bot!\n");
 				return;
 			}
 
@@ -201,7 +184,7 @@ namespace Components
 				return;
 			}
 
-			for (auto i = 0u; i < std::extent_v<decltype(BotActions)>; ++i)
+			for (std::size_t i = 0; i < std::extent_v<decltype(BotActions)>; ++i)
 			{
 				if (Utils::String::ToLower(&action[1]) != BotActions[i].action)
 					continue;
@@ -218,22 +201,18 @@ namespace Components
 			Game::Scr_ParamError(0, "^1BotAction: Unknown action.\n");
 		});
 
-		Script::AddMethod("BotMovement", [](Game::scr_entref_t entref) // Usage: <bot> BotMovement(<int>, <int>);
+		Script::AddMethod("BotMovement", [](Game::scr_entref_t entref) // Usage: <bot> iw4x_BotMovement(<int>, <int>);
 		{
-			auto forwardInt = Game::Scr_GetInt(0);
-			auto rightInt = Game::Scr_GetInt(1);
-
 			const auto* ent = Game::GetPlayerEntity(entref);
-			const auto* client = Script::GetClient(ent);
 
-			if (!client->bIsTestClient)
+			if (Game::SV_IsTestClient(ent->s.number) == 0)
 			{
 				Game::Scr_Error("^1BotMovement: Can only call on a bot!\n");
 				return;
 			}
 
-			forwardInt = std::clamp<int>(forwardInt, std::numeric_limits<char>::min(), std::numeric_limits<char>::max());
-			rightInt = std::clamp<int>(rightInt, std::numeric_limits<char>::min(), std::numeric_limits<char>::max());
+			const auto forwardInt = std::clamp<int>(Game::Scr_GetInt(0), std::numeric_limits<char>::min(), std::numeric_limits<char>::max());
+			const auto rightInt = std::clamp<int>(Game::Scr_GetInt(1), std::numeric_limits<char>::min(), std::numeric_limits<char>::max());
 
 			g_botai[entref.entnum].forward = static_cast<int8_t>(forwardInt);
 			g_botai[entref.entnum].right = static_cast<int8_t>(rightInt);
@@ -313,20 +292,10 @@ namespace Components
 		}
 	}
 
-	/*
-	 * Should be called when a client drops from the server
-	 * but not "between levels" (Quake-III-Arena)
-	 */
-	void Bots::ClientDisconnect_Hk(int clientNum)
-	{
-		g_botai[clientNum].active = false;
-
-		// Call original function
-		Utils::Hook::Call<void(int)>(0x4AA430)(clientNum);
-	}
-
 	Bots::Bots()
 	{
+		AssertOffset(Game::client_s, bIsTestClient, 0x41AF0);
+
 		// Replace connect string
 		Utils::Hook::Set<const char*>(0x48ADA6, "connect bot%d \"\\cg_predictItems\\1\\cl_anonymous\\0\\color\\4\\head\\default\\model\\multi\\snaps\\20\\rate\\5000\\name\\%s\\protocol\\%d\\checksum\\%d\\statver\\%d %u\\qport\\%d\"");
 
@@ -339,12 +308,15 @@ namespace Components
 		Utils::Hook(0x441B80, Bots::G_SelectWeaponIndex_Hk, HOOK_JUMP).install()->quick();
 
 		// Reset BotMovementInfo.active when client is dropped
-		Utils::Hook(0x625235, Bots::ClientDisconnect_Hk, HOOK_CALL).install()->quick();
+		Events::OnClientDisconnect([](const int clientNum)
+		{
+			g_botai[clientNum].active = false;
+		});
 
 		// Zero the bot command array
-		for (auto i = 0u; i < std::extent_v<decltype(g_botai)>; i++)
+		for (std::size_t i = 0; i < std::extent_v<decltype(g_botai)>; ++i)
 		{
-			g_botai[i] = {0};
+			std::memset(&g_botai[i], 0, sizeof(BotMovementInfo));
 			g_botai[i].weapon = 1; // Prevent the bots from defaulting to the 'none' weapon
 		}
 
@@ -366,8 +338,7 @@ namespace Components
 
 					if (input == end)
 					{
-						Logger::Print("Warning: %s is not a valid input\n"
-							"Usage: %s optional <number of bots> or optional <\"all\">\n",
+						Logger::Warning(Game::CON_CHANNEL_DONT_FILTER, "{} is not a valid input\nUsage: {} optional <number of bots> or optional <\"all\">\n",
 							input, params->get(0));
 						return;
 					}
@@ -385,7 +356,7 @@ namespace Components
 			}
 
 			Toast::Show("cardicon_headshot", "^2Success", Utils::String::VA("Spawning %d %s...", count, (count == 1 ? "bot" : "bots")), 3000);
-			Logger::Print("Spawning %d %s...\n", count, (count == 1 ? "bot" : "bots"));
+			Logger::Debug("Spawning {} {}", count, (count == 1 ? "bot" : "bots"));
 
 			Bots::Spawn(count);
 		});
@@ -393,9 +364,9 @@ namespace Components
 		Bots::AddMethods();
 
 		// In case a loaded mod didn't call "BotStop" before the VM shutdown
-		Script::OnVMShutdown([]
+		Events::OnVMShutdown([]
 		{
-			for (auto i = 0u; i < std::extent_v<decltype(g_botai)>; i++)
+			for (std::size_t i = 0; i < std::extent_v<decltype(g_botai)>; ++i)
 			{
 				g_botai[i].active = false;
 			}

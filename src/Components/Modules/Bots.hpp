@@ -14,6 +14,7 @@ namespace Components
 
 		static void Spawn(unsigned int count);
 
+		static void GScr_isTestClient(Game::scr_entref_t entref);
 		static void AddMethods();
 
 		static void BotAiAction(Game::client_t* cl);
@@ -21,7 +22,5 @@ namespace Components
 
 		static void G_SelectWeaponIndex(int clientNum, int iWeaponIndex);
 		static void G_SelectWeaponIndex_Hk();
-
-		static void ClientDisconnect_Hk(int clientNum);
 	};
 }

@@ -19,15 +19,9 @@
 |:----------------------------|:-----------------------------------------------|
 | `--copy-to=PATH`            | Optional, copy the DLL to a custom folder after build, define the path here if wanted. |
 | `--copy-pdb`                | Copy debug information for binaries as well to the path given via --copy-to. |
-| `--ac-disable`              | Disable anticheat.                             |
-| `--ac-debug-detections`     | Log anticheat detections.                      |
-| `--ac-debug-load-library`   | Log libraries that get loaded.                 |
 | `--force-unit-tests`        | Always compile unit tests.                     |
 | `--force-exception-handler` | Install custom unhandled exception handler even for Debug builds. |
-| `--force-minidump-upload`   | Upload minidumps even for Debug builds.        |
-| `--disable-bitmessage`      | Disable use of BitMessage completely.          |
-| `--disable-base128`         | Disable base128 encoding for minidumps.        |
-| `--no-new-structure`        | Do not use new virtual path structure (separating headers and source files). |
+| `--disable-binary-check`    | Do not perform integrity checks on the exe. |
 | `--iw4x-zones`              | Zonebuilder generates iw4x zones that cannot be loaded without IW4x specific patches. |
 
 ## Command line arguments
@@ -39,7 +33,6 @@
 | `-stdout`               | Redirect all logging output to the terminal iw4x is started from, or if there is none, creates a new terminal window to write log information in. |
 | `-console`              | Allow the game to display its own separate interactive console window. |
 | `-dedicated`            | Starts the game as a headless dedicated server. |
-| `-scriptablehttp`       | Enable HTTP related gsc functions.             |
 | `-bigminidumps`         | Include all code sections from loaded modules in the dump. |
 | `-reallybigminidumps`   | Include data sections from all loaded modules in the dump. |
 | `-dump`                 | Write info of loaded assets to the raw folder as they are being loaded. |
@@ -48,6 +41,7 @@
 | `-version`              | Print IW4x build info on startup.              |
 | `-zonebuilder`          | Start the interactive zonebuilder tool console instead of starting the game. |
 | `-nosteam`              | Disable friends feature and do not update Steam about the game's current status just like an invisible mode. |
+| `-protect-saved-dvars`  | Block the server from modifying saved/archive dvars. |
 
 
 ## Disclaimer
