@@ -55,12 +55,23 @@ namespace Components
 		
 
 		// Make sure preDestroy is called when the game shuts down
-		Scheduler::OnShutdown(Loader::PreDestroy);
+		Scheduler::OnGameShutdown(Loader::PreDestroy);
 
 		// FS_game-specific fixes
 		Utils::Hook::Set<BYTE>(0x4081FD, 0xEB); // defaultweapon fix ("missing default weapon")
 		Utils::Hook::Set<BYTE>(0x452C1D, 0xEB); // LoadObj weaponDefs
-		Utils::Hook::Xor<DWORD>(0x6431EA, Game::dvar_flag::DVAR_WRITEPROTECTED); // remove write protection from fs_game
+		Utils::Hook::Xor<DWORD>(0x6431EA, Game::DvarFlags::DVAR_INIT); // remove write protection from fs_game
+
+		// allow loading of IWffu (unsigned) files
+		Utils::Hook::Set<BYTE>(0x4158D9, 0xEB); // main function
+		Utils::Hook::Nop(0x4A1D97, 2); // DB_AuthLoad_InflateInit
+
+#ifdef DEBUG
+		// Easy dirty disk debugging
+		Utils::Hook::Set<WORD>(0x4CF7F0, 0xC3CC);
+		// disable _invoke_watson to allow debugging
+		Utils::Hook::Set<WORD>(0x6B9602, 0xCCCC);
+#endif
 	}
 
 	Game::XAssetEntry* Core::AddUniqueWeaponXAsset(Game::XAssetType type, Game::XAssetHeader* asset) 

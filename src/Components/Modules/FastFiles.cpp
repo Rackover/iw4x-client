@@ -530,10 +530,6 @@ namespace Components
 		Utils::Hook::Nop(0x5B97B4, 2);
 		Utils::Hook::Nop(0x5BA4A4, 2);
 
-		// allow loading of IWffu (unsigned) files
-		Utils::Hook::Set<BYTE>(0x4158D9, 0xEB); // main function
-		Utils::Hook::Nop(0x4A1D97, 2); // DB_AuthLoad_InflateInit
-
 		// some other, unknown, check
 		// this is replaced by hooks below
 		Utils::Hook::Set<BYTE>(0x5B9912, 0xB8);
