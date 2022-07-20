@@ -20,7 +20,7 @@ namespace Components
 		public:
 			File() = default;
 			File(std::string file) : filePath{std::move(file)} { this->read(); };
-			File(std::string file, Game::FsThread thread) : filePath{ std::move(file) } { this->read(thread); };
+			File(std::string file, Game::FsThread thread) : filePath{std::move(file)} { this->read(thread); };
 
 			bool exists() override { return !this->buffer.empty(); };
 			std::string getName() override { return this->filePath; };
