@@ -8,9 +8,10 @@ namespace Components
 
 	void FileSystem::File::read(Game::FsThread onThread)
 	{
+		std::lock_guard<std::recursive_mutex> _(FileSystem::FSMutex);
+
 		char* _buffer = nullptr;
 		
-
 		int handle;
 		int size = Game::FS_FOpenFileReadForThread(filePath.data(), &handle, onThread);
 
