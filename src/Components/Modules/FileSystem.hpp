@@ -20,6 +20,7 @@ namespace Components
 		public:
 			File() {};
 			File(const std::string& file) : filePath(file) { this->read(); };
+			File(const std::string& file, Game::FsThread thread) : File(file) { this->read(thread); };
 
 			bool exists() override { return !this->buffer.empty(); };
 			std::string getName() override { return this->filePath; };
@@ -29,7 +30,7 @@ namespace Components
 			std::string filePath;
 			std::string buffer;
 
-			void read();
+			void read(Game::FsThread onThread = Game::FS_THREAD_MAIN);
 		};
 
 		class RawFile : public AbstractFile

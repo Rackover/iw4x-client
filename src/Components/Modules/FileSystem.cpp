@@ -6,17 +6,27 @@ namespace Components
 	std::recursive_mutex FileSystem::FSMutex;
 	Utils::Memory::Allocator FileSystem::MemAllocator;
 
-	void FileSystem::File::read()
+	void FileSystem::File::read(Game::FsThread onThread)
 	{
 		char* _buffer = nullptr;
-		int size = Game::FS_ReadFile(this->filePath.data(), &_buffer);
+		
 
-		this->buffer.clear();
+		int handle;
+		int size = Game::FS_FOpenFileReadForThread(filePath.data(), &handle, onThread);
 
-		if (size >= 0)
+		if (handle > 0 && size > 0)
 		{
+			Utils::Memory::Allocator allocator;
+			_buffer = reinterpret_cast<char*>(allocator.allocate(size + 1));
+
+			Game::FS_Read(_buffer, size, handle);
+
+			_buffer[size] = 0x00;
+
+			Game::FS_FCloseFile(handle);
+
+			this->buffer.clear();
 			this->buffer.append(_buffer, size);
-			Game::FS_FreeFile(_buffer);
 		}
 	}
 
