@@ -345,6 +345,8 @@ namespace Components
 			Game::newMapArena_t* arena = &ArenaLength::NewArenas[i];
 			if (arena->mapName == map)
 			{
+				dependencies.requiresTeamZones = false;
+
 				for (std::size_t j = 0; j < std::extent_v<decltype(Game::newMapArena_t::keys)>; ++j)
 				{
 					const auto* key = arena->keys[j];
