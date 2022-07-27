@@ -76,7 +76,7 @@ namespace Components
 		{
 			std::vector<std::string> requiredMaps;
 			std::pair<std::string, std::string> requiredTeams;
-			bool requiresTeamZones = true; // True by default - cause some maps won't have an arenafile entry
+			bool requiresTeamZones;
 		};
 
 		static bool SPMap;
