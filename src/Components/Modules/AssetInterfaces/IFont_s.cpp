@@ -146,8 +146,8 @@ namespace Assets
 
 			if (fontDef["charset"].is_array())
 			{
-				nlohmann::json::array_t charset = fontDef["charset"];
-				for (auto& ch : charset)
+				nlohmann::json::array_t charsetArray = fontDef["charset"];
+				for (auto& ch : charsetArray)
 					charset.push_back(static_cast<uint16_t>(ch.get<int>()));
 
 				// order matters
