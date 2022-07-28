@@ -30,9 +30,7 @@
 	url = https://github.com/devKlausS/dxsdk.git
 [submodule "deps/GSL"]
 	path = deps/GSL
-	url = https://github.com/microsoft/GSL.git
-	
-	
+	url = https://github.com/microsoft/GSL.git	
 [submodule "deps/nlohmannjson"]
 	path = deps/nlohmannjson
 	url = https://github.com/nlohmann/json.git
