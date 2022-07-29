@@ -2,7 +2,6 @@
 
 #define PROTOCOL 0x96
 #define NUM_CUSTOM_CLASSES 15
-#define SEMANTIC_WATER_MAP 11
 #define FX_ELEM_FIELD_COUNT 90
 
 // This allows us to compile our structures in IDA, for easier reversing :3
@@ -106,6 +105,23 @@ namespace Game
 		FS_THREAD_COUNT = 0x5,
 		FS_THREAD_INVALID = 0x6,
 	};
+
+	enum TextureSemantic : char
+	{
+		TS_2D = 0x0,
+		TS_FUNCTION = 0x1,
+		TS_COLOR_MAP = 0x2,
+		TS_DETAIL_MAP = 0x3,
+		TS_UNUSED_2 = 0x4,
+		TS_NORMAL_MAP = 0x5,
+		TS_UNUSED_3 = 0x6,
+		TS_UNUSED_4 = 0x7,
+		TS_SPECULAR_MAP = 0x8,
+		TS_UNUSED_5 = 0x9,
+		TS_UNUSED_6 = 0xA,
+		TS_WATER_MAP = 0xB,
+	};
+
 
 	enum materialSurfType_t
 	{
@@ -1930,7 +1946,7 @@ namespace Game
 	{
 		GfxTexture texture;
 		char mapType;
-		char semantic;
+		TextureSemantic semantic;
 		char category;
 		bool useSrgbReads;
 		Picmip picmip;
@@ -1984,7 +2000,7 @@ namespace Game
 		char nameStart;
 		char nameEnd;
 		char samplerState;
-		char semantic;
+		TextureSemantic semantic;
 		MaterialTextureDefInfo u;
 	};
 
