@@ -1,16 +1,288 @@
 #include <STDInclude.hpp>
 #include "IMaterial.hpp"
 
-#define IW4X_MAT_VERSION "1"
+#define IW4X_MAT_BIN_VERSION "1"
+#define IW4X_MAT_JSON_VERSION 1
 
 namespace Assets
 {
 	void IMaterial::load(Game::XAssetHeader* header, const std::string& name, Components::ZoneBuilder::Zone* builder)
 	{
-		if (!header->data) this->loadJson(header, name, builder);   // Check if we want to override materials
+		if (!header->data) this->loadJson(header, name, builder);   // Check if we want to load a material from disk
+		if (!header->data) this->loadBinary(header, name, builder); // Check if we want to load a material from disk (binary format)
 		if (!header->data) this->loadNative(header, name, builder); // Check if there is a native one
-		if (!header->data) this->loadBinary(header, name, builder); // Check if we need to import a new one into the game
 	}
+
+
+	void IMaterial::loadJson(Game::XAssetHeader* header, const std::string& name, [[maybe_unused]] Components::ZoneBuilder::Zone* builder)
+	{
+		Components::FileSystem::File materialInfo(Utils::String::VA("materials/%s.iw4x.json", name.data()));
+
+		if (!materialInfo.exists()) return;
+
+		Game::Material* asset = builder->getAllocator()->allocate<Game::Material>();
+
+
+		auto materialJson = nlohmann::json::parse(materialInfo.getBuffer());
+
+		if (!materialJson.is_object()) 
+		{
+			Components::Logger::Print("Invalid material json for {} (Is it zonebuilder format?)\n", name);
+			return;
+		}
+
+		if (materialJson["version"].get<int>() != IW4X_MAT_JSON_VERSION)
+		{
+			Components::Logger::PrintError(Game::CON_CHANNEL_ERROR, "Invalid material json version for {}, expected {} and got {}\n", name, IW4X_MAT_JSON_VERSION, materialJson["version"].get<std::string>());
+			return;
+		}
+
+		asset->info.name = builder->getAllocator()->duplicateString(materialJson["name"].get<std::string>());
+		asset->info.gameFlags = static_cast<char>(readFlags(materialJson["gameFlags"].get<std::string>()));
+
+		asset->info.sortKey = materialJson["sortKey"].get<char>();
+		// * We do techset later * //
+		asset->info.textureAtlasRowCount = materialJson["textureAtlasRowCount"].get<unsigned char>();
+		asset->info.textureAtlasColumnCount = materialJson["textureAtlasColumnCount"].get<unsigned char>();
+		asset->info.surfaceTypeBits = static_cast<unsigned int>(readFlags(materialJson["surfaceTypeBits"].get<std::string>()));
+		asset->info.hashIndex = materialJson["hashIndex"].get<unsigned short>();
+		asset->cameraRegion = materialJson["cameraRegion"].get<char>();
+
+		if (materialJson["gfxDrawSurface"].is_object()) 
+		{
+			asset->info.drawSurf.fields.customIndex = materialJson["gfxDrawSurface"]["customIndex"].get<long long>();
+			asset->info.drawSurf.fields.hasGfxEntIndex = materialJson["gfxDrawSurface"]["hasGfxEntIndex"].get<long long>();
+			asset->info.drawSurf.fields.materialSortedIndex = materialJson["gfxDrawSurface"]["materialSortedIndex"].get<long long>();
+			asset->info.drawSurf.fields.objectId = materialJson["gfxDrawSurface"]["objectId"].get<long long>();
+			asset->info.drawSurf.fields.prepass = materialJson["gfxDrawSurface"]["prepass"].get<long long>();
+			asset->info.drawSurf.fields.primarySortKey = materialJson["gfxDrawSurface"]["primarySortKey"].get<long long>();
+			asset->info.drawSurf.fields.reflectionProbeIndex = materialJson["gfxDrawSurface"]["reflectionProbeIndex"].get<long long>();
+			asset->info.drawSurf.fields.sceneLightIndex = materialJson["gfxDrawSurface"]["sceneLightIndex"].get<long long>();
+			asset->info.drawSurf.fields.surfType = materialJson["gfxDrawSurface"]["surfType"].get<long long>();
+			asset->info.drawSurf.fields.unused = materialJson["gfxDrawSurface"]["unused"].get<long long>();
+			asset->info.drawSurf.fields.useHeroLighting = materialJson["gfxDrawSurface"]["useHeroLighting"].get<long long>();
+		}
+
+		asset->stateFlags = static_cast<char>(readFlags(materialJson["stateFlags"].get<std::string>()));
+
+		if (materialJson["textureTable"].is_array())
+		{
+			nlohmann::json::array_t textureTable = materialJson["textureTable"];
+			asset->textureCount = static_cast<unsigned char>(textureTable.size());
+			asset->textureTable = builder->getAllocator()->allocateArray<Game::MaterialTextureDef>(asset->textureCount);
+
+			for (size_t i = 0; i < textureTable.size(); i++)
+			{
+				auto textureJson = textureTable[i];
+				if (textureJson.is_object()) 
+				{
+					Game::MaterialTextureDef* textureDef = &asset->textureTable[i];
+					textureDef->semantic = textureJson["semantic"].get<Game::TextureSemantic>();
+					textureDef->samplerState = textureJson["samplerState"].get<char>();
+					textureDef->nameStart = textureJson["nameStart"].get<char>();
+					textureDef->nameEnd = textureJson["nameEnd"].get<char>();
+					textureDef->nameHash = textureJson["nameHash"].get<unsigned int>();
+
+					if (textureDef->semantic == Game::TextureSemantic::TS_WATER_MAP)
+					{
+						Game::water_t* water = builder->getAllocator()->allocate<Game::water_t>();
+
+						if (textureJson["water"].is_object())
+						{
+							auto waterJson = textureJson["water"];
+							
+							auto imageName = waterJson["image"].get<std::string>();
+							
+							if (imageName.starts_with("watersetup")) 
+							{
+								// Ignore - it seems to be generated at runtime during loading, not a real image
+							}
+							else 
+							{
+								water->image = Components::AssetHandler::FindAssetForZone(Game::XAssetType::ASSET_TYPE_IMAGE, imageName.data(), builder).image;
+							}
+
+							water->amplitude = waterJson["amplitude"].get<float>();
+							water->M = waterJson["M"].get<int>();
+							water->N = waterJson["N"].get<int>();
+							water->Lx = waterJson["Lx"].get<float>();
+							water->Lz = waterJson["Lz"].get<float>();
+							water->gravity = waterJson["gravity"].get<float>();
+							water->windvel = waterJson["windvel"].get<float>();
+
+							auto winddir = waterJson["winddir"].get<std::vector<float>>();
+							if (winddir.size() == 2)
+							{
+								std::copy(winddir.begin(), winddir.end(), water->winddir);
+							}
+
+							auto codeConstant = waterJson["codeConstant"].get<std::vector<float>>();
+
+							if (codeConstant.size() == 4)
+							{
+								std::copy(codeConstant.begin(), codeConstant.end(), water->codeConstant);
+							}
+
+
+							/// H0
+							auto h064 = waterJson["H0"].get<std::string>();
+							auto h0 = builder->getAllocator()->allocateArray<Game::complex_s>(water->M * water->N);
+
+							[[maybe_unused]] unsigned int decodedH0 = mg_base64_decode(
+								reinterpret_cast<const unsigned char*>(h064.data()),
+								h064.size(),
+								reinterpret_cast<char*>(h0)
+							);
+
+							assert(decodedH0 == h064.size());
+							water->H0 = h0;
+
+							/// WTerm
+							auto wTerm64 = waterJson["wTerm"].get<std::string>();
+							auto wTerm = builder->getAllocator()->allocateArray<float>(water->M * water->N);
+
+							[[maybe_unused]] unsigned int decodedWTerm = mg_base64_decode(
+								reinterpret_cast<const unsigned char*>(wTerm64.data()),
+								wTerm64.size(),
+								reinterpret_cast<char*>(wTerm)
+							);
+
+							assert(decodedWTerm == wTerm64.size());
+							water->wTerm = wTerm;
+						}
+					}
+					else 
+					{
+						textureDef->u.image = Components::AssetHandler::FindAssetForZone
+						(
+							Game::XAssetType::ASSET_TYPE_IMAGE, 
+							textureJson["image"].get<std::string>(), 
+							builder
+						).image;
+					}
+				}
+			}
+		}
+
+		// Statebits
+		if (materialJson["stateBitsEntry"].is_array())
+		{
+			nlohmann::json::array_t stateBitsEntry = materialJson["stateBitsEntry"];
+
+			for (size_t i = 0; i < std::min(stateBitsEntry.size(), 48u); i++)
+			{
+				asset->stateBitsEntry[i] = stateBitsEntry[i].get<char>();
+			}
+		}
+
+		if (materialJson["stateBitsCount"].is_number())
+		{
+			auto count = materialJson["stateBitsCount"].get<unsigned char>();
+
+			asset->stateBitsCount = count;
+
+			auto stateBits64 = materialJson["stateBitsTable"].get<std::string>();
+			asset->stateBitsTable = builder->getAllocator()->allocateArray<Game::GfxStateBits>(count);
+
+			[[maybe_unused]] unsigned int decodedStateBits = mg_base64_decode(
+				reinterpret_cast<const unsigned char*>(stateBits64.data()),
+				stateBits64.size(),
+				reinterpret_cast<char*>(asset->stateBitsTable)
+			);
+
+			assert(decodedStateBits == stateBits64.size());
+		}
+
+		// Constant table
+		if (materialJson["constantTable"].is_array()) 
+		{
+
+			nlohmann::json::array_t constants = materialJson["constantTable"];
+			asset->constantCount = static_cast<char>(constants.size());
+			auto table = builder->getAllocator()->allocateArray<Game::MaterialConstantDef>(asset->constantCount);
+
+			for (size_t i = 0; i < asset->constantCount; i++) 
+			{
+				auto constant = constants[i];
+				auto entry = &table[i];
+				
+				auto litVec = constant["literal"].get<std::vector<float>>();
+				std::copy(litVec.begin(), litVec.end(), entry->literal);
+
+				auto constantName = constant["name"].get<std::string>();
+				std::copy(constantName.begin(), constantName.end(), entry->name);
+
+				entry->nameHash = constant["nameHash"].get<unsigned int>();
+			}
+
+			asset->constantTable = table;
+		}
+
+		const std::string techsetName = materialJson["techniqueSet"].get<std::string>();
+		asset->techniqueSet = findWorkingTechset(techsetName, asset, builder);
+
+		header->material = asset;
+	}
+
+	Game::MaterialTechniqueSet* IMaterial::findWorkingTechset(std::string techsetName, [[maybe_unused]] Game::Material* material, Components::ZoneBuilder::Zone* builder) const
+	{
+		Game::MaterialTechniqueSet* techset;
+
+		// Pass 1: Identical techset (1:1)
+		techset = Components::AssetHandler::FindAssetForZone(Game::XAssetType::ASSET_TYPE_TECHNIQUE_SET, techsetName.data(), builder).techniqueSet;
+		if (techset != nullptr)
+		{
+			return techset;
+		}
+
+		//// Match the name in case it's a known correspondance
+		//if (IMaterial::techSetCorrespondance.contains(techsetName)) 
+		//{
+		//	techsetName = IMaterial::techSetCorrespondance.at(techsetName);
+		//}
+
+		//// Pass 2: Find header if we've loaded it before
+		//entry = Game::DB_FindXAssetEntry(Game::XAssetType::ASSET_TYPE_TECHNIQUE_SET, techsetName.data());
+		//if (entry != nullptr) 
+		//{
+		//	return entry->asset.header.techniqueSet;
+		//}
+		//
+
+
+		return nullptr;
+	}
+
+	int IMaterial::readFlags(const std::string binaryFlags) const
+	{
+		int result = 0x00;
+		size_t size = sizeof(int) * 8;
+
+		if (binaryFlags.size() > size) {
+			Components::Logger::Print("Flag {} might not be properly translated, it seems to contain an error (invalid length)\n", binaryFlags);
+			return result;
+		}
+
+
+		size_t i = size-1;
+		for (char bit : binaryFlags)
+		{
+			if (i < 0)
+			{
+				// Uhmm
+				Components::Logger::Print("Flag {} might not be properly translated, it seems to contain an error (invalid length)\n", binaryFlags);
+				break;
+			}
+
+			bool isOne = bit == '1';
+			result |= isOne << i;
+			i--;
+		}
+
+		return result;
+	}
+
+
 
 	void IMaterial::loadBinary(Game::XAssetHeader* header, const std::string& name, Components::ZoneBuilder::Zone* builder)
 	{
@@ -66,9 +338,9 @@ namespace Assets
 
 		std::string version;
 		version.push_back(reader.read<char>());
-		if (version != IW4X_MAT_VERSION)
+		if (version != IW4X_MAT_BIN_VERSION)
 		{
-			Components::Logger::Error(Game::ERR_FATAL, "Reading material '{}' failed, expected version is {}, but it was {}!", name, IW4X_MAT_VERSION, version);
+			Components::Logger::Error(Game::ERR_FATAL, "Reading material '{}' failed, expected version is {}, but it was {}!", name, IW4X_MAT_BIN_VERSION, version);
 		}
 
 		auto* asset = reader.readObject<Game::Material>();
@@ -127,7 +399,7 @@ namespace Assets
 			{
 				Game::MaterialTextureDef* textureDef = &asset->textureTable[i];
 
-				if (textureDef->semantic == SEMANTIC_WATER_MAP)
+				if (textureDef->semantic == Game::TextureSemantic::TS_WATER_MAP)
 				{
 					if (textureDef->u.water)
 					{
@@ -241,9 +513,9 @@ namespace Assets
 		{
 			Components::Logger::Print("No replacement found for material {} with techset {}\n", asset->info.name, asset->techniqueSet->name);
 			std::string techName = asset->techniqueSet->name;
-			if (techSetCorrespondance.contains(techName))
+			if (this->techSetCorrespondance.contains(techName))
 			{
-				auto iw4TechSetName = techSetCorrespondance[techName];
+				auto iw4TechSetName = this->techSetCorrespondance.at(techName);
 				Game::XAssetEntry* iw4TechSet = Game::DB_FindXAssetEntry(Game::XAssetType::ASSET_TYPE_TECHNIQUE_SET, iw4TechSetName.data());
 
 				if (iw4TechSet) 
@@ -327,6 +599,7 @@ namespace Assets
 		header->material = Components::AssetHandler::FindOriginalAsset(this->getType(), name.data()).material;
 	}
 
+<<<<<<< HEAD
 	void IMaterial::loadJson(Game::XAssetHeader* header, const std::string& name, [[maybe_unused]] Components::ZoneBuilder::Zone* builder)
 	{
 		Components::FileSystem::File materialInfo(std::format("materials/{}.json", name));
@@ -336,6 +609,8 @@ namespace Assets
 		header->material = nullptr;
 	}
 
+=======
+>>>>>>> 92f5e2c7 (FXworld support, JSON materials)
 	void IMaterial::mark(Game::XAssetHeader header, Components::ZoneBuilder::Zone* builder)
 	{
 		Game::Material* asset = header.material;
@@ -351,7 +626,7 @@ namespace Assets
 			{
 				if (asset->textureTable[i].u.image)
 				{
-					if (asset->textureTable[i].semantic == SEMANTIC_WATER_MAP)
+					if (asset->textureTable[i].semantic == Game::TextureSemantic::TS_WATER_MAP)
 					{
 						if (asset->textureTable[i].u.water->image)
 						{
@@ -411,7 +686,7 @@ namespace Assets
 					auto* destTextureDef = &destTextureTable[i];
 					auto* textureDef = &asset->textureTable[i];
 
-					if (textureDef->semantic == SEMANTIC_WATER_MAP)
+					if (textureDef->semantic == Game::TextureSemantic::TS_WATER_MAP)
 					{
 						AssertSize(Game::water_t, 68);
 
