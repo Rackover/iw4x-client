@@ -5,7 +5,7 @@ namespace Assets
 {
 	void Isnd_alias_list_t::load(Game::XAssetHeader* header, const std::string& name, Components::ZoneBuilder::Zone* builder)
 	{
-		Components::FileSystem::File aliasFile(Utils::String::VA("sounds/%s", name.c_str()));
+		Components::FileSystem::File aliasFile(Utils::String::VA("sounds/%s.json", name.c_str()));
 		if (!aliasFile.exists())
 		{
 			header->sound = Components::AssetHandler::FindOriginalAsset(this->getType(), name.c_str()).sound;
@@ -19,7 +19,6 @@ namespace Assets
 			return;
 		}
 
-		std::string errors;
 		nlohmann::json infoData = nlohmann::json::parse(aliasFile.getBuffer());
 		nlohmann::json aliasesContainer = infoData["head"];
 
