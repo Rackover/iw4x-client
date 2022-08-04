@@ -38,13 +38,13 @@ namespace Assets
 		}
 
 		asset->info.name = builder->getAllocator()->duplicateString(materialJson["name"].get<std::string>());
-		asset->info.gameFlags = static_cast<char>(readFlags(materialJson["gameFlags"].get<std::string>()));
+		asset->info.gameFlags = static_cast<char>(Utils::Json::ReadFlags(materialJson["gameFlags"].get<std::string>()));
 
 		asset->info.sortKey = materialJson["sortKey"].get<char>();
 		// * We do techset later * //
 		asset->info.textureAtlasRowCount = materialJson["textureAtlasRowCount"].get<unsigned char>();
 		asset->info.textureAtlasColumnCount = materialJson["textureAtlasColumnCount"].get<unsigned char>();
-		asset->info.surfaceTypeBits = static_cast<unsigned int>(readFlags(materialJson["surfaceTypeBits"].get<std::string>()));
+		asset->info.surfaceTypeBits = static_cast<unsigned int>(Utils::Json::ReadFlags(materialJson["surfaceTypeBits"].get<std::string>()));
 		asset->info.hashIndex = materialJson["hashIndex"].get<unsigned short>();
 		asset->cameraRegion = materialJson["cameraRegion"].get<char>();
 
@@ -63,7 +63,7 @@ namespace Assets
 			asset->info.drawSurf.fields.useHeroLighting = materialJson["gfxDrawSurface"]["useHeroLighting"].get<long long>();
 		}
 
-		asset->stateFlags = static_cast<char>(readFlags(materialJson["stateFlags"].get<std::string>()));
+		asset->stateFlags = static_cast<char>(Utils::Json::ReadFlags(materialJson["stateFlags"].get<std::string>()));
 
 		if (materialJson["textureTable"].is_array())
 		{
@@ -221,6 +221,11 @@ namespace Assets
 		const std::string techsetName = materialJson["techniqueSet"].get<std::string>();
 		asset->techniqueSet = findWorkingTechset(techsetName, asset, builder);
 
+		if (asset->techniqueSet == nullptr)
+		{
+			assert(false);
+		}
+
 		header->material = asset;
 	}
 
@@ -252,37 +257,6 @@ namespace Assets
 
 		return nullptr;
 	}
-
-	int IMaterial::readFlags(const std::string binaryFlags) const
-	{
-		int result = 0x00;
-		size_t size = sizeof(int) * 8;
-
-		if (binaryFlags.size() > size) {
-			Components::Logger::Print("Flag {} might not be properly translated, it seems to contain an error (invalid length)\n", binaryFlags);
-			return result;
-		}
-
-
-		size_t i = size-1;
-		for (char bit : binaryFlags)
-		{
-			if (i < 0)
-			{
-				// Uhmm
-				Components::Logger::Print("Flag {} might not be properly translated, it seems to contain an error (invalid length)\n", binaryFlags);
-				break;
-			}
-
-			bool isOne = bit == '1';
-			result |= isOne << i;
-			i--;
-		}
-
-		return result;
-	}
-
-
 
 	void IMaterial::loadBinary(Game::XAssetHeader* header, const std::string& name, Components::ZoneBuilder::Zone* builder)
 	{
