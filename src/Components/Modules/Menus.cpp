@@ -758,13 +758,6 @@ namespace Components
 	void Menus::RegisterCustomMenusHook()
 	{
 		Utils::Hook::Call<void()>(0x401700)(); // call original load functions
-
-#ifdef _DEBUG
-		for (int i = 0; i < Game::uiContext->menuCount; i++)
-		{
-			OutputDebugStringA(Utils::String::VA("%s\n", Game::uiContext->Menus[i]->window.name));
-		}
-#endif
 	}
 
 	Menus::Menus()
