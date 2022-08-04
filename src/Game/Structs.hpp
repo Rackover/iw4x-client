@@ -1010,6 +1010,23 @@ namespace Game
 		MaterialPixelShaderProgram prog;
 	};
 
+
+	enum MaterialShaderArgumentType : unsigned __int16
+	{
+		MTL_ARG_MATERIAL_VERTEX_CONST = 0x0,
+		MTL_ARG_LITERAL_VERTEX_CONST = 0x1,
+		MTL_ARG_MATERIAL_PIXEL_SAMPLER = 0x2,
+		MTL_ARG_CODE_PRIM_BEGIN = 0x3,
+		MTL_ARG_CODE_VERTEX_CONST = 0x3,
+		MTL_ARG_CODE_PIXEL_SAMPLER = 0x4,
+		MTL_ARG_CODE_PIXEL_CONST = 0x5,
+		MTL_ARG_CODE_PRIM_END = 0x6,
+		MTL_ARG_MATERIAL_PIXEL_CONST = 0x6,
+		MTL_ARG_LITERAL_PIXEL_CONST = 0x7,
+		MTL_ARG_COUNT = 0x8,
+	};
+
+
 	struct MaterialArgumentCodeConst
 	{
 		unsigned __int16 index;
@@ -1019,7 +1036,7 @@ namespace Game
 
 	union MaterialArgumentDef
 	{
-		const float* literalConst;
+		float* literalConst;
 		MaterialArgumentCodeConst codeConst;
 		unsigned int codeSampler;
 		unsigned int nameHash;
@@ -1027,7 +1044,7 @@ namespace Game
 
 	struct MaterialShaderArgument
 	{
-		unsigned __int16 type;
+		MaterialShaderArgumentType type;
 		unsigned __int16 dest;
 		MaterialArgumentDef u;
 	};
@@ -6978,6 +6995,39 @@ namespace Game
 		MaterialTechniqueType origTechType;
 	};
 
+	enum MaterialTextureSource : unsigned int
+	{
+		TEXTURE_SRC_CODE_BLACK = 0x0,
+		TEXTURE_SRC_CODE_WHITE = 0x1,
+		TEXTURE_SRC_CODE_IDENTITY_NORMAL_MAP = 0x2,
+		TEXTURE_SRC_CODE_MODEL_LIGHTING = 0x3,
+		TEXTURE_SRC_CODE_LIGHTMAP_PRIMARY = 0x4,
+		TEXTURE_SRC_CODE_LIGHTMAP_SECONDARY = 0x5,
+		TEXTURE_SRC_CODE_SHADOWMAP_SUN = 0x6,
+		TEXTURE_SRC_CODE_SHADOWMAP_SPOT = 0x7,
+		TEXTURE_SRC_CODE_FEEDBACK = 0x8,
+		TEXTURE_SRC_CODE_RESOLVED_POST_SUN = 0x9,
+		TEXTURE_SRC_CODE_RESOLVED_SCENE = 0xA,
+		TEXTURE_SRC_CODE_POST_EFFECT_0 = 0xB,
+		TEXTURE_SRC_CODE_POST_EFFECT_1 = 0xC,
+		TEXTURE_SRC_CODE_LIGHT_ATTENUATION = 0xD,
+		TEXTURE_SRC_CODE_OUTDOOR = 0xE,
+		TEXTURE_SRC_CODE_FLOATZ = 0xF,
+		TEXTURE_SRC_CODE_PROCESSED_FLOATZ = 0x10,
+		TEXTURE_SRC_CODE_RAW_FLOATZ = 0x11,
+		TEXTURE_SRC_CODE_HALF_PARTICLES = 0x12,
+		TEXTURE_SRC_CODE_HALF_PARTICLES_Z = 0x13,
+		TEXTURE_SRC_CODE_CASE_TEXTURE = 0x14,
+		TEXTURE_SRC_CODE_CINEMATIC_Y = 0x15,
+		TEXTURE_SRC_CODE_CINEMATIC_CR = 0x16,
+		TEXTURE_SRC_CODE_CINEMATIC_CB = 0x17,
+		TEXTURE_SRC_CODE_CINEMATIC_A = 0x18,
+		TEXTURE_SRC_CODE_REFLECTION_PROBE = 0x19,
+		TEXTURE_SRC_CODE_ALTERNATE_SCENE = 0x1A,
+		TEXTURE_SRC_CODE_COUNT = 0x1B,
+	};
+
+
 	struct GfxCmdBufContext
 	{
 		/*GfxCmdBufSourceState*/ void* source;
@@ -7072,6 +7122,60 @@ namespace Game
 		float viewOffset[3];
 		GfxImage* sunShadowImage;
 		float sunShadowPixelAdjust[4];
+	};
+
+	struct GfxMatrix
+	{
+		float m[4][4];
+	};
+
+	struct GfxCodeMatrices
+	{
+		GfxMatrix matrix[56];
+	};
+
+	struct GfxCamera
+	{
+		float origin[3];
+		float axis[3][3];
+		float subWindowMins[2];
+		float subWindowMaxs[2];
+		float tanHalfFovX;
+		float tanHalfFovY;
+		float zNear;
+		float depthHackNearClip;
+	};
+
+	struct GfxViewParms
+	{
+		GfxMatrix viewMatrix;
+		GfxMatrix projectionMatrix;
+		GfxMatrix viewProjectionMatrix;
+		GfxMatrix inverseViewProjectionMatrix;
+		GfxCamera camera;
+	};
+	
+	struct GfxCmdBufInput
+	{
+		float consts[76][4];
+		GfxImage* codeImages[27];
+		char codeImageSamplerStates[27];
+		/*GfxBackEndData*/ void* data;
+	};
+
+
+	enum GfxViewMode
+	{
+		VIEW_MODE_NONE = 0x0,
+		VIEW_MODE_3D = 0x1,
+		VIEW_MODE_2D = 0x2,
+		VIEW_MODE_IDENTITY = 0x3,
+	};
+
+	enum GfxViewportBehavior
+	{
+		GFX_USE_VIEWPORT_FOR_VIEW = 0x0,
+		GFX_USE_VIEWPORT_FULL = 0x1,
 	};
 
 	struct GfxLight
@@ -7169,6 +7273,33 @@ namespace Game
 	{
 		GfxPlacement base;
 		float scale;
+	};
+
+	struct GfxCmdBufSourceState
+	{
+		GfxCodeMatrices matrices;
+		GfxCmdBufInput input;
+		GfxViewParms viewParms;
+		float eyeOffset[4];
+		GfxMatrix shadowLookupMatrix;
+		unsigned __int16 constVersions[132];
+		unsigned __int16 matrixVersions[14];
+		unsigned int sceneLightForShadowLookupMatrix;
+		GfxPlacement* objectPlacement[3];
+		GfxViewParms* viewParms3D;
+		unsigned int depthHackFlags;
+		GfxScaledPlacement skinnedPlacement;
+		int cameraView;
+		GfxViewMode viewMode;
+		GfxSceneDef sceneDef;
+		GfxViewport sceneViewport;
+		float materialTime;
+		GfxViewportBehavior viewportBehavior;
+		int renderTargetWidth;
+		int renderTargetHeight;
+		bool viewportIsDirty;
+		unsigned int sceneLightIndex;
+		bool useHeroLighting;
 	};
 
 	struct GfxSceneModel
