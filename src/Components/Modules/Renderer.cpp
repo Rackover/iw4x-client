@@ -171,6 +171,31 @@ namespace Components
 		return Utils::Hook::Call<int(int, float, float, const char*, Game::vec4_t*, int)>(0x005033E0)(a1, a2, a3, Utils::String::VA("%s (^3%s^7)", mat->info.name, mat->techniqueSet->name), color, a6);
 	}
 
+	void ListSamplers() {
+
+		Game::GfxCmdBufSourceState* source = reinterpret_cast<Game::GfxCmdBufSourceState*>(0x6CAF080);
+
+		Game::Font_s* font = Game::R_RegisterFont("fonts/smallFont", 0);
+		auto height = Game::R_TextHeight(font);
+		auto scale = 1.0f;
+		float color[4] = { 0.0f, 1.0f, 0.0f, 1.0f };
+
+		for (size_t i = 0; i < 27; i++)
+		{
+			if (source->input.codeImages[i] == nullptr)
+			{
+				color[0] = 1.f;
+			}
+			else {
+				color[0] = 0.f;
+			}
+
+			std::stringstream str;
+			str << std::format("{}/{:#X} => ", i, i).c_str() << (source->input.codeImages[i] == nullptr ? "---" : source->input.codeImages[i]->name) << " " << std::to_string(source->input.codeImageSamplerStates[i]).c_str();
+			Game::R_AddCmdDrawText(Utils::String::VA("%s", str.str().data()), 0x7FFFFFFF, font, 15.0f, (height * scale + 1) * (i + 1) + 14.0f, scale, scale, 0.0f, color, Game::ITEM_TEXTSTYLE_NORMAL);
+		}
+	}
+
 	void Renderer::DebugDrawTriggers()
 	{
 		if (!r_drawTriggers.get<bool>()) return;
