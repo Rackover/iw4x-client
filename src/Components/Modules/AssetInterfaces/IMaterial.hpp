@@ -41,7 +41,6 @@ namespace Assets
 			{"mc_effect_falloff_add_nofog", "mc_effect_falloff_add_nofog_eyeoffset"}
 		};
 
-		int readFlags(const std::string binaryFlags) const;
 		Game::MaterialTechniqueSet* findWorkingTechset(const std::string techsetName, Game::Material* material, Components::ZoneBuilder::Zone* builder) const;
 	};
 }
