@@ -1730,7 +1730,7 @@ namespace Components
 				{
 					Game::GfxImageLoadDef* texture;
 					char mapType;
-					char semantic;
+					Game::TextureSemantic semantic;
 					char category;
 					char flags;
 					int cardMemory;
