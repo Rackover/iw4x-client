@@ -1,4 +1,5 @@
 #include <STDInclude.hpp>
+#include <bitset>
 
 namespace Utils::Json
 {
@@ -27,18 +28,17 @@ namespace Utils::Json
 		}
 	}
 
-
-	int ReadFlags(const std::string binaryFlags)
+	unsigned long ReadFlags(const std::string binaryFlags, const size_t size)
 	{
-		int result = 0x00;
-		size_t size = sizeof(int) * 8;
+		std::bitset<64>	input;
+		const size_t binarySize = size * 8;
 
-		if (binaryFlags.size() > size) {
+		if (binaryFlags.size() > binarySize) {
 			Components::Logger::Print("Flag {} might not be properly translated, it seems to contain an error (invalid length)\n", binaryFlags);
-			return result;
+			return 0;
 		}
 
-		size_t i = size - 1;
+		size_t i = binarySize - 1;
 		for (char bit : binaryFlags)
 		{
 			if (i < 0)
@@ -49,11 +49,10 @@ namespace Utils::Json
 			}
 
 			bool isOne = bit == '1';
-			result |= isOne << i;
-			i--;
+			input.set(i--, isOne);
 		}
 
-		return result;
+		return input.to_ulong();
 	}
 
 }
