@@ -233,6 +233,8 @@ namespace Components
 			return false;
 		}
 
+		Logger::Print("Loading {}\n", name);
+
 		Game::XAssetHeader assetHeader = AssetHandler::FindAssetForZone(type, name, this, isSubAsset);
 
 		if (!assetHeader.data)
@@ -530,7 +532,7 @@ namespace Components
 		constexpr auto* data = "Built using the IW4x Zone:B:uilder Version 4";
 		auto dataLen = std::strlen(data); // + 1 is added by the save code
 
-		this->branding = { this->zoneName.data(), 0, static_cast<int>(dataLen), data };
+		this->branding = {this->zoneName.data(), 0, static_cast<int>(dataLen), data};
 
 		if (this->findAsset(Game::XAssetType::ASSET_TYPE_RAWFILE, this->branding.name) != -1)
 		{
