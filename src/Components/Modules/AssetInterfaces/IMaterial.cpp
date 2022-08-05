@@ -38,13 +38,13 @@ namespace Assets
 		}
 
 		asset->info.name = builder->getAllocator()->duplicateString(materialJson["name"].get<std::string>());
-		asset->info.gameFlags = static_cast<char>(Utils::Json::ReadFlags(materialJson["gameFlags"].get<std::string>()));
+		asset->info.gameFlags = static_cast<char>(Utils::Json::ReadFlags(materialJson["gameFlags"].get<std::string>(), sizeof(char)));
 
 		asset->info.sortKey = materialJson["sortKey"].get<char>();
 		// * We do techset later * //
 		asset->info.textureAtlasRowCount = materialJson["textureAtlasRowCount"].get<unsigned char>();
 		asset->info.textureAtlasColumnCount = materialJson["textureAtlasColumnCount"].get<unsigned char>();
-		asset->info.surfaceTypeBits = static_cast<unsigned int>(Utils::Json::ReadFlags(materialJson["surfaceTypeBits"].get<std::string>()));
+		asset->info.surfaceTypeBits = static_cast<unsigned int>(Utils::Json::ReadFlags(materialJson["surfaceTypeBits"].get<std::string>(), sizeof(int)));
 		asset->info.hashIndex = materialJson["hashIndex"].get<unsigned short>();
 		asset->cameraRegion = materialJson["cameraRegion"].get<char>();
 
@@ -63,7 +63,8 @@ namespace Assets
 			asset->info.drawSurf.fields.useHeroLighting = materialJson["gfxDrawSurface"]["useHeroLighting"].get<long long>();
 		}
 
-		asset->stateFlags = static_cast<char>(Utils::Json::ReadFlags(materialJson["stateFlags"].get<std::string>()));
+		asset->stateFlags = static_cast<char>(Utils::Json::ReadFlags(materialJson["stateFlags"].get<std::string>(), sizeof(char)));
+
 
 		if (materialJson["textureTable"].is_array())
 		{
@@ -93,14 +94,7 @@ namespace Assets
 							
 							auto imageName = waterJson["image"].get<std::string>();
 							
-							if (imageName.starts_with("watersetup")) 
-							{
-								// Ignore - it seems to be generated at runtime during loading, not a real image
-							}
-							else 
-							{
-								water->image = Components::AssetHandler::FindAssetForZone(Game::XAssetType::ASSET_TYPE_IMAGE, imageName.data(), builder).image;
-							}
+							water->image = Components::AssetHandler::FindAssetForZone(Game::XAssetType::ASSET_TYPE_IMAGE, imageName.data(), builder).image;
 
 							water->amplitude = waterJson["amplitude"].get<float>();
 							water->M = waterJson["M"].get<int>();
@@ -150,6 +144,8 @@ namespace Assets
 							assert(decodedWTerm == wTerm64.size());
 							water->wTerm = wTerm;
 						}
+
+						textureDef->u.water = water;
 					}
 					else 
 					{
