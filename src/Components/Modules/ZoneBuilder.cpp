@@ -223,6 +223,8 @@ namespace Components
 			return false;
 		}
 
+		Logger::Print("Loading {}\n", name);
+
 		Game::XAssetHeader assetHeader = AssetHandler::FindAssetForZone(type, name, this, isSubAsset);
 
 		if (!assetHeader.data)
@@ -513,7 +515,7 @@ namespace Components
 	void ZoneBuilder::Zone::addBranding()
 	{
 		const char* data = "FastFile built using the IW4x ZoneBuilder!";
-		this->branding = { this->zoneName.data(), static_cast<int>(strlen(data)), 0, data };
+		this->branding = { this->zoneName.data(), 0, static_cast<int>(strlen(data)), data };
 
 		if (this->findAsset(Game::XAssetType::ASSET_TYPE_RAWFILE, this->branding.name) != -1)
 		{
