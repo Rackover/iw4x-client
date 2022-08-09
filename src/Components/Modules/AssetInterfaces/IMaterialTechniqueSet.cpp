@@ -24,6 +24,7 @@ namespace Assets
 		if (!techFile.exists())
 		{
 			*tech = nullptr;
+
 			Components::Logger::Warning(Game::CON_CHANNEL_DONT_FILTER, "Missing technique '{}'\n", name);
 			return;
 		}
@@ -170,9 +171,10 @@ namespace Assets
 
 		Game::MaterialTechniqueSet* asset = builder->getAllocator()->allocate<Game::MaterialTechniqueSet>();
 
-		if (!asset)
+		if (asset == nullptr)
 		{
 			Components::Logger::Error(Game::ERR_FATAL, "Reading techset '{}' failed, allocation failed!", name);
+			return;
 		}
 
 		if (techset["name"].is_string())
@@ -253,8 +255,10 @@ namespace Assets
 		AssertSize(Game::MaterialTechniqueSet, 204);
 
 		Utils::Stream* buffer = builder->getBuffer();
+
 		Game::MaterialTechniqueSet* asset = header.techniqueSet;
 		Game::MaterialTechniqueSet* dest = buffer->dest<Game::MaterialTechniqueSet>();
+
 		buffer->save(asset);
 
 		buffer->pushBlock(Game::XFILE_BLOCK_VIRTUAL);
