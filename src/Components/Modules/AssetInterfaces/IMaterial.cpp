@@ -171,22 +171,155 @@ namespace Assets
 			}
 		}
 
-		if (materialJson["stateBitsCount"].is_number())
+		if (materialJson["stateBitsTable"].is_array())
 		{
-			auto count = materialJson["stateBitsCount"].get<unsigned char>();
+			nlohmann::json::array_t arr = materialJson["stateBitsTable"];
+			asset->stateBitsCount = arr.size();
 
-			asset->stateBitsCount = count;
+			asset->stateBitsTable = builder->getAllocator()->allocateArray<Game::GfxStateBits>(arr.size());
 
-			auto stateBits64 = materialJson["stateBitsTable"].get<std::string>();
-			asset->stateBitsTable = builder->getAllocator()->allocateArray<Game::GfxStateBits>(count);
+			size_t i = 0;
+			for (auto jsonStateBitEntry : arr)
+			{
+				auto stateBit = &asset->stateBitsTable[i++];
 
-			[[maybe_unused]] unsigned int decodedStateBits = mg_base64_decode(
-				reinterpret_cast<const unsigned char*>(stateBits64.data()),
-				stateBits64.size(),
-				reinterpret_cast<char*>(asset->stateBitsTable)
-			);
+				unsigned int loadbits0 = 0;
+				unsigned int loadbits1 = 0;
 
-			assert(decodedStateBits == stateBits64.size());
+#define READ_INT_LB_FROM_JSON(x) unsigned int x = jsonStateBitEntry[#x].get<unsigned int>()
+#define READ_BOOL_LB_FROM_JSON(x) bool x = jsonStateBitEntry[#x].get<bool>()
+
+				READ_INT_LB_FROM_JSON(srcBlendRgb);
+				READ_INT_LB_FROM_JSON(dstBlendRgb);
+				READ_INT_LB_FROM_JSON(blendOpRgb);
+				READ_INT_LB_FROM_JSON(srcBlendAlpha);
+				READ_INT_LB_FROM_JSON(dstBlendAlpha);
+				READ_INT_LB_FROM_JSON(blendOpAlpha);
+				READ_INT_LB_FROM_JSON(depthTest);
+				READ_INT_LB_FROM_JSON(polygonOffset);
+
+				const auto alphaTest = jsonStateBitEntry["alphaTest"].get<std::string>();
+				const auto cullFace = jsonStateBitEntry["cullFace"].get<std::string>();
+
+				READ_BOOL_LB_FROM_JSON(colorWriteRgb);
+				READ_BOOL_LB_FROM_JSON(colorWriteAlpha);
+				READ_BOOL_LB_FROM_JSON(polymodeLine);
+
+				READ_BOOL_LB_FROM_JSON(gammaWrite);
+				READ_BOOL_LB_FROM_JSON(depthWrite);
+				READ_BOOL_LB_FROM_JSON(stencilFrontEnabled);
+				READ_BOOL_LB_FROM_JSON(stencilBackEnabled);
+
+				READ_INT_LB_FROM_JSON(stencilFrontPass);
+				READ_INT_LB_FROM_JSON(stencilFrontFail);
+				READ_INT_LB_FROM_JSON(stencilFrontZFail);
+				READ_INT_LB_FROM_JSON(stencilFrontFunc);
+				READ_INT_LB_FROM_JSON(stencilBackPass);
+				READ_INT_LB_FROM_JSON(stencilBackFail);
+				READ_INT_LB_FROM_JSON(stencilBackZFail);
+				READ_INT_LB_FROM_JSON(stencilBackFunc);
+
+				loadbits0 |= srcBlendRgb << Game::GFXS0_SRCBLEND_RGB_SHIFT;
+				loadbits0 |= dstBlendRgb << Game::GFXS0_DSTBLEND_RGB_SHIFT;
+				loadbits0 |= blendOpRgb << Game::GFXS0_BLENDOP_RGB_SHIFT;
+				loadbits0 |= srcBlendAlpha << Game::GFXS0_SRCBLEND_ALPHA_SHIFT;
+				loadbits0 |= dstBlendAlpha << Game::GFXS0_DSTBLEND_ALPHA_SHIFT;
+				loadbits0 |= blendOpAlpha << Game::GFXS0_BLENDOP_ALPHA_SHIFT;
+			
+				if (depthTest == -1)
+				{
+					loadbits1 |= Game::GFXS1_DEPTHTEST_DISABLE;
+				}
+				else 
+				{
+					loadbits1 |= depthTest << Game::GFXS1_DEPTHTEST_SHIFT;
+				}
+
+				loadbits1 |= polygonOffset << Game::GFXS1_POLYGON_OFFSET_SHIFT;
+				
+				if (alphaTest == "disable")
+				{
+					loadbits0 |= Game::GFXS0_ATEST_DISABLE;
+				}
+				else if (alphaTest == ">0")
+				{
+					loadbits0 |= Game::GFXS0_ATEST_GT_0;
+				}
+				else if(alphaTest == "<128")
+				{
+					loadbits0 |= Game::GFXS0_ATEST_LT_128;
+				}
+				else if (alphaTest == ">=128")
+				{
+					loadbits0 |= Game::GFXS0_ATEST_GE_128;
+				}
+				else {
+					Components::Logger::PrintError(Game::CON_CHANNEL_ERROR, "Invalid alphatest loadbit0 '{}' in material {}\n", alphaTest, name);
+					return;
+				}
+
+				if (cullFace == "none")
+				{
+					loadbits0 |= Game::GFXS0_CULL_NONE;
+				}
+				else if (cullFace == "back")
+				{
+					loadbits0 |= Game::GFXS0_CULL_BACK;
+				}
+				else if (cullFace == "front")
+				{
+					loadbits0 |= Game::GFXS0_CULL_FRONT;
+				}
+				else 
+				{
+					Components::Logger::PrintError(Game::CON_CHANNEL_ERROR, "Invalid cullFace loadbit0 '{}' in material {}\n", cullFace, name);
+					return;
+				}
+
+				if (gammaWrite)
+				{
+					loadbits0 |= Game::GFXS0_GAMMAWRITE;
+				}
+
+				if (colorWriteAlpha)
+				{
+					loadbits0 |= Game::GFXS0_COLORWRITE_ALPHA;
+				}
+
+				if (colorWriteRgb)
+				{
+					loadbits0 |= Game::GFXS0_COLORWRITE_RGB;
+				}
+
+				if (polymodeLine)
+				{
+					loadbits0 |= Game::GFXS0_POLYMODE_LINE;
+				}
+
+				if (depthWrite) 
+				{
+					loadbits1 |= Game::GFXS1_DEPTHWRITE;
+				}
+				if (stencilFrontEnabled)
+				{
+					loadbits1 |= Game::GFXS1_STENCIL_FRONT_ENABLE;
+				}
+				if (stencilBackEnabled)
+				{
+					loadbits1 |= Game::GFXS1_STENCIL_BACK_ENABLE;
+				}
+
+				loadbits1 |= stencilFrontPass << Game::GFXS1_STENCIL_FRONT_PASS_SHIFT;
+				loadbits1 |= stencilFrontFail << Game::GFXS1_STENCIL_FRONT_FAIL_SHIFT;
+				loadbits1 |= stencilFrontZFail << Game::GFXS1_STENCIL_FRONT_ZFAIL_SHIFT;
+				loadbits1 |= stencilFrontFunc << Game::GFXS1_STENCIL_FRONT_FUNC_SHIFT;
+				loadbits1 |= stencilBackPass << Game::GFXS1_STENCIL_BACK_PASS_SHIFT;
+				loadbits1 |= stencilBackFail << Game::GFXS1_STENCIL_BACK_FAIL_SHIFT;
+				loadbits1 |= stencilBackZFail << Game::GFXS1_STENCIL_BACK_ZFAIL_SHIFT;
+				loadbits1 |= stencilBackFunc << Game::GFXS1_STENCIL_BACK_FUNC_SHIFT;
+
+				stateBit->loadBits[0] = loadbits0;
+				stateBit->loadBits[1] = loadbits1;
 		}
 
 		// Constant table
