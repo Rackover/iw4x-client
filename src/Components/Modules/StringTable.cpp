@@ -1,4 +1,4 @@
-#include "STDInclude.hpp"
+#include <STDInclude.hpp>
 
 namespace Components
 {
@@ -64,7 +64,7 @@ namespace Components
 
 			std::string filename = Utils::String::ToLower(_filename);
 
-			if (StringTable::StringTableMap.find(filename) != StringTable::StringTableMap.end())
+			if (StringTable::StringTableMap.contains(filename))
 			{
 				header.stringTable = StringTable::StringTableMap[filename];
 			}
@@ -75,10 +75,5 @@ namespace Components
 
 			return header;
 		});
-	}
-
-	StringTable::~StringTable()
-	{
-		StringTable::StringTableMap.clear();
 	}
 }

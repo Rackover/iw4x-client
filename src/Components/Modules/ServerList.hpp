@@ -35,9 +35,10 @@ namespace Components
 
 		static void Refresh(UIScript::Token);
 		static void RefreshVisibleList(UIScript::Token);
+		static void RefreshVisibleListInternal(UIScript::Token, bool refresh = false);
 		static void UpdateVisibleList(UIScript::Token);
 		static void InsertRequest(Network::Address address);
-		static void Insert(Network::Address address, Utils::InfoString info);
+		static void Insert(const Network::Address& address, const Utils::InfoString& info);
 
 		static ServerInfo* GetCurrentServer();
 
@@ -49,6 +50,9 @@ namespace Components
 		static std::vector<ServerInfo>* GetList();
 
 		static void UpdateVisibleInfo();
+
+		static bool GetMasterServer(const char* ip, int port, Game::netadr_t& address);
+		static bool useMasterServer;
 
 	private:
 		enum Column
@@ -138,5 +142,12 @@ namespace Components
 		static std::vector<ServerInfo> FavouriteList;
 
 		static std::vector<unsigned int> VisibleList;
+
+		static Dvar::Var UIServerSelected;
+		static Dvar::Var UIServerSelectedMap;
+		static Dvar::Var NETServerQueryLimit;
+		static Dvar::Var NETServerFrames;
+
+		static bool IsServerListOpen();
 	};
 }

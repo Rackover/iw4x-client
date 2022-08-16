@@ -1,4 +1,4 @@
-#include "STDInclude.hpp"
+#include <STDInclude.hpp>
 
 namespace Components
 {
@@ -19,7 +19,7 @@ namespace Components
 	void Theatre::RecordGamestateStub()
 	{
 		int sequence = (*Game::serverMessageSequence - 1);
-		Game::FS_Write(&sequence, 4, *Game::demoFile);
+		Game::FS_WriteToDemo(&sequence, 4, *Game::demoFile);
 	}
 
 	void Theatre::StoreBaseline(PBYTE snapshotMsg)
@@ -62,10 +62,10 @@ namespace Components
 		int byte8 = 8;
 		char byte0 = 0;
 
-		Game::FS_Write(&byte0, 1, *Game::demoFile);
-		Game::FS_Write(Game::serverMessageSequence, 4, *Game::demoFile);
-		Game::FS_Write(&fileCompressedSize, 4, *Game::demoFile);
-		Game::FS_Write(&byte8, 4, *Game::demoFile);
+		Game::FS_WriteToDemo(&byte0, 1, *Game::demoFile);
+		Game::FS_WriteToDemo(Game::serverMessageSequence, 4, *Game::demoFile);
+		Game::FS_WriteToDemo(&fileCompressedSize, 4, *Game::demoFile);
+		Game::FS_WriteToDemo(&byte8, 4, *Game::demoFile);
 
 		for (int i = 0; i < compressedSize; i += 1024)
 		{
@@ -73,11 +73,11 @@ namespace Components
 
 			if (i + size >= sizeof(cmpData))
 			{
-				Logger::Print("Error: Writing compressed demo baseline exceeded buffer\n");
+				Logger::PrintError(Game::CON_CHANNEL_ERROR, "Writing compressed demo baseline exceeded buffer\n");
 				break;
 			}
 
-			Game::FS_Write(&cmpData[i], size, *Game::demoFile);
+			Game::FS_WriteToDemo(&cmpData[i], size, *Game::demoFile);
 		}
 	}
 
@@ -178,7 +178,7 @@ namespace Components
 
 		// Write metadata
 		FileSystem::FileWriter meta(Utils::String::VA("%s.json", Theatre::CurrentInfo.name.data()));
-		meta.write(json11::Json(Theatre::CurrentInfo).dump());
+		meta.write(nlohmann::json(Theatre::CurrentInfo.to_json()).dump());
 	}
 
 	void Theatre::LoadDemos(UIScript::Token)
@@ -195,18 +195,19 @@ namespace Components
 			if (meta.exists())
 			{
 				std::string error;
-				json11::Json metaObject = json11::Json::parse(meta.getBuffer(), error);
+				nlohmann::json metaObject = nlohmann::json::parse(meta.getBuffer());
 
 				if (metaObject.is_object())
 				{
 					Theatre::DemoInfo info;
 
 					info.name      = demo.substr(0, demo.find_last_of("."));
-					info.author    = metaObject["author"].string_value();
-					info.gametype  = metaObject["gametype"].string_value();
-					info.mapname   = metaObject["mapname"].string_value();
-					info.length    = static_cast<int>(metaObject["length"].number_value());
-					info.timeStamp = _atoi64(metaObject["timestamp"].string_value().data());
+					info.author    = metaObject["author"].get<std::string>();
+					info.gametype  = metaObject["gametype"].get<std::string>();
+					info.mapname   = metaObject["mapname"].get<std::string>();
+					info.length    = metaObject["length"].get<int>();
+					auto timestamp = metaObject["timestamp"].get<std::string>();
+					info.timeStamp = _atoi64(timestamp.data());
 
 					Theatre::Demos.push_back(info);
 				}
@@ -223,7 +224,7 @@ namespace Components
 		{
 			Theatre::DemoInfo info = Theatre::Demos[Theatre::CurrentSelection];
 
-			Logger::Print("Deleting demo %s...\n", info.name.data());
+			Logger::Print("Deleting demo {}...\n", info.name);
 
 			FileSystem::DeleteFile("demos", info.name + ".dm_13");
 			FileSystem::DeleteFile("demos", info.name + ".dm_13.json");
@@ -308,7 +309,7 @@ namespace Components
 
 			for (int i = 0; i < numDel; ++i)
 			{
-				Logger::Print("Deleting old demo %s\n", files[i].data());
+				Logger::Print("Deleting old demo {}\n", files[i]);
 				FileSystem::DeleteFile("demos", files[i].data());
 				FileSystem::DeleteFile("demos", Utils::String::VA("%s.json", files[i].data()));
 			}
@@ -342,8 +343,8 @@ namespace Components
 
 	Theatre::Theatre()
 	{
-		Dvar::Register<bool>("cl_autoRecord", true, Game::dvar_flag::DVAR_FLAG_SAVED, "Automatically record games.");
-		Dvar::Register<int>("cl_demosKeep", 30, 1, 999, Game::dvar_flag::DVAR_FLAG_SAVED, "How many demos to keep with autorecord.");
+		Dvar::Register<bool>("cl_autoRecord", true, Game::DVAR_ARCHIVE, "Automatically record games.");
+		Dvar::Register<int>("cl_demosKeep", 30, 1, 999, Game::DVAR_ARCHIVE, "How many demos to keep with autorecord.");
 
 		Utils::Hook(0x5A8370, Theatre::GamestateWriteStub, HOOK_CALL).install()->quick();
 		Utils::Hook(0x5A85D2, Theatre::RecordGamestateStub, HOOK_CALL).install()->quick();

@@ -1,4 +1,4 @@
-#include "STDInclude.hpp"
+#include <STDInclude.hpp>
 
 namespace Components
 {
@@ -31,7 +31,7 @@ namespace Components
 
 		if (retval == SOCKET_ERROR)
 		{
-			Logger::Print("Warning: select() syscall failed: %s\n", Game::NET_ErrorString());
+			Logger::Warning(Game::CON_CHANNEL_SYSTEM, "Select() syscall failed: {}\n", Game::NET_ErrorString());
 		}
 		else if (retval > 0)
 		{

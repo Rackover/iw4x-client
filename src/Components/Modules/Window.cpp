@@ -1,4 +1,4 @@
-#include "STDInclude.hpp"
+#include <STDInclude.hpp>
 
 namespace Components
 {
@@ -7,6 +7,8 @@ namespace Components
 
 	HWND Window::MainWindow = nullptr;
 	BOOL Window::CursorVisible = TRUE;
+	std::unordered_map<UINT, Utils::Slot<Window::WndProcCallback>> Window::WndMessageCallbacks;
+	Utils::Signal<Window::CreateCallback> Window::CreateSignals;
 
 	int Window::Width()
 	{
@@ -66,6 +68,16 @@ namespace Components
 		return Window::MainWindow;
 	}
 
+	void Window::OnWndMessage(UINT Msg, Utils::Slot<Window::WndProcCallback> callback)
+	{
+		WndMessageCallbacks.emplace(Msg, callback);
+	}
+
+	void Window::OnCreate(Utils::Slot<CreateCallback> callback)
+	{
+		CreateSignals.connect(callback);
+	}
+
 	int Window::IsNoBorder()
 	{
 		return Window::NoBorder.get<bool>();
@@ -88,7 +100,7 @@ namespace Components
 		}
 	}
 
-	void Window::DrawCursorStub(void *scrPlace, float x, float y, float w, float h, int horzAlign, int vertAlign, const float *color, Game::Material *material)
+	void Window::DrawCursorStub(Game::ScreenPlacement* scrPlace, float x, float y, float w, float h, int horzAlign, int vertAlign, const float* color, Game::Material* material)
 	{
 		if (Window::NativeCursor.get<bool>())
 		{
@@ -121,6 +133,9 @@ namespace Components
 	HWND WINAPI Window::CreateMainWindow(DWORD dwExStyle, LPCSTR lpClassName, LPCSTR lpWindowName, DWORD dwStyle, int X, int Y, int nWidth, int nHeight, HWND hWndParent, HMENU hMenu, HINSTANCE hInstance, LPVOID lpParam)
 	{
 		Window::MainWindow = CreateWindowExA(dwExStyle, lpClassName, lpWindowName, dwStyle, X, Y, nWidth, nHeight, hWndParent, hMenu, hInstance, lpParam);
+
+		CreateSignals();
+
 		return Window::MainWindow;
 	}
 
@@ -132,20 +147,26 @@ namespace Components
 
 	BOOL WINAPI Window::MessageHandler(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam)
 	{
-		if (Msg == WM_SETCURSOR)
+		if (const auto cb = WndMessageCallbacks.find(Msg); cb != WndMessageCallbacks.end())
 		{
-			Window::ApplyCursor();
-			return TRUE;
+			return cb->second(lParam, wParam);
 		}
 
 		return Utils::Hook::Call<BOOL(__stdcall)(HWND, UINT, WPARAM, LPARAM)>(0x4731F0)(hWnd, Msg, wParam, lParam);
 	}
 
+	void Window::EnableDpiAwareness()
+	{
+		const Utils::Library user32{"user32.dll"};
+
+		user32.invokePascal<void>("SetProcessDpiAwarenessContext", DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
+	}
+
 	Window::Window()
 	{
 		// Borderless window
-		Window::NoBorder = Dvar::Register<bool>("r_noborder", true, Game::dvar_flag::DVAR_FLAG_SAVED, "Do not use a border in windowed mode");
-		Window::NativeCursor = Dvar::Register<bool>("ui_nativeCursor", false, Game::dvar_flag::DVAR_FLAG_SAVED, "Display native cursor");
+		Window::NoBorder = Dvar::Register<bool>("r_noborder", true, Game::DVAR_ARCHIVE, "Do not use a border in windowed mode");
+		Window::NativeCursor = Dvar::Register<bool>("ui_nativeCursor", false, Game::DVAR_ARCHIVE, "Display native cursor");
 
 		Utils::Hook(0x507643, Window::StyleHookStub, HOOK_CALL).install()->quick();
 
@@ -157,7 +178,7 @@ namespace Components
 		Utils::Hook(0x48E5D3, Window::DrawCursorStub, HOOK_CALL).install()->quick();
 
 		// Draw the cursor if necessary
-		Scheduler::OnFrame([]()
+		Scheduler::Loop([]
 		{
 			if (Window::NativeCursor.get<bool>() && IsWindow(Window::MainWindow) && GetForegroundWindow() == Window::MainWindow && Window::IsCursorWithin(Window::MainWindow))
 			{
@@ -177,12 +198,20 @@ namespace Components
 
 				Window::CursorVisible = FALSE;
 			}
-		});
+		}, Scheduler::Pipeline::RENDERER);
 
 		// Don't let the game interact with the native cursor
 		Utils::Hook::Set(0x6D7348, Window::ShowCursorHook);
 
 		// Use custom message handler
 		Utils::Hook::Set(0x64D298, Window::MessageHandler);
+
+		Window::OnWndMessage(WM_SETCURSOR, [](WPARAM, LPARAM)
+		{
+			Window::ApplyCursor();
+			return TRUE;
+		});
+
+		Window::EnableDpiAwareness();
 	}
 }

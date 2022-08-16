@@ -1,4 +1,4 @@
-#include "STDInclude.hpp"
+#include <STDInclude.hpp>
 
 namespace Components
 {
@@ -13,7 +13,7 @@ namespace Components
 		{
 			if (!this->world_) return;
 
-			Logger::Print("Exporting '%s'...\n", this->world_->baseName);
+			Logger::Print("Exporting '{}'...\n", this->world_->baseName);
 
 			this->parseVertices();
 			this->parseFaces();
@@ -471,7 +471,7 @@ namespace Components
 				MapDumper dumper(world);
 				dumper.dump();
 
-				Logger::Print("Map '%s' exported!\n", world->baseName);
+				Logger::Print("Map '{}' exported!\n", world->baseName);
 			}
 			else
 			{

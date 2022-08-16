@@ -1,4 +1,4 @@
-﻿#include "STDInclude.hpp"
+﻿#include <STDInclude.hpp>
 
 namespace Components
 {
@@ -13,8 +13,8 @@ namespace Components
 	int Console::Height = 25;
 	int Console::Width = 80;
 
-	char Console::LineBuffer[1024] = { 0 };
-	char Console::LineBuffer2[1024] = { 0 };
+	char Console::LineBuffer[1024] = {0};
+	char Console::LineBuffer2[1024] = {0};
 	int Console::LineBufferIndex = 0;
 
 	bool Console::HasConsole = false;
@@ -24,7 +24,7 @@ namespace Components
 
 	Game::SafeArea Console::OriginalSafeArea;
 
-	char** Console::GetAutoCompleteFileList(const char *path, const char *extension, Game::FsListBehavior_e behavior, int *numfiles, int allocTrackType)
+	char** Console::GetAutoCompleteFileList(const char* path, const char* extension, Game::FsListBehavior_e behavior, int* numfiles, int allocTrackType)
 	{
 		if (path == reinterpret_cast<char*>(0xBAADF00D) || path == reinterpret_cast<char*>(0xCDCDCDCD) || ::Utils::Memory::IsBadReadPtr(path)) return nullptr;
 		return Game::FS_GetFileList(path, extension, behavior, numfiles, allocTrackType);
@@ -44,15 +44,15 @@ namespace Components
 
 	void Console::RefreshStatus()
 	{
-		std::string mapname = Dvar::Var("mapname").get<const char*>();
-		std::string hostname = TextRenderer::StripColors(Dvar::Var("sv_hostname").get<const char*>());
+		const auto mapname = Dvar::Var("mapname").get<std::string>();
+		const auto hostname = TextRenderer::StripColors(Dvar::Var("sv_hostname").get<std::string>());
 
 		if (Console::HasConsole)
 		{
 			SetConsoleTitleA(hostname.data());
 
-			int clientCount = 0;
-			int maxclientCount = *Game::svs_numclients;
+			auto clientCount = 0;
+			auto maxclientCount = *Game::svs_clientCount;
 
 			if (maxclientCount)
 			{
@@ -68,11 +68,11 @@ namespace Components
 			{
 				maxclientCount = Dvar::Var("party_maxplayers").get<int>();
 				//maxclientCount = Game::Party_GetMaxPlayers(*Game::partyIngame);
-				clientCount = Game::PartyHost_CountMembers(reinterpret_cast<Game::PartyData_s*>(0x1081C00));
+				clientCount = Game::PartyHost_CountMembers(reinterpret_cast<Game::PartyData*>(0x1081C00));
 			}
 
 			wclear(Console::InfoWindow);
-			wprintw(Console::InfoWindow, "%s : %d/%d players : map %s", hostname.data(), clientCount, maxclientCount, (mapname.size() ? mapname.data() : "none"));
+			wprintw(Console::InfoWindow, "%s : %d/%d players : map %s", hostname.data(), clientCount, maxclientCount, (!mapname.empty()) ? mapname.data() : "none");
 			wnoutrefresh(Console::InfoWindow);
 		}
 		else if (IsWindow(Console::GetWindow()) != FALSE)
@@ -318,17 +318,16 @@ namespace Components
 		Console::RefreshOutput();
 	}
 
-	void Console::Error(const char* format, ...)
+	void Console::Error(const char* fmt, ...)
 	{
-		static char buffer[32768];
+		char buf[4096] = {0};
 
 		va_list va;
-		va_start(va, format);
-		_vsnprintf_s(buffer, sizeof(buffer), format, va);
+		va_start(va, fmt);
+		vsnprintf_s(buf, _TRUNCATE, fmt, va);
 		va_end(va);
 
-		Game::Com_Printf(0, "ERROR:\n");
-		Game::Com_Printf(0, buffer);
+		Logger::PrintError(Game::CON_CHANNEL_ERROR, "{}\n", buf);
 
 		Console::RefreshOutput();
 
@@ -426,13 +425,13 @@ namespace Components
 		fflush(stdout);
 	}
 
-	void Console::StdOutError(const char* format, ...)
+	void Console::StdOutError(const char* fmt, ...)
 	{
-		char buffer[0x1000] = { 0 };
+		char buffer[4096] = {0};
 
 		va_list ap;
-		va_start(ap, format);
-		_vsnprintf_s(buffer, sizeof(buffer), format, ap);
+		va_start(ap, fmt);
+		_vsnprintf_s(buffer, _TRUNCATE, fmt, ap);
 		va_end(ap);
 
 		perror(buffer);
@@ -504,7 +503,8 @@ namespace Components
 		Console::ConsoleThread = std::thread(Console::ConsoleRunner);
 	}
 
-	Game::dvar_t* Console::RegisterConColor(const char* name, float r, float g, float b, float a, float min, float max, int flags, const char* description)
+	Game::dvar_t* Console::RegisterConColor(const char* dvarName, float r, float g, float b, float a, float min,
+		float max, unsigned __int16 flags, const char* description)
 	{
 		static struct
 		{
@@ -519,9 +519,9 @@ namespace Components
 			{ "con_outputWindowColor", { 0.25f, 0.25f, 0.25f, 0.85f } },
 		};
 
-		for (int i = 0; i < ARRAYSIZE(patchedColors); ++i)
+		for (std::size_t i = 0; i < ARRAYSIZE(patchedColors); ++i)
 		{
-			if (std::string(name) == patchedColors[i].name)
+			if (std::strcmp(dvarName, patchedColors[i].name) == 0)
 			{
 				r = patchedColors[i].color[0];
 				g = patchedColors[i].color[1];
@@ -531,19 +531,54 @@ namespace Components
 			}
 		}
 
-		return reinterpret_cast<Game::Dvar_RegisterVec4_t>(0x471500)(name, r, g, b, a, min, max, flags, description);
+		return reinterpret_cast<Game::Dvar_RegisterVec4_t>(0x471500)(dvarName, r, g, b, a, min, max, flags, description);
+	}
+
+	void Console::Con_ToggleConsole()
+	{
+		Game::Field_Clear(Game::g_consoleField);
+		if (Game::conDrawInputGlob->matchIndex >= 0 && Game::conDrawInputGlob->autoCompleteChoice[0] != '\0')
+		{
+			Game::conDrawInputGlob->matchIndex = -1;
+			Game::conDrawInputGlob->autoCompleteChoice[0] = '\0';
+		}
+
+		Game::g_consoleField->fixedSize = 1;
+		Game::con->outputVisible = false;
+		Game::g_consoleField->widthInPixels = *Game::g_console_field_width;
+		Game::g_consoleField->charHeight = *Game::g_console_char_height;
+
+		for (std::size_t localClientNum = 0; localClientNum < Game::MAX_LOCAL_CLIENTS; ++localClientNum)
+		{
+			assert((Game::clientUIActives[0].keyCatchers & Game::KEYCATCH_CONSOLE) == (Game::clientUIActives[localClientNum].keyCatchers & Game::KEYCATCH_CONSOLE));
+			Game::clientUIActives[localClientNum].keyCatchers ^= 1;
+		}
+	}
+
+	void Console::AddConsoleCommand()
+	{
+		Command::Add("con_echo", []
+		{
+			Console::Con_ToggleConsole();
+			Game::I_strncpyz(Game::g_consoleField->buffer, "\\echo ", sizeof(Game::field_t::buffer));
+			Game::g_consoleField->cursor = static_cast<int>(std::strlen(Game::g_consoleField->buffer));
+			Game::Field_AdjustScroll(Game::ScrPlace_GetFullPlacement(), Game::g_consoleField);
+		});
 	}
 
 	Console::Console()
 	{
 		// Console '%s: %s> ' string
-		Utils::Hook::Set<const char*>(0x5A44B4, "IW4x: " VERSION "> ");
+		Utils::Hook::Set<const char*>(0x5A44B4, "IW4x MP: " VERSION "> ");
 
 		// Patch console color
 		static float consoleColor[] = { 0.70f, 1.00f, 0.00f, 1.00f };
 		Utils::Hook::Set<float*>(0x5A451A, consoleColor);
 		Utils::Hook::Set<float*>(0x5A4400, consoleColor);
-
+		
+		// Remove the need to type '\' or '/' to send a console command
+		Utils::Hook::Set<BYTE>(0x431565, 0xEB);
+		
 		// Internal console
 		Utils::Hook(0x4F690C, Console::ToggleConsole, HOOK_CALL).install()->quick();
 		Utils::Hook(0x4F65A5, Console::ToggleConsole, HOOK_JUMP).install()->quick();
@@ -574,9 +609,13 @@ namespace Components
 		// Don't resize the console
 		Utils::Hook(0x64DC6B, 0x64DCC2, HOOK_JUMP).install()->quick();
 
+#ifdef _DEBUG
+		Console::AddConsoleCommand();
+#endif
+
 		if (Dedicated::IsEnabled() && !ZoneBuilder::IsEnabled())
 		{
-			Scheduler::OnFrame(Console::RefreshStatus);
+			Scheduler::Loop(Console::RefreshStatus, Scheduler::Pipeline::MAIN);
 		}
 
 		// Code below is not necessary when performing unit tests!
@@ -618,10 +657,10 @@ namespace Components
 				}
 			}, HOOK_CALL).install()->quick();
 
-			Scheduler::OnFrame([]()
+			Scheduler::Loop([]
 			{
 				Console::LastRefresh = Game::Sys_Milliseconds();
-			});
+			}, Scheduler::Pipeline::MAIN);
 		}
 		else if (Dedicated::IsEnabled()/* || ZoneBuilder::IsEnabled()*/)
 		{

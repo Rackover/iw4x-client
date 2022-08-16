@@ -1,39 +1,45 @@
-#include "STDInclude.hpp"
+#include <STDInclude.hpp>
 
 namespace Game
 {
 	std::vector<std::string> Sys_ListFilesWrapper(const std::string& directory, const std::string& extension)
 	{
 		auto fileCount = 0;
-		auto files = Game::Sys_ListFiles(directory.data(), extension.data(), 0, &fileCount, 0);
+		auto** const files = Sys_ListFiles(directory.data(), extension.data(), nullptr, &fileCount, 0);
 
 		std::vector<std::string> result;
 
 		for (auto i = 0; i < fileCount; i++)
 		{
-			if (files[i])
+			if (files[i] != nullptr)
 			{
-				result.push_back(files[i]);
+				result.emplace_back(files[i]);
 			}
 		}
 
-		Game::FS_FreeFileList(files);
+		FS_FreeFileList(files);
 
 		return result;
 	}
-	
+
 	AddRefToObject_t AddRefToObject = AddRefToObject_t(0x61C360);
 	AllocObject_t AllocObject = AllocObject_t(0x434320);
+	AddRefToValue_t AddRefToValue = AddRefToValue_t(0x482740);
+	AllocThread_t AllocThread = AllocThread_t(0x4F78C0);
+	VM_Execute_0_t VM_Execute_0 = VM_Execute_0_t(0x6222A0);
 
 	AngleVectors_t AngleVectors = AngleVectors_t(0x4691A0);
 
 	BG_GetNumWeapons_t BG_GetNumWeapons = BG_GetNumWeapons_t(0x4F5CC0);
 	BG_GetWeaponName_t BG_GetWeaponName = BG_GetWeaponName_t(0x4E6EC0);
 	BG_LoadWeaponDef_LoadObj_t BG_LoadWeaponDef_LoadObj = BG_LoadWeaponDef_LoadObj_t(0x57B5F0);
+	BG_LoadWeaponCompleteDefInternal_t BG_LoadWeaponCompleteDefInternal = BG_LoadWeaponCompleteDefInternal_t(0x4B5F10);
 	BG_GetWeaponDef_t BG_GetWeaponDef = BG_GetWeaponDef_t(0x440EB0);
+	BG_GetEntityTypeName_t BG_GetEntityTypeName = BG_GetEntityTypeName_t(0x43A0E0);
 
 	Cbuf_AddServerText_t Cbuf_AddServerText = Cbuf_AddServerText_t(0x4BB9B0);
 	Cbuf_AddText_t Cbuf_AddText = Cbuf_AddText_t(0x404B20);
+	Cbuf_InsertText_t Cbuf_InsertText = Cbuf_InsertText_t(0x4940B0);
 
 	CG_NextWeapon_f_t CG_NextWeapon_f = CG_NextWeapon_f_t(0x449DE0);
 	CG_GetClientNum_t CG_GetClientNum = CG_GetClientNum_t(0x433700);
@@ -43,7 +49,9 @@ namespace Game
 	CG_ScoresUp_f_t CG_ScoresUp_f = CG_ScoresUp_f_t(0x5802C0);
 	CG_ScrollScoreboardUp_t CG_ScrollScoreboardUp = CG_ScrollScoreboardUp_t(0x47A5C0);
 	CG_ScrollScoreboardDown_t CG_ScrollScoreboardDown = CG_ScrollScoreboardDown_t(0x493B50);
-	
+	CG_GetTeamName_t CG_GetTeamName = CG_GetTeamName_t(0x4B6210);
+	CG_SetupWeaponDef_t CG_SetupWeaponDef = CG_SetupWeaponDef_t(0x4BD520);
+
 	CL_GetClientName_t CL_GetClientName = CL_GetClientName_t(0x4563D0);
 	CL_IsCgameInitialized_t CL_IsCgameInitialized = CL_IsCgameInitialized_t(0x43EB20);
 	CL_ConnectFromParty_t CL_ConnectFromParty = CL_ConnectFromParty_t(0x433D30);
@@ -56,6 +64,10 @@ namespace Game
 	CL_HandleRelayPacket_t CL_HandleRelayPacket = CL_HandleRelayPacket_t(0x5A8C70);
 	CL_ResetViewport_t CL_ResetViewport = CL_ResetViewport_t(0x4A8830);
 	CL_SelectStringTableEntryInDvar_f_t CL_SelectStringTableEntryInDvar_f = CL_SelectStringTableEntryInDvar_f_t(0x4A4560);
+	CL_DrawStretchPic_t CL_DrawStretchPic = CL_DrawStretchPic_t(0x412490);
+	CL_ConsoleFixPosition_t CL_ConsoleFixPosition = CL_ConsoleFixPosition_t(0x44A430);
+	CL_GetLocalClientActiveCount_t CL_GetLocalClientActiveCount = CL_GetLocalClientActiveCount_t(0x5BAD90);
+	CL_ControllerIndexFromClientNum_t CL_ControllerIndexFromClientNum = CL_ControllerIndexFromClientNum_t(0x449E30);
 
 	Cmd_AddCommand_t Cmd_AddCommand = Cmd_AddCommand_t(0x470090);
 	Cmd_AddServerCommand_t Cmd_AddServerCommand = Cmd_AddServerCommand_t(0x4DCE00);
@@ -64,9 +76,13 @@ namespace Game
 
 	Com_Error_t Com_Error = Com_Error_t(0x4B22D0);
 	Com_Printf_t Com_Printf = Com_Printf_t(0x402500);
+	Com_PrintError_t Com_PrintError = Com_PrintError_t(0x4F8C70);
+	Com_PrintWarning_t Com_PrintWarning = Com_PrintWarning_t(0x4E0200);
 	Com_PrintMessage_t Com_PrintMessage = Com_PrintMessage_t(0x4AA830);
 	Com_EndParseSession_t Com_EndParseSession = Com_EndParseSession_t(0x4B80B0);
 	Com_BeginParseSession_t Com_BeginParseSession = Com_BeginParseSession_t(0x4AAB80);
+	Com_ParseOnLine_t Com_ParseOnLine = Com_ParseOnLine_t(0x4C0350);
+	Com_SkipRestOfLine_t Com_SkipRestOfLine = Com_SkipRestOfLine_t(0x4B8300);
 	Com_SetSpaceDelimited_t Com_SetSpaceDelimited = Com_SetSpaceDelimited_t(0x4FC710);
 	Com_Parse_t Com_Parse = Com_Parse_t(0x474D60);
 	Com_MatchToken_t Com_MatchToken = Com_MatchToken_t(0x447130);
@@ -111,17 +127,23 @@ namespace Game
 	Dvar_RegisterEnum_t Dvar_RegisterEnum = Dvar_RegisterEnum_t(0x412E40);
 	Dvar_RegisterString_t Dvar_RegisterString = Dvar_RegisterString_t(0x4FC7E0);
 	Dvar_RegisterColor_t Dvar_RegisterColor = Dvar_RegisterColor_t(0x4F28E0);
+	Dvar_RegisterVec3Color_t Dvar_RegisterVec3Color = Dvar_RegisterVec3Color_t(0x4918B0);
 
 	Dvar_GetUnpackedColorByName_t Dvar_GetUnpackedColorByName = Dvar_GetUnpackedColorByName_t(0x406530);
+	Dvar_GetString_t Dvar_GetString = Dvar_GetString_t(0x4EC6B0);
+	Dvar_GetVariantString_t Dvar_GetVariantString = Dvar_GetVariantString_t(0x4C47E0);
 	Dvar_FindVar_t Dvar_FindVar = Dvar_FindVar_t(0x4D5390);
 	Dvar_InfoString_Big_t Dvar_InfoString_Big = Dvar_InfoString_Big_t(0x4D98A0);
 	Dvar_SetCommand_t Dvar_SetCommand = Dvar_SetCommand_t(0x4EE430);
+	Dvar_DisplayableValue_t Dvar_DisplayableValue = Dvar_DisplayableValue_t(0x4B5530);
+	Dvar_Reset_t Dvar_Reset = Dvar_Reset_t(0x4FEFD0);
 
 	Encode_Init_t Encode_Init = Encode_Init_t(0x462AB0);
 
 	Field_Clear_t Field_Clear = Field_Clear_t(0x437EB0);
 
 	FreeMemory_t FreeMemory = FreeMemory_t(0x4D6640);
+	Free_String_t Free_String = Free_String_t(0x470E80);
 
 	FS_FileExists_t FS_FileExists = FS_FileExists_t(0x4DEFA0);
 	FS_FreeFile_t FS_FreeFile = FS_FreeFile_t(0x4416B0);
@@ -135,7 +157,8 @@ namespace Game
 	FS_FOpenFileReadForThread_t FS_FOpenFileReadForThread = FS_FOpenFileReadForThread_t(0x643270);
 	FS_FCloseFile_t FS_FCloseFile = FS_FCloseFile_t(0x462000);
 	FS_WriteFile_t FS_WriteFile = FS_WriteFile_t(0x426450);
-	FS_Write_t FS_Write = FS_Write_t(0x4C06E0);
+	FS_WriteToDemo_t  FS_WriteToDemo = FS_WriteToDemo_t(0x4C06E0);
+	FS_Write_t FS_Write = FS_Write_t(0x4576C0);
 	FS_Printf_t FS_Printf = FS_Printf_t(0x459320);
 	FS_Read_t FS_Read = FS_Read_t(0x4A04C0);
 	FS_Seek_t FS_Seek = FS_Seek_t(0x4A63D0);
@@ -144,9 +167,19 @@ namespace Game
 	FS_Restart_t FS_Restart = FS_Restart_t(0x461A50);
 	FS_BuildPathToFile_t FS_BuildPathToFile = FS_BuildPathToFile_t(0x4702C0);
 	FS_IsShippedIWD_t FS_IsShippedIWD = FS_IsShippedIWD_t(0x642440);
+	FS_Delete_t FS_Delete = FS_Delete_t(0x48A5B0);
 
+	G_LogPrintf_t G_LogPrintf = G_LogPrintf_t(0x4B0150);
 	G_GetWeaponIndexForName_t G_GetWeaponIndexForName = G_GetWeaponIndexForName_t(0x49E540);
 	G_SpawnEntitiesFromString_t G_SpawnEntitiesFromString = G_SpawnEntitiesFromString_t(0x4D8840);
+	G_Spawn_t G_Spawn = G_Spawn_t(0x4226F0);
+	G_FreeEntity_t G_FreeEntity = G_FreeEntity_t(0x44C9D0);
+	G_SpawnItem_t G_SpawnItem = G_SpawnItem_t(0x403770);
+	G_GetItemClassname_t G_GetItemClassname = G_GetItemClassname_t(0x492630);
+	G_PrintEntities_t G_PrintEntities = G_PrintEntities_t(0x4E6A50);
+	G_GetEntityTypeName_t G_GetEntityTypeName = G_GetEntityTypeName_t(0x4EB810);
+
+	Svcmd_EntityList_f_t Svcmd_EntityList_f = Svcmd_EntityList_f_t(0x4B6A70);
 
 	GScr_LoadGameTypeScript_t GScr_LoadGameTypeScript = GScr_LoadGameTypeScript_t(0x4ED9A0);
 
@@ -158,6 +191,7 @@ namespace Game
 	Key_SetCatcher_t Key_SetCatcher = Key_SetCatcher_t(0x43BD00);
 	Key_RemoveCatcher_t Key_RemoveCatcher = Key_RemoveCatcher_t(0x408260);
 	Key_IsKeyCatcherActive_t Key_IsKeyCatcherActive = Key_IsKeyCatcherActive_t(0x4DA010);
+	Key_SetBinding_t Key_SetBinding = Key_SetBinding_t(0x494C90);
 
 	LargeLocalInit_t LargeLocalInit = LargeLocalInit_t(0x4A62A0);
 
@@ -180,7 +214,7 @@ namespace Game
 	Load_snd_alias_list_nameArray_t Load_snd_alias_list_nameArray = Load_snd_alias_list_nameArray_t(0x4499F0);
 
 	Menus_CloseAll_t Menus_CloseAll = Menus_CloseAll_t(0x4BA5B0);
-    Menus_CloseRequest_t Menus_CloseRequest = Menus_CloseRequest_t(0x430D50);
+	Menus_CloseRequest_t Menus_CloseRequest = Menus_CloseRequest_t(0x430D50);
 	Menus_OpenByName_t Menus_OpenByName = Menus_OpenByName_t(0x4CCE60);
 	Menus_FindByName_t Menus_FindByName = Menus_FindByName_t(0x487240);
 	Menu_IsVisible_t Menu_IsVisible = Menu_IsVisible_t(0x4D77D0);
@@ -223,7 +257,9 @@ namespace Game
 	Live_GetPrestige_t Live_GetPrestige = Live_GetPrestige_t(0x430F90);
 	Live_GetXp_t Live_GetXp = Live_GetXp_t(0x404C60);
 
-	LoadModdableRawfile_t LoadModdableRawfile = LoadModdableRawfile_t(0x61ABC0);
+	LiveStorage_GetStat_t LiveStorage_GetStat = LiveStorage_GetStat_t(0x471F60);
+
+	Scr_AddSourceBuffer_t Scr_AddSourceBuffer = Scr_AddSourceBuffer_t(0x61ABC0);
 
 	PC_ReadToken_t PC_ReadToken = PC_ReadToken_t(0x4ACCD0);
 	PC_ReadTokenHandle_t PC_ReadTokenHandle = PC_ReadTokenHandle_t(0x4D2060);
@@ -250,30 +286,50 @@ namespace Game
 	RemoveRefToObject_t RemoveRefToObject = RemoveRefToObject_t(0x437190);
 
 	Scr_LoadGameType_t Scr_LoadGameType = Scr_LoadGameType_t(0x4D9520);
+	Scr_StartupGameType_t Scr_StartupGameType = Scr_StartupGameType_t(0x438720);
 
 	Scr_LoadScript_t Scr_LoadScript = Scr_LoadScript_t(0x45D940);
 	Scr_GetFunctionHandle_t Scr_GetFunctionHandle = Scr_GetFunctionHandle_t(0x4234F0);
 
 	Scr_GetString_t Scr_GetString = Scr_GetString_t(0x425900);
+	Scr_GetConstString_t Scr_GetConstString = Scr_GetConstString_t(0x494830);
+	Scr_GetDebugString_t Scr_GetDebugString = Scr_GetDebugString_t(0x4EBF50);
 	Scr_GetFloat_t Scr_GetFloat = Scr_GetFloat_t(0x443140);
 	Scr_GetInt_t Scr_GetInt = Scr_GetInt_t(0x4F31D0);
 	Scr_GetObject_t Scr_GetObject = Scr_GetObject_t(0x462100);
 	Scr_GetNumParam_t Scr_GetNumParam = Scr_GetNumParam_t(0x4B0E90);
+	Scr_GetEntityId_t Scr_GetEntityId = Scr_GetEntityId_t(0x4165E0);
 
 	Scr_ExecThread_t Scr_ExecThread = Scr_ExecThread_t(0x4AD0B0);
 	Scr_FreeThread_t Scr_FreeThread = Scr_FreeThread_t(0x4BD320);
 
 	Scr_AddEntity_t Scr_AddEntity = Scr_AddEntity_t(0x4BFB40);
 	Scr_AddString_t Scr_AddString = Scr_AddString_t(0x412310);
+	Scr_AddConstString_t Scr_AddConstString = Scr_AddConstString_t(0x488860);
+	Scr_AddIString_t Scr_AddIString = Scr_AddIString_t(0x455F20);
 	Scr_AddInt_t Scr_AddInt = Scr_AddInt_t(0x41D7D0);
 	Scr_AddFloat_t Scr_AddFloat = Scr_AddFloat_t(0x61E860);
 	Scr_AddObject_t Scr_AddObject = Scr_AddObject_t(0x430F40);
 	Scr_Notify_t Scr_Notify = Scr_Notify_t(0x4A4750);
 	Scr_NotifyLevel_t Scr_NotifyLevel = Scr_NotifyLevel_t(0x4D9C30);
+
 	Scr_Error_t Scr_Error = Scr_Error_t(0x61E8B0);
+	Scr_ObjectError_t Scr_ObjectError = Scr_ObjectError_t(0x42EF40);
+	Scr_ParamError_t Scr_ParamError = Scr_ParamError_t(0x4FBC70);
+
 	Scr_GetType_t Scr_GetType = Scr_GetType_t(0x422900);
+	Scr_GetPointerType_t Scr_GetPointerType = Scr_GetPointerType_t(0x4828E0);
 
 	Scr_ClearOutParams_t Scr_ClearOutParams = Scr_ClearOutParams_t(0x4386E0);
+
+	Scr_GetObjectField_t Scr_GetObjectField = Scr_GetObjectField_t(0x4FF3D0);
+	Scr_SetObjectField_t Scr_SetObjectField = Scr_SetObjectField_t(0x4F20F0);
+	Scr_GetEntityField_t Scr_GetEntityField = Scr_GetEntityField_t(0x4E8390);
+	Scr_SetClientField_t Scr_SetClientField = Scr_SetClientField_t(0x4A6DF0);
+	Scr_AddClassField_t Scr_AddClassField = Scr_AddClassField_t(0x4C0E70);
+
+	GetEntity_t GetEntity = GetEntity_t(0x4BC270);
+	GetPlayerEntity_t GetPlayerEntity = GetPlayerEntity_t(0x49C4A0);
 
 	Scr_RegisterFunction_t Scr_RegisterFunction = Scr_RegisterFunction_t(0x492D50);
 	Scr_ShutdownAllocNode_t Scr_ShutdownAllocNode = Scr_ShutdownAllocNode_t(0x441650);
@@ -287,6 +343,7 @@ namespace Game
 
 	SEH_StringEd_GetString_t SEH_StringEd_GetString = SEH_StringEd_GetString_t(0x44BB30);
 	SEH_ReadCharFromString_t SEH_ReadCharFromString = SEH_ReadCharFromString_t(0x486560);
+	SEH_GetCurrentLanguage_t SEH_GetCurrentLanguage = SEH_GetCurrentLanguage_t(0x4F6110);
 
 	Dvar_SetFromStringByName_t Dvar_SetFromStringByName = Dvar_SetFromStringByName_t(0x4F52E0);
 	Dvar_SetFromStringByNameFromSource_t Dvar_SetFromStringByNameFromSource = Dvar_SetFromStringByNameFromSource_t(0x4FC770);
@@ -298,6 +355,8 @@ namespace Game
 
 	SL_ConvertToString_t SL_ConvertToString = SL_ConvertToString_t(0x4EC1D0);
 	SL_GetString_t SL_GetString = SL_GetString_t(0x4CDC10);
+	SL_AddRefToString_t SL_AddRefToString = SL_AddRefToString_t(0x4D9B00);
+	SL_RemoveRefToString_t SL_RemoveRefToString = SL_RemoveRefToString_t(0x47CD70);
 
 	SND_Init_t SND_Init = SND_Init_t(0x46A630);
 	SND_InitDriver_t SND_InitDriver = SND_InitDriver_t(0x4F5090);
@@ -307,19 +366,24 @@ namespace Game
 	Steam_JoinLobby_t Steam_JoinLobby = Steam_JoinLobby_t(0x49CF70);
 
 	StringTable_Lookup_t StringTable_Lookup = StringTable_Lookup_t(0x42F0E0);
+	StringTable_GetColumnValueForRow_t StringTable_GetColumnValueForRow = StringTable_GetColumnValueForRow_t(0x4F2C80);
 	StringTable_HashString_t StringTable_HashString = StringTable_HashString_t(0x475EB0);
 
 	SV_AddTestClient_t SV_AddTestClient = SV_AddTestClient_t(0x48AD30);
+	SV_IsTestClient_t SV_IsTestClient = SV_IsTestClient_t(0x4D6E40);
 	SV_GameClientNum_Score_t SV_GameClientNum_Score = SV_GameClientNum_Score_t(0x469AC0);
 	SV_GameSendServerCommand_t SV_GameSendServerCommand = SV_GameSendServerCommand_t(0x4BC3A0);
 	SV_Cmd_TokenizeString_t SV_Cmd_TokenizeString = SV_Cmd_TokenizeString_t(0x4B5780);
 	SV_Cmd_EndTokenizedString_t SV_Cmd_EndTokenizedString = SV_Cmd_EndTokenizedString_t(0x464750);
+	SV_Cmd_ArgvBuffer_t SV_Cmd_ArgvBuffer = SV_Cmd_ArgvBuffer_t(0x40BB60);
 	SV_DirectConnect_t SV_DirectConnect = SV_DirectConnect_t(0x460480);
 	SV_SetConfigstring_t SV_SetConfigstring = SV_SetConfigstring_t(0x4982E0);
 	SV_Loaded_t SV_Loaded = SV_Loaded_t(0x4EE3E0);
 	SV_ClientThink_t SV_ClientThink = SV_ClientThink_t(0x44ADD0);
+	SV_DropClient_t SV_DropClient = SV_DropClient_t(0x4D1600);
+	SV_GetPlayerByName_t SV_GetPlayerByName = SV_GetPlayerByName_t(0x6242B0);
+	SV_GetPlayerByNum_t SV_GetPlayerByNum = SV_GetPlayerByNum_t(0x624390);
 
-	Sys_Error_t Sys_Error = Sys_Error_t(0x4E0200);
 	Sys_FreeFileList_t Sys_FreeFileList = Sys_FreeFileList_t(0x4D8580);
 	Sys_IsDatabaseReady_t Sys_IsDatabaseReady = Sys_IsDatabaseReady_t(0x4CA4A0);
 	Sys_IsDatabaseReady2_t Sys_IsDatabaseReady2 = Sys_IsDatabaseReady2_t(0x441280);
@@ -332,6 +396,10 @@ namespace Game
 	Sys_SuspendOtherThreads_t Sys_SuspendOtherThreads = Sys_SuspendOtherThreads_t(0x45A190);
 	Sys_ListFiles_t Sys_ListFiles = Sys_ListFiles_t(0x45A660);
 	Sys_Milliseconds_t Sys_Milliseconds = Sys_Milliseconds_t(0x42A660);
+	Sys_Error_t Sys_Error = Sys_Error_t(0x43D570);
+	Sys_LockWrite_t Sys_LockWrite = Sys_LockWrite_t(0x435880);
+	Sys_TempPriorityAtLeastNormalBegin_t Sys_TempPriorityAtLeastNormalBegin = Sys_TempPriorityAtLeastNormalBegin_t(0x478680);
+	Sys_TempPriorityEnd_t Sys_TempPriorityEnd = Sys_TempPriorityEnd_t(0x4DCF00);
 
 	TeleportPlayer_t TeleportPlayer = TeleportPlayer_t(0x496850);
 
@@ -344,6 +412,7 @@ namespace Game
 	UI_DrawHandlePic_t UI_DrawHandlePic = UI_DrawHandlePic_t(0x4D0EA0);
 	ScrPlace_GetActivePlacement_t ScrPlace_GetActivePlacement = ScrPlace_GetActivePlacement_t(0x4F8940);
 	UI_TextWidth_t UI_TextWidth = UI_TextWidth_t(0x6315C0);
+	UI_TextHeight_t UI_TextHeight = UI_TextHeight_t(0x4C8630);
 	UI_DrawText_t UI_DrawText = UI_DrawText_t(0x49C0D0);
 	UI_GetFontHandle_t UI_GetFontHandle = UI_GetFontHandle_t(0x4AEA60);
 	ScrPlace_ApplyRect_t ScrPlace_ApplyRect = ScrPlace_ApplyRect_t(0x454E20);
@@ -373,16 +442,42 @@ namespace Game
 	Field_AdjustScroll_t Field_AdjustScroll = Field_AdjustScroll_t(0x488C10);
 	AimAssist_ApplyAutoMelee_t AimAssist_ApplyAutoMelee = AimAssist_ApplyAutoMelee_t(0x56A360);
 
+	Weapon_RocketLauncher_Fire_t Weapon_RocketLauncher_Fire = Weapon_RocketLauncher_Fire_t(0x424680);
+
+	Jump_ClearState_t Jump_ClearState = Jump_ClearState_t(0x04B3890);
+	PM_playerTrace_t PM_playerTrace = PM_playerTrace_t(0x458980);
+	PM_Trace_t PM_Trace = PM_Trace_t(0x441F60);
+	PM_GetEffectiveStance_t PM_GetEffectiveStance = PM_GetEffectiveStance_t(0x412540);
+
+	CL_MouseEvent_t CL_MouseEvent = CL_MouseEvent_t(0x4D7C50);
+	IN_RecenterMouse_t IN_RecenterMouse = IN_RecenterMouse_t(0x463D80);
+
+	IN_MouseMove_t IN_MouseMove = IN_MouseMove_t(0x64C490);
+	IN_Init_t IN_Init = IN_Init_t(0x45D620);
+	IN_Shutdown_t IN_Shutdown = IN_Shutdown_t(0x426360);
+
+	Touch_Item_t Touch_Item = Touch_Item_t(0x44FA20);
+
+	Add_Ammo_t Add_Ammo = Add_Ammo_t(0x4E1480);
+  
+	ClientUserinfoChanged_t ClientUserinfoChanged = ClientUserinfoChanged_t(0x445240);
+
+	player_die_t player_die = player_die_t(0x42BC70);
+
+	Vec3Normalize_t Vec3Normalize = Vec3Normalize_t(0x453500);
+	Vec3NormalizeFast_t Vec3NormalizeFast = Vec3NormalizeFast_t(0x478F80);
+	Vec2Normalize_t Vec2Normalize = Vec2Normalize_t(0x416F70);
+	Vec2NormalizeFast_t Vec2NormalizeFast = Vec2NormalizeFast_t(0x5FC830);
+
+	Z_VirtualAlloc_t Z_VirtualAlloc = Z_VirtualAlloc_t(0x4CFBA0);
+
+	I_strncpyz_t I_strncpyz = I_strncpyz_t(0x4D6F80);
+
 	XAssetHeader* DB_XAssetPool = reinterpret_cast<XAssetHeader*>(0x7998A8);
 	unsigned int* g_poolSize = reinterpret_cast<unsigned int*>(0x7995E8);
 
-	DWORD* cmd_id = reinterpret_cast<DWORD*>(0x1AAC5D0);
-	DWORD* cmd_argc = reinterpret_cast<DWORD*>(0x1AAC614);
-	char*** cmd_argv = reinterpret_cast<char***>(0x1AAC634);
-
-	DWORD* cmd_id_sv = reinterpret_cast<DWORD*>(0x1ACF8A0);
-	DWORD* cmd_argc_sv = reinterpret_cast<DWORD*>(0x1ACF8E4);
-	char*** cmd_argv_sv = reinterpret_cast<char***>(0x1ACF904);
+	CmdArgs* cmd_args = reinterpret_cast<CmdArgs*>(0x1AAC5D0);
+	CmdArgs* sv_cmd_args = reinterpret_cast<CmdArgs*>(0x1ACF8A0);
 
 	cmd_function_t** cmd_functions = reinterpret_cast<cmd_function_t**>(0x1AAC658);
 
@@ -393,10 +488,10 @@ namespace Game
 	float* cgameFOVSensitivityScale = reinterpret_cast<float*>(0xB2F884);
 
 	int* svs_time = reinterpret_cast<int*>(0x31D9384);
-	int* svs_numclients = reinterpret_cast<int*>(0x31D938C);
+	int* svs_clientCount = reinterpret_cast<int*>(0x31D938C);
 	client_t* svs_clients = reinterpret_cast<client_t*>(0x31D9390);
 
-	UiContext *uiContext = reinterpret_cast<UiContext *>(0x62E2858);
+	UiContext* uiContext = reinterpret_cast<UiContext*>(0x62E2858);
 
 	int* arenaCount = reinterpret_cast<int*>(0x62E6930);
 	mapArena_t* arenas = reinterpret_cast<mapArena_t*>(0x62E6934);
@@ -411,8 +506,8 @@ namespace Game
 	int* g_streamPosIndex = reinterpret_cast<int*>(0x16E5578);
 
 	bool* g_lobbyCreateInProgress = reinterpret_cast<bool*>(0x66C9BC2);
-	party_t** partyIngame = reinterpret_cast<party_t**>(0x1081C00);
-	PartyData_s** partyData = reinterpret_cast<PartyData_s**>(0x107E500);
+	PartyData* g_lobbyData = reinterpret_cast<PartyData*>(0x1081C00);
+	PartyData* g_partyData = reinterpret_cast<PartyData*>(0x107E500);
 
 	int* numIP = reinterpret_cast<int*>(0x64A1E68);
 	netIP_t* localIP = reinterpret_cast<netIP_t*>(0x64A1E28);
@@ -450,29 +545,39 @@ namespace Game
 	FxEffectDef*** varFxEffectDefHandle = reinterpret_cast<FxEffectDef***>(0x112ACC0);
 	PhysCollmap*** varPhysCollmapPtr = reinterpret_cast<PhysCollmap***>(0x112B440);
 	PhysPreset*** varPhysPresetPtr = reinterpret_cast<PhysPreset***>(0x112B378);
-	Game::MaterialPass** varMaterialPass = reinterpret_cast<Game::MaterialPass**>(0x112A960);
+	MaterialPass** varMaterialPass = reinterpret_cast<MaterialPass**>(0x112A960);
 	snd_alias_list_t*** varsnd_alias_list_name = reinterpret_cast<snd_alias_list_t***>(0x112AF38);
+	MaterialVertexShader*** varMaterialVertexShader = reinterpret_cast<MaterialVertexShader***>(0x112B338);
 
 	FxElemField* s_elemFields = reinterpret_cast<FxElemField*>(0x73B848);
+
+	visField_t* visionDefFields = reinterpret_cast<visField_t*>(0x7982F0); // Count 21
 
 	infoParm_t* infoParams = reinterpret_cast<infoParm_t*>(0x79D260); // Count 0x1E
 
 	XZone* g_zones = reinterpret_cast<XZone*>(0x14C0F80);
 	unsigned short* db_hashTable = reinterpret_cast<unsigned short*>(0x12412B0);
 
-	ScriptContainer* scriptContainer = reinterpret_cast<ScriptContainer*>(0x2040D00);
+	scrVmPub_t* scrVmPub = reinterpret_cast<scrVmPub_t*>(0x2040CF0);
+	scrVarPub_t* scrVarPub = reinterpret_cast<scrVarPub_t*>(0x201A408);
 
-	clientstate_t* clcState = reinterpret_cast<clientstate_t*>(0xB2C540);
+	clientState_t* clcState = reinterpret_cast<clientState_t*>(0xB2C540);
 
 	GfxScene* scene = reinterpret_cast<GfxScene*>(0x6944914);
 
+	Console* con = reinterpret_cast<Console*>(0x9FCCF8);
 	ConDrawInputGlob* conDrawInputGlob = reinterpret_cast<ConDrawInputGlob*>(0x9FD6F8);
+
+	int* g_console_field_width = reinterpret_cast<int*>(0x79854C);
+	float* g_console_char_height = reinterpret_cast<float*>(0x798550);
 	field_t* g_consoleField = reinterpret_cast<field_t*>(0xA1B6B0);
 
 	clientStatic_t* cls = reinterpret_cast<clientStatic_t*>(0xA7FE90);
+	clientUIActive_t* clientUIActives = reinterpret_cast<clientUIActive_t*>(0xB2BB8A);
 
 	sharedUiInfo_t* sharedUiInfo = reinterpret_cast<sharedUiInfo_t*>(0x62E4B78);
 	ScreenPlacement* scrPlaceFull = reinterpret_cast<ScreenPlacement*>(0x10843F0);
+	ScreenPlacement* scrPlaceFullUnsafe = reinterpret_cast<ScreenPlacement*>(0x1084460);
 	ScreenPlacement* scrPlaceView = reinterpret_cast<ScreenPlacement*>(0x1084378);
 	
 	clientActive_t* clients = reinterpret_cast<clientActive_t*>(0xB2C698);
@@ -488,6 +593,65 @@ namespace Game
 	keyname_t* localizedKeyNames = reinterpret_cast<keyname_t*>(0x798880);
 
 	GraphFloat* aaInputGraph = reinterpret_cast<GraphFloat*>(0x7A2FC0);
+
+	const char* MY_CMDS = reinterpret_cast<const char*>(0x73C9C4); // Count 5
+
+	XModel** cached_models = reinterpret_cast<XModel**>(0x1AA20C8);
+
+	FastCriticalSection* db_hashCritSect = reinterpret_cast<FastCriticalSection*>(0x16B8A54);
+
+	float (*CorrectSolidDeltas)[26][3] = reinterpret_cast<float(*)[26][3]>(0x739BB8); // Count 26
+
+	level_locals_t* level = reinterpret_cast<level_locals_t*>(0x1A831A8);
+
+	float (*penetrationDepthTable)[PENETRATE_TYPE_COUNT][SURF_TYPE_COUNT] = reinterpret_cast<float(*)[PENETRATE_TYPE_COUNT][SURF_TYPE_COUNT]>(0x7C4878);
+
+	WinMouseVars_t* s_wmv = reinterpret_cast<WinMouseVars_t*>(0x649D640);
+
+	int* window_center_x = reinterpret_cast<int*>(0x649D638);
+	int* window_center_y = reinterpret_cast<int*>(0x649D630);
+
+	DeferredQueue* deferredQueue = reinterpret_cast<DeferredQueue*>(0x1CC2CE8);
+
+	int* g_waitingForKey = reinterpret_cast<int*>(0x63A50FC);
+
+	Material** whiteMaterial = reinterpret_cast<Material**>(0x8EE4B8);
+
+	unsigned long* _tls_index = reinterpret_cast<unsigned long*>(0x66D94A8);
+
+	int* cls_uiStarted = reinterpret_cast<int*>(0xA7FFA0);
+
+	int* com_fixedConsolePosition = reinterpret_cast<int*>(0x1AD8EC8);
+
+	int* com_errorPrintsCount = reinterpret_cast<int*>(0x1AD7910);
+
+	scr_const_t* scr_const = reinterpret_cast<scr_const_t*>(0x1AA2E00);
+
+	clientConnection_t* clientConnections = reinterpret_cast<clientConnection_t*>(0xA1E878);
+
+	unsigned int* playerCardUIStringIndex = reinterpret_cast<unsigned int*>(0x62CD7A8);
+	char (*playerCardUIStringBuf)[PLAYER_CARD_UI_STRING_COUNT][38] = reinterpret_cast<char(*)[PLAYER_CARD_UI_STRING_COUNT][38]>(0x62CB4F8);
+
+	GamerSettingState* gamerSettings = reinterpret_cast<GamerSettingState*>(0x107D3E8);
+
+	void Sys_LockRead(FastCriticalSection* critSect)
+	{
+		InterlockedIncrement(&critSect->readCount);
+		while (critSect->writeCount) std::this_thread::sleep_for(1ms);
+	}
+
+	void Sys_UnlockRead(FastCriticalSection* critSect)
+	{
+		assert(critSect->readCount > 0);
+		InterlockedDecrement(&critSect->readCount);
+	}
+
+	XModel* G_GetModel(const int index)
+	{
+		assert(index > 0);
+		assert(index < MAX_MODELS);
+		return cached_models[index];
+	}
 
 	XAssetHeader ReallocateAssetPool(XAssetType type, unsigned int newSize)
 	{
@@ -603,12 +767,9 @@ namespace Game
 		return false;
 	}
 
-	void DB_EnumXAssetEntries(XAssetType type, std::function<void(XAssetEntry*)> callback, bool overrides, bool lock)
+	void DB_EnumXAssetEntries(XAssetType type, std::function<void(XAssetEntry*)> callback, bool overrides)
 	{
-		volatile long* lockVar = reinterpret_cast<volatile long*>(0x16B8A54);
-		if (lock) InterlockedIncrement(lockVar);
-
-		while (lock && *reinterpret_cast<volatile long*>(0x16B8A58)) std::this_thread::sleep_for(1ms);
+		Sys_LockRead(db_hashCritSect);
 
 		const auto pool = Components::Maps::GetAssetEntryPool();
 		for(auto hash = 0; hash < 37000; hash++)
@@ -637,7 +798,7 @@ namespace Game
 			}
 		}
 
-		if(lock) InterlockedDecrement(lockVar);
+		Sys_UnlockRead(db_hashCritSect);
 	}
 
 	// this cant be MessageBox because windows.h has a define that converts it to MessageBoxW. which is just stupid
@@ -647,7 +808,7 @@ namespace Game
 		{
 			Dvar_SetStringByName("com_errorMessage", message.data());
 			Dvar_SetStringByName("com_errorTitle", title.data());
-			Cbuf_AddText(0, "openmenu error_popmenu_lobby");
+			Cbuf_AddText(0, "openmenu error_popmenu_lobby\n");
 		}
 	}
 
@@ -678,24 +839,49 @@ namespace Game
 		return hash;
 	}
 
-	void SV_KickClientError(client_t* client, const std::string& reason)
+	void SV_GameDropClient(int clientNum, const char* reason)
 	{
-		if (client->state < 5)
+		const auto maxClients = Dvar_FindVar("sv_maxclients")->current.integer;
+		assert(maxClients >= 1 && maxClients <= 18);
+
+		if (clientNum >= 0 && clientNum < maxClients)
 		{
-			Components::Network::SendCommand(client->netchan.remoteAddress, "error", reason);
+			SV_DropClient(&svs_clients[clientNum], reason, true);
+		}
+	}
+
+	void SV_DropAllBots()
+	{
+		for (auto i = 0; i < *svs_clientCount; ++i)
+		{
+			if (svs_clients[i].state != CS_FREE
+				&& svs_clients[i].netchan.remoteAddress.type == NA_BOT)
+			{
+				SV_GameDropClient(i, "GAME_GET_TO_COVER");
+			}
+		}
+	}
+
+	void IncInParam()
+	{
+		Scr_ClearOutParams();
+
+		if (scrVmPub->top == scrVmPub->maxStack)
+		{
+			Sys_Error("Internal script stack overflow");
 		}
 
-		SV_KickClient(client, reason.data());
+		scrVmPub->top++;
+		scrVmPub->inparamcount++;
 	}
 
-	void Scr_iPrintLn(int clientNum, const std::string& message)
+	void Scr_AddBool(int value)
 	{
-		Game::SV_GameSendServerCommand(clientNum, 0, Utils::String::VA("%c \"%s\"", 0x66, message.data()));
-	}
+		assert(value == 0 || value == 1);
 
-	void Scr_iPrintLnBold(int clientNum, const std::string& message)
-	{
-		Game::SV_GameSendServerCommand(clientNum, 0, Utils::String::VA("%c \"%s\"", 0x67, message.data()));
+		IncInParam();
+		scrVmPub->top->type = VAR_INTEGER;
+		scrVmPub->top->u.intValue = value;
 	}
 
 	int FS_FOpenFileReadCurrentThread(const char* file, int* fh)
@@ -735,22 +921,20 @@ namespace Game
 		{
 			return reinterpret_cast<char*>(0x6466628);
 		}
-		else if (Game::Sys_IsRenderThread())
+		if (Game::Sys_IsRenderThread())
 		{
 			return reinterpret_cast<char*>(0x646AC34);
 		}
-		else if (Game::Sys_IsServerThread())
+		if (Game::Sys_IsServerThread())
 		{
 			return reinterpret_cast<char*>(0x646F240);
 		}
-		else if(Game::Sys_IsDatabaseThread())
+		if (Game::Sys_IsDatabaseThread())
 		{
 			return reinterpret_cast<char*>(0x647384C);
 		}
-		else
-		{
-			return nullptr;
-		}
+
+		return nullptr;
 	}
 
 	void Com_SetParseNegativeNumbers(int parse)
@@ -768,33 +952,6 @@ namespace Game
 		StringTable* rankTable = DB_FindXAssetHeader(ASSET_TYPE_STRINGTABLE, "mp/rankTable.csv").stringTable;
 		const char* maxrank = StringTable_Lookup(rankTable, 0, "maxrank", 1);
 		return atoi(StringTable_Lookup(rankTable, 0, maxrank, 7));
-	}
-
-	float Vec2Normalize(vec2_t& vec)
-	{
-		const float length = std::sqrt((vec[0] * vec[0]) + (vec[1] * vec[1]));
-
-		if(length > 0.0f)
-		{
-			vec[0] /= length;
-			vec[1] /= length;
-		}
-
-		return length;
-	}
-
-	float Vec3Normalize(vec3_t& vec)
-	{
-		const float length = std::sqrt(std::pow(vec[0], 2.0f) + std::pow(vec[1], 2.0f) + std::pow(vec[2], 2.0f));
-
-		if(length > 0.0f)
-		{
-			vec[0] /= length;
-			vec[1] /= length;
-			vec[2] /= length;
-		}
-
-		return length;
 	}
 
 	void Vec2UnpackTexCoords(const PackedTexCoords in, vec2_t* out)
@@ -1012,6 +1169,43 @@ namespace Game
 		return GraphGetValueFromFraction(graph->knotCount, graph->knots, fraction) * graph->scale;
 	}
 
+	ScreenPlacement* ScrPlace_GetFullPlacement()
+	{
+		return scrPlaceFull;
+	}
+
+	ScreenPlacement* ScrPlace_GetUnsafeFullPlacement()
+	{
+		return scrPlaceFullUnsafe;
+	}
+
+	void UI_FilterStringForButtonAnimation(char* str, unsigned int strMaxSize)
+	{
+		if (SEH_GetCurrentLanguage() == 8 || Sys_Milliseconds() % 1000 <= 800)
+		{
+			return;
+		}
+
+		size_t i = 0;
+		while (str[i] != '\0')
+		{
+			if (i >= strMaxSize)
+				break;
+
+			const auto value = str[i];
+			if (value == 16)
+			{
+				str[i] = -68;
+			}
+			else if (value == 17)
+			{
+				str[i] = -67;
+			}
+
+			++i;
+		}
+	}
+
 #pragma optimize("", off)
 	__declspec(naked) float UI_GetScoreboardLeft(void* /*a1*/)
 	{
@@ -1075,19 +1269,23 @@ namespace Game
 		}
 	}
 
-	bool PM_IsAdsAllowed(Game::playerState_s* playerState)
+	__declspec(naked) bool PM_IsAdsAllowed(playerState_s* /*ps*/)
 	{
-		bool result;
-
 		__asm
 		{
-			mov esi, playerState
-			mov ebx, 0x5755A0
-			call ebx
-			mov result, al // AL
-		}
+			push eax
+			pushad
 
-		return result;
+			mov esi, [esp + 0x24 + 0x4] // ps
+			mov ecx, 0x5755A0
+			call ecx
+
+			mov [esp + 0x20], eax
+			popad
+			pop eax
+
+			ret
+		}
 	}
 
 	__declspec(naked) void FS_AddLocalizedGameDirectory(const char* /*path*/, const char* /*dir*/)
@@ -1139,28 +1337,6 @@ namespace Game
 		}
 	}
 
-	__declspec(naked) void SV_KickClient(client_t* /*client*/, const char* /*reason*/)
-	{
-		__asm
-		{
-			pushad
-
-			mov edi, 0
-			mov esi, [esp + 24h]
-			push [esp + 28h]
-			push 0
-			push 0
-
-			mov eax, 6249A0h
-			call eax
-			add esp, 0Ch
-
-			popad
-
-			retn
-		}
-	}
-
 	__declspec(naked) void Scr_NotifyId(unsigned int /*id*/, unsigned __int16 /*stringValue*/, unsigned int /*paramcount*/)
 	{
 		__asm
@@ -1179,6 +1355,27 @@ namespace Game
 
 			popad
 			retn
+		}
+	}
+
+	__declspec(naked) void RuntimeErrorInternal(int /*channel*/, const char* /*codePos*/, unsigned int /*index*/, const char* /*msg*/)
+	{
+		__asm
+		{
+			pushad
+
+			mov eax, [esp + 0x10 + 0x20] // msg
+			mov edi, [esp + 0x4 + 0x20] // channel
+
+			push [esp + 0xC + 0x20] // index
+			push [esp + 0xC + 0x20] // codePos
+
+			mov edx, 0x61ABE0
+			call edx
+			add esp, 0x8
+
+			popad
+			ret
 		}
 	}
 
@@ -1350,24 +1547,25 @@ namespace Game
 		}
 	}
 
-	__declspec(naked) Glyph* R_GetCharacterGlyph(Font_s* /*font*/, unsigned int /*letter*/)
+	Glyph* R_GetCharacterGlyph(Font_s* font, unsigned int letter)
 	{
+		static auto R_GetCharacterGlyph_Func = 0x5055C0;
+		Glyph* returnValue;
+
 		__asm
 		{
-			push eax
 			pushad
 
-			mov edi, [esp + 0x8 + 0x24] // letter
-			push [esp + 0x4 + 0x24] // font
-			mov eax, 0x5055C0
-			call eax
+			mov edi, letter
+			push font
+			call R_GetCharacterGlyph_Func
 			add esp, 4
-			mov [esp + 0x20], eax
+			mov returnValue, eax
 
 			popad
-			pop eax
-			ret
 		}
+
+		return returnValue;
 	}
 
 	__declspec(naked) bool SetupPulseFXVars(const char* /*text*/, int /*maxLength*/, int /*fxBirthTime*/, int /*fxLetterTime*/, int /*fxDecayStartTime*/, int /*fxDecayDuration*/, bool* /*resultDrawRandChar*/, int* /*resultRandSeed*/, int* /*resultMaxLength*/, bool* /*resultDecaying*/, int* /*resultDecayTimeElapsed*/)
@@ -1474,8 +1672,8 @@ namespace Game
 	{
 		__asm
 		{
-			mov eax,[esp+0x4]
-			mov ebx,0x569950
+			mov eax, [esp+0x4]
+			mov ebx, 0x569950
 			call ebx
 			retn
 		}
@@ -1483,7 +1681,7 @@ namespace Game
 
 	__declspec(naked) void AimAssist_UpdateAdsLerp(const AimInput* /*aimInput*/)
 	{
-	    __asm
+		__asm
 		{
 			mov eax, [esp + 0x4]
 			mov ebx, 0x569AA0
@@ -1492,5 +1690,84 @@ namespace Game
 		}
 	}
 
+	__declspec(naked) void Dvar_SetVariant(dvar_t*, DvarValue, DvarSetSource)
+	{
+		__asm
+		{
+			pushad
+
+			mov eax, [esp + 0x4 + 0x20] // dvar
+			push [esp + 0x18 + 0x20] // source
+			push [esp + 0x18 + 0x20] // value
+			push [esp + 0x18 + 0x20] // value
+			push [esp + 0x18 + 0x20] // value
+			push [esp + 0x18 + 0x20] // value
+
+			mov ebx, 0x647400
+			call ebx
+			add esp, 0x14
+
+			popad
+
+			retn
+		}
+	}
+
+	constexpr auto Dvar_SetFromStringFromSource_Func = 0x648580;
+	__declspec(naked) void Dvar_SetFromStringFromSource(const dvar_t* /*dvar*/, const char* /*string*/, DvarSetSource /*source*/)
+	{
+		__asm
+		{
+			pushad
+
+			mov esi, [esp + 0x20 + 0x4] // dvar
+			mov eax, [esp + 0x20 + 0x8] // string
+			push [esp + 0x20 + 0xC] // source
+			call Dvar_SetFromStringFromSource_Func
+			add esp, 0x4
+
+			popad
+
+			ret
+		}
+	}
+
+	constexpr auto ApplyTokenToField_Func = 0x59A760;
+	__declspec(naked) bool ApplyTokenToField(unsigned int /*fieldNum*/, const char* /*token*/, visionSetVars_t* /*settings*/)
+	{
+		__asm
+		{
+			push eax
+			pushad
+
+			mov eax, [esp + 0x24 + 0x4] // fieldNum
+			mov ecx, [esp + 0x24 + 0x8] // token
+			push [esp + 0x24 + 0xC] // settings
+			call ApplyTokenToField_Func
+			add esp, 0x4
+
+			movzx eax, al // Zero extend eax
+			mov [esp + 0x20], eax
+			popad
+			pop eax
+
+			ret
+		}
+	}
+
+	constexpr auto SV_BotUserMove_Addr = 0x626E50;
+	__declspec(naked) void SV_BotUserMove(client_t* /*client*/)
+	{
+		__asm
+		{
+			pushad
+
+			mov edi, [esp + 0x20 + 0x4]
+			call SV_BotUserMove_Addr
+
+			popad
+			ret
+		}
+	}
 #pragma optimize("", on)
 }

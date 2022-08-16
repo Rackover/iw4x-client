@@ -1,8 +1,11 @@
-#include "STDInclude.hpp"
+#include <STDInclude.hpp>
 
 namespace Components
 {
 	ServerInfo::Container ServerInfo::PlayerContainer;
+
+	Game::dvar_t** ServerInfo::CGScoreboardHeight;
+	Game::dvar_t** ServerInfo::CGScoreboardWidth;
 
 	unsigned int ServerInfo::GetPlayerCount()
 	{
@@ -74,22 +77,24 @@ namespace Components
 	void ServerInfo::DrawScoreboardInfo(int localClientNum)
 	{
 		Game::Font_s* font = Game::R_RegisterFont("fonts/bigfont", 0);
-		void* cxt = Game::ScrPlace_GetActivePlacement(localClientNum);
+		const auto* cxt = Game::ScrPlace_GetActivePlacement(localClientNum);
 
-		std::string addressText = Network::Address(*Game::connectedHost).getString();
-		if (addressText == "0.0.0.0:0" || addressText == "loopback") addressText = "Listen Server";
+		auto addressText = Network::Address(*Game::connectedHost).getString();
 
-		// get x positions
-		float fontSize = 0.35f;
-		float y = (480.0f - Dvar::Var("cg_scoreboardHeight").get<float>()) * 0.5f;
-		y += Dvar::Var("cg_scoreboardHeight").get<float>() + 6.0f;
+		if (addressText == "0.0.0.0:0" || addressText == "loopback")
+			addressText = "Listen Server";
 
-		float x = 320.0f - Dvar::Var("cg_scoreboardWidth").get<float>() * 0.5f;
-		float x2 = 320.0f + Dvar::Var("cg_scoreboardWidth").get<float>() * 0.5f;
+		// Get x positions
+		auto y = (480.0f - (*ServerInfo::CGScoreboardHeight)->current.value) * 0.5f;
+		y += (*ServerInfo::CGScoreboardHeight)->current.value + 6.0f;
 
-		// draw only when stream friendly ui is not enabled
-		if (!Dvar::Var("ui_streamFriendly").get<bool>())
+		const auto x = 320.0f - (*ServerInfo::CGScoreboardWidth)->current.value * 0.5f;
+		const auto x2 = 320.0f + (*ServerInfo::CGScoreboardWidth)->current.value * 0.5f;
+
+		// Draw only when stream friendly ui is not enabled
+		if (!Friends::UIStreamFriendly.get<bool>())
 		{
+			constexpr auto fontSize = 0.35f;
 			Game::UI_DrawText(cxt, reinterpret_cast<const char*>(0x7ED3F8), 0x7FFFFFFF, font, x, y, 0, 0, fontSize, reinterpret_cast<float*>(0x747F34), 3);
 			Game::UI_DrawText(cxt, addressText.data(), 0x7FFFFFFF, font, x2 - Game::UI_TextWidth(addressText.data(), 0, font, fontSize), y, 0, 0, fontSize, reinterpret_cast<float*>(0x747F34), 3);
 		}
@@ -125,7 +130,7 @@ namespace Components
 
 	Utils::InfoString ServerInfo::GetInfo()
 	{
-		int maxclientCount = *Game::svs_numclients;
+		int maxclientCount = *Game::svs_clientCount;
 
 		if (!maxclientCount)
 		{
@@ -172,7 +177,9 @@ namespace Components
 	ServerInfo::ServerInfo()
 	{
 		ServerInfo::PlayerContainer.currentPlayer = 0;
-		ServerInfo::PlayerContainer.playerList.clear();
+
+		ServerInfo::CGScoreboardHeight = reinterpret_cast<Game::dvar_t**>(0x9FD070);
+		ServerInfo::CGScoreboardWidth = reinterpret_cast<Game::dvar_t**>(0x9FD0AC);
 
 		// Draw IP and hostname on the scoreboard
 		Utils::Hook(0x4FC6EA, ServerInfo::DrawScoreboardStub, HOOK_CALL).install()->quick();
@@ -186,17 +193,17 @@ namespace Components
 		// Add uifeeder
 		UIFeeder::Add(13.0f, ServerInfo::GetPlayerCount, ServerInfo::GetPlayerText, ServerInfo::SelectPlayer);
 
-		Network::Handle("getStatus", [](Network::Address address, const std::string& data)
+		Network::OnPacket("getStatus", [](const Network::Address& address, [[maybe_unused]] const std::string& data)
 		{
 			std::string playerList;
 
 			Utils::InfoString info = ServerInfo::GetInfo();
 			info.set("challenge", Utils::ParseChallenge(data));
 
-			for (int i = 0; i < atoi(info.get("sv_maxclients").data()); ++i) // Maybe choose 18 here?
+			for (auto i = 0; i < atoi(info.get("sv_maxclients").data()); ++i) // Maybe choose 18 here?
 			{
-				int score = 0;
-				int ping = 0;
+				auto score = 0;
+				auto ping = 0;
 				std::string name;
 
 				if (Dvar::Var("sv_running").get<bool>())
@@ -210,7 +217,7 @@ namespace Components
 				else
 				{
 					// Score and ping are irrelevant
-					const char* namePtr = Game::PartyHost_GetMemberName(reinterpret_cast<Game::PartyData_t*>(0x1081C00), i);
+					const auto* namePtr = Game::PartyHost_GetMemberName(reinterpret_cast<Game::PartyData*>(0x1081C00), i);
 					if (!namePtr || !namePtr[0]) continue;
 
 					name = namePtr;
@@ -222,7 +229,7 @@ namespace Components
 			Network::SendCommand(address, "statusResponse", "\\" + info.build() + "\n" + playerList + "\n");
 		});
 
-		Network::Handle("statusResponse", [](Network::Address address, const std::string& data)
+		Network::OnPacket("statusResponse", [](const Network::Address& address, [[maybe_unused]] const std::string& data)
 		{
 			if (ServerInfo::PlayerContainer.target == address)
 			{
@@ -264,7 +271,7 @@ namespace Components
 					Dvar::Var("uiSi_ModName").set(info.get("fs_game").data() + 5);
 				}
 
-				auto lines = Utils::String::Explode(data, '\n');
+				auto lines = Utils::String::Split(data, '\n');
 
 				if (lines.size() <= 1) return;
 

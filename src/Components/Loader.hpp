@@ -5,8 +5,8 @@ namespace Components
 	class Component
 	{
 	public:
-		Component() {};
-		virtual ~Component() {};
+		Component() = default;
+		virtual ~Component() = default;
 
 #if defined(DEBUG) || defined(FORCE_UNIT_TESTS)
 		virtual std::string getName()
@@ -20,8 +20,8 @@ namespace Components
 		// It's illegal to spawn threads in DLLMain, and apparently it causes problems if they are destroyed there as well.
 		// This method is called before DLLMain (if possible) and should to destroy threads.
 		// It's not 100% guaranteed that it's called outside DLLMain, as it depends on the game, but it's 100% guaranteed, that it is called at all.
-		virtual void preDestroy() {};
-		virtual bool unitTest() { return true; }; // Unit testing entry
+		virtual void preDestroy() {}
+		virtual bool unitTest() { return true; } // Unit testing entry
 	};
 
 	class Loader
@@ -74,7 +74,6 @@ namespace Components
 #include "Modules/Toast.hpp"
 #include "Modules/Zones.hpp"
 #include "Modules/D3D9Ex.hpp"
-#include "Modules/Script.hpp"
 #include "Modules/Weapon.hpp"
 #include "Modules/Window.hpp"
 #include "Modules/Command.hpp"
@@ -85,10 +84,10 @@ namespace Components
 #include "Modules/Network.hpp"
 #include "Modules/Theatre.hpp"
 #include "Modules/QuickPatch.hpp"
+#include "Modules/Security.hpp"
 #include "Modules/Node.hpp"
 #include "Modules/RCon.hpp"
 #include "Modules/Party.hpp" // Destroys the order, but requires network classes :D
-#include "Modules/IW4MVM.hpp"
 #include "Modules/Logger.hpp"
 #include "Modules/Friends.hpp"
 #include "Modules/IPCPipe.hpp"
@@ -100,7 +99,6 @@ namespace Components
 #include "Modules/RawFiles.hpp"
 #include "Modules/Renderer.hpp"
 #include "Modules/UIFeeder.hpp"
-#include "Modules/AntiCheat.hpp"
 #include "Modules/Changelog.hpp"
 #include "Modules/Dedicated.hpp"
 #include "Modules/Discovery.hpp"
@@ -132,6 +130,18 @@ namespace Components
 #include "Modules/SoundMutexFix.hpp"
 #include "Modules/Chat.hpp"
 #include "Modules/TextRenderer.hpp"
-
+#include "Modules/Movement.hpp"
+#include "Modules/Elevators.hpp"
+#include "Modules/ClientCommand.hpp"
+#include "Modules/VisionFile.hpp"
 #include "Modules/Gamepad.hpp"
-#include "Modules/Client.hpp"
+#include "Modules/Branding.hpp"
+#include "Modules/Debug.hpp"
+#include "Modules/RawMouse.hpp"
+#include "Modules/Bullet.hpp"
+#include "Modules/MapRotation.hpp"
+#include "Modules/Ceg.hpp"
+#include "Modules/UserInfo.hpp"
+#include "Modules/Events.hpp"
+
+#include "Modules/GSC/GSC.hpp"

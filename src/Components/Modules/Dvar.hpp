@@ -8,24 +8,23 @@ namespace Components
 		class Flag
 		{
 		public:
-			Flag(Game::dvar_flag flag) : val(flag) {};
-			Flag(int flag) : Flag(static_cast<Game::dvar_flag>(flag)) {};
+			Flag(Game::DvarFlags flag) : val(flag) {}
+			Flag(unsigned __int16 flag) : Flag(static_cast<Game::DvarFlags>(flag)) {}
 
-			Game::dvar_flag val;
+			Game::DvarFlags val;
 		};
 
 		class Var
 		{
 		public:
-			Var() : dvar(nullptr) {};
-			Var(const Var &obj) { this->dvar = obj.dvar; };
-			Var(Game::dvar_t* _dvar) : dvar(_dvar) {};
-			Var(DWORD ppdvar) : Var(*reinterpret_cast<Game::dvar_t**>(ppdvar)) {};
+			Var() : dvar(nullptr) {}
+			Var(const Var& obj) { this->dvar = obj.dvar; }
+			Var(Game::dvar_t* _dvar) : dvar(_dvar) {}
+			Var(DWORD ppdvar) : Var(*reinterpret_cast<Game::dvar_t**>(ppdvar)) {}
 			Var(const std::string& dvarName);
 
 			template<typename T> T get();
 
-			void set(char* string);
 			void set(const char* string);
 			void set(const std::string& string);
 
@@ -44,18 +43,25 @@ namespace Components
 		Dvar();
 		~Dvar();
 
-		static void OnInit(Utils::Slot<Scheduler::Callback> callback);
-
 		// Only strings and bools use this type of declaration
-		template<typename T> static Var Register(const char* name, T value, Flag flag, const char* description);
-		template<typename T> static Var Register(const char* name, T value, T min, T max, Flag flag, const char* description);
+		template<typename T> static Var Register(const char* dvarName, T value, Flag flag, const char* description);
+		template<typename T> static Var Register(const char* dvarName, T value, T min, T max, Flag flag, const char* description);
+
+		static void ResetDvarsValue();
 
 	private:
-		static Utils::Signal<Scheduler::Callback> RegistrationSignal;
+		static const char* ArchiveDvarPath;
 
-		static Game::dvar_t* RegisterName(const char* name, const char* defaultVal, Game::dvar_flag flag, const char* description);
+		static Game::dvar_t* Dvar_RegisterName(const char* name, const char* defaultVal, unsigned __int16 flags, const char* description);
 
-		static Game::dvar_t* SetFromStringByNameExternal(const char* dvar, const char* value);
-		static Game::dvar_t* SetFromStringByNameSafeExternal(const char* dvar, const char* value);
+		static void SetFromStringByNameExternal(const char* dvar, const char* value);
+		static void SetFromStringByNameSafeExternal(const char* dvar, const char* value);
+
+		static bool AreArchiveDvarsProtected();
+		static void SaveArchiveDvar(const Game::dvar_t* var);
+		static void DvarSetFromStringByNameStub(const char* dvarName, const char* value);
+
+		static void OnRegisterVariant(Game::dvar_t* dvar);
+		static void Dvar_RegisterVariant_Stub();
 	};
 }

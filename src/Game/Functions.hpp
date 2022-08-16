@@ -28,6 +28,15 @@ namespace Game
 	typedef unsigned int(__cdecl * AllocObject_t)();
 	extern AllocObject_t AllocObject;
 
+	typedef void(__cdecl * AddRefToValue_t)(int type, VariableUnion u);
+	extern AddRefToValue_t AddRefToValue;
+
+	typedef unsigned int(__cdecl * AllocThread_t)(unsigned int self);
+	extern AllocThread_t AllocThread;
+
+	typedef unsigned int(__cdecl * VM_Execute_0_t)(unsigned int localId, const char* pos, unsigned int paramcount);
+	extern VM_Execute_0_t VM_Execute_0;
+
 	typedef void(__cdecl * AngleVectors_t)(float *angles, float *forward, float *right, float *up);
 	extern AngleVectors_t AngleVectors;
 
@@ -37,17 +46,26 @@ namespace Game
 	typedef const char*(__cdecl * BG_GetWeaponName_t)(unsigned int index);
 	extern BG_GetWeaponName_t BG_GetWeaponName;
 
-	typedef void*(__cdecl * BG_LoadWeaponDef_LoadObj_t)(const char* filename);
+	typedef void*(__cdecl * BG_LoadWeaponDef_LoadObj_t)(const char* name);
 	extern BG_LoadWeaponDef_LoadObj_t BG_LoadWeaponDef_LoadObj;
 
-	typedef WeaponDef* (__cdecl * BG_GetWeaponDef_t)(int weaponIndex);
+	typedef WeaponCompleteDef*(__cdecl * BG_LoadWeaponCompleteDefInternal_t)(const char* folder, const char* name);
+	extern BG_LoadWeaponCompleteDefInternal_t BG_LoadWeaponCompleteDefInternal;
+
+	typedef WeaponDef*(__cdecl * BG_GetWeaponDef_t)(unsigned int weaponIndex);
 	extern BG_GetWeaponDef_t BG_GetWeaponDef;
+
+	typedef const char*(__cdecl * BG_GetEntityTypeName_t)(const int eType);
+	extern BG_GetEntityTypeName_t BG_GetEntityTypeName;
 
 	typedef void(__cdecl * Cbuf_AddServerText_t)();
 	extern Cbuf_AddServerText_t Cbuf_AddServerText;
 
-	typedef void(__cdecl * Cbuf_AddText_t)(int localClientNum, const char *text);
+	typedef void(__cdecl * Cbuf_AddText_t)(int localClientNum, const char* text);
 	extern Cbuf_AddText_t Cbuf_AddText;
+
+	typedef void(__cdecl * Cbuf_InsertText_t)(int localClientNum, const char* text);
+	extern Cbuf_InsertText_t Cbuf_InsertText;
 
 	typedef int(__cdecl * CG_GetClientNum_t)();
 	extern CG_GetClientNum_t CG_GetClientNum;
@@ -72,8 +90,14 @@ namespace Game
 
 	typedef void(__cdecl * CG_ScrollScoreboardDown_t)(cg_s* cgameGlob);
 	extern CG_ScrollScoreboardDown_t CG_ScrollScoreboardDown;
-	
-	typedef char*(__cdecl * CL_GetClientName_t)(int localClientNum, int index, char *buf, size_t size);
+
+	typedef const char*(__cdecl * CG_GetTeamName_t)(team_t team);
+	extern CG_GetTeamName_t CG_GetTeamName;
+
+	typedef void(__cdecl * CG_SetupWeaponDef_t)(int localClientNum, unsigned int weapIndex);
+	extern CG_SetupWeaponDef_t CG_SetupWeaponDef;
+
+	typedef int(__cdecl * CL_GetClientName_t)(int localClientNum, int index, char *buf, int size);
 	extern CL_GetClientName_t CL_GetClientName;
 
 	typedef int(__cdecl * CL_IsCgameInitialized_t)();
@@ -109,6 +133,18 @@ namespace Game
 	typedef void(__cdecl * CL_SelectStringTableEntryInDvar_f_t)();
 	extern CL_SelectStringTableEntryInDvar_f_t CL_SelectStringTableEntryInDvar_f;
 
+	typedef void(__cdecl * CL_DrawStretchPic_t)(const ScreenPlacement* scrPlace, float x, float y, float w, float h, int horzAlign, int vertAlign, float s1, float t1, float s2, float t2, const float* color, Material* material);
+	extern CL_DrawStretchPic_t CL_DrawStretchPic;
+
+	typedef void(__cdecl * CL_ConsoleFixPosition_t)();
+	extern CL_ConsoleFixPosition_t CL_ConsoleFixPosition;
+
+	typedef int(__cdecl * CL_GetLocalClientActiveCount_t)();
+	extern CL_GetLocalClientActiveCount_t CL_GetLocalClientActiveCount;
+
+	typedef int(__cdecl * CL_ControllerIndexFromClientNum_t)(int localActiveClientNum);
+	extern CL_ControllerIndexFromClientNum_t CL_ControllerIndexFromClientNum;
+
 	typedef void(__cdecl * Cmd_AddCommand_t)(const char* cmdName, void(*function), cmd_function_t* allocedCmd, bool isKey);
 	extern Cmd_AddCommand_t Cmd_AddCommand;
 
@@ -121,25 +157,37 @@ namespace Game
 	typedef void(__cdecl * Com_ClientPacketEvent_t)();
 	extern Com_ClientPacketEvent_t Com_ClientPacketEvent;
 
-	typedef void(__cdecl * Com_Error_t)(int type, const char* message, ...);
+	typedef void(__cdecl * Com_Error_t)(errorParm_t type, const char* message, ...);
 	extern Com_Error_t Com_Error;
 
-	typedef void(__cdecl * Com_Printf_t)(int channel, const char *fmt, ...);
+	typedef void(__cdecl * Com_Printf_t)(int channel, const char* fmt, ...);
 	extern Com_Printf_t Com_Printf;
 
-	typedef void(__cdecl * Com_PrintMessage_t)(int channel, const char *msg, int error);
+	typedef void(__cdecl * Com_PrintError_t)(int channel, const char* fmt, ...);
+	extern Com_PrintError_t Com_PrintError;
+
+	typedef void(__cdecl * Com_PrintWarning_t)(int channel, const char* fmt, ...);
+	extern Com_PrintWarning_t  Com_PrintWarning;
+
+	typedef void(__cdecl * Com_PrintMessage_t)(int channel, const char* msg, int error);
 	extern Com_PrintMessage_t Com_PrintMessage;
 
 	typedef void(__cdecl * Com_EndParseSession_t)();
 	extern Com_EndParseSession_t Com_EndParseSession;
 
-	typedef void(__cdecl * Com_BeginParseSession_t)(const char* why);
+	typedef void(__cdecl * Com_BeginParseSession_t)(const char* filename);
 	extern Com_BeginParseSession_t Com_BeginParseSession;
+
+	typedef char*(__cdecl * Com_ParseOnLine_t)(const char** data_p);
+	extern Com_ParseOnLine_t Com_ParseOnLine;
+
+	typedef void(__cdecl * Com_SkipRestOfLine_t)(const char** data);
+	extern Com_SkipRestOfLine_t Com_SkipRestOfLine;
 
 	typedef void(__cdecl * Com_SetSpaceDelimited_t)(int);
 	extern Com_SetSpaceDelimited_t Com_SetSpaceDelimited;
 
-	typedef char* (__cdecl * Com_Parse_t)(const char **data_p);
+	typedef char*(__cdecl * Com_Parse_t)(const char** data_p);
 	extern Com_Parse_t Com_Parse;
 
 	typedef bool (__cdecl * Com_MatchToken_t)(const char **data_p, const char* token, int size);
@@ -196,7 +244,7 @@ namespace Game
 	typedef const char *(__cdecl * DB_GetXAssetTypeName_t)(XAssetType type);
 	extern DB_GetXAssetTypeName_t DB_GetXAssetTypeName;
 
-	typedef const char *(__cdecl * DB_IsXAssetDefault_t)(XAssetType type, const char* name);
+	typedef int(__cdecl * DB_IsXAssetDefault_t)(XAssetType type, const char* name);
 	extern DB_IsXAssetDefault_t DB_IsXAssetDefault;
 
 	typedef void(__cdecl * DB_GetRawBuffer_t)(RawFile* rawfile, char* buffer, int size);
@@ -229,65 +277,80 @@ namespace Game
 	typedef void(__cdecl * DB_XModelSurfsFixup_t)(XModel* model);
 	extern DB_XModelSurfsFixup_t DB_XModelSurfsFixup;
 
-	typedef dvar_t* (__cdecl * Dvar_RegisterBool_t)(const char* name, bool defaultVal, int flags, const char* description);
+	typedef dvar_t*(__cdecl * Dvar_RegisterBool_t)(const char* dvarName, bool value, unsigned __int16 flags, const char* description);
 	extern Dvar_RegisterBool_t Dvar_RegisterBool;
 
-	typedef dvar_t* (__cdecl * Dvar_RegisterFloat_t)(const char* name, float defaultVal, float min, float max, int flags, const char* description);
+	typedef dvar_t*(__cdecl * Dvar_RegisterFloat_t)(const char* dvarName, float value, float min, float max, unsigned __int16 flags, const char* description);
 	extern Dvar_RegisterFloat_t Dvar_RegisterFloat;
 
-	typedef dvar_t* (__cdecl * Dvar_RegisterVec2_t)(const char* name, float defx, float defy, float min, float max, int flags, const char* description);
+	typedef dvar_t*(__cdecl * Dvar_RegisterVec2_t)(const char* dvarName, float x, float y, float min, float max, unsigned __int16 flags, const char* description);
 	extern Dvar_RegisterVec2_t Dvar_RegisterVec2;
 
-	typedef dvar_t* (__cdecl * Dvar_RegisterVec3_t)(const char* name, float defx, float defy, float defz, float min, float max, int flags, const char* description);
+	typedef dvar_t*(__cdecl * Dvar_RegisterVec3_t)(const char* dvarName, float x, float y, float z, float min, float max, unsigned __int16 flags, const char* description);
 	extern Dvar_RegisterVec3_t Dvar_RegisterVec3;
 
-	typedef dvar_t* (__cdecl * Dvar_RegisterVec4_t)(const char* name, float defx, float defy, float defz, float defw, float min, float max, int flags, const char* description);
+	typedef dvar_t*(__cdecl * Dvar_RegisterVec4_t)(const char* dvarName, float x, float y, float z, float w, float min, float max, unsigned __int16 flags, const char* description);
 	extern Dvar_RegisterVec4_t Dvar_RegisterVec4;
 
-	typedef dvar_t* (__cdecl * Dvar_RegisterInt_t)(const char* name, int defaultVal, int min, int max, int flags, const char* description);
+	typedef dvar_t*(__cdecl * Dvar_RegisterInt_t)(const char* dvarName, int value, int min, int max, unsigned __int16 flags, const char* description);
 	extern Dvar_RegisterInt_t Dvar_RegisterInt;
 
-	typedef dvar_t* (__cdecl * Dvar_RegisterEnum_t)(const char* name, char** enumValues, int defaultVal, int flags, const char* description);
+	typedef dvar_t*(__cdecl * Dvar_RegisterEnum_t)(const char* dvarName, const char** valueList, int defaultIndex, unsigned __int16 flags, const char* description);
 	extern Dvar_RegisterEnum_t Dvar_RegisterEnum;
 
-	typedef dvar_t* (__cdecl * Dvar_RegisterString_t)(const char* name, const char* defaultVal, int, const char*);
+	typedef dvar_t*(__cdecl * Dvar_RegisterString_t)(const char* dvarName, const char* value, unsigned __int16 flags, const char* description);
 	extern Dvar_RegisterString_t Dvar_RegisterString;
 
-	typedef dvar_t* (__cdecl * Dvar_RegisterColor_t)(const char* name, float r, float g, float b, float a, int flags, const char* description);
+	typedef dvar_t*(__cdecl * Dvar_RegisterColor_t)(const char* dvarName, float r, float g, float b, float a, unsigned __int16 flags, const char* description);
 	extern Dvar_RegisterColor_t Dvar_RegisterColor;
 
-	typedef dvar_t* (__cdecl * Dvar_SetFromStringByName_t)(const char* cvar, const char* value);
+	typedef dvar_t*(__cdecl * Dvar_RegisterVec3Color_t)(const char* dvarName, float x, float y, float z, float max, unsigned __int16 flags, const char* description);
+	extern Dvar_RegisterVec3Color_t Dvar_RegisterVec3Color;
+
+	typedef void(__cdecl * Dvar_SetFromStringByName_t)(const char* dvarName, const char* string);
 	extern Dvar_SetFromStringByName_t Dvar_SetFromStringByName;
 
-	typedef dvar_t* (__cdecl * Dvar_SetFromStringByNameFromSource_t)(const char* cvar, const char* value, DvarSetSource source);
+	typedef const dvar_t*(__cdecl * Dvar_SetFromStringByNameFromSource_t)(const char* dvarName, const char* string, DvarSetSource source);
 	extern Dvar_SetFromStringByNameFromSource_t Dvar_SetFromStringByNameFromSource;
 
-	typedef void (__cdecl * Dvar_SetStringByName_t)(const char* cvar, const char* value);
+	typedef void(__cdecl * Dvar_SetStringByName_t)(const char* dvarName, const char* value);
 	extern Dvar_SetStringByName_t Dvar_SetStringByName;
 
-	typedef void (__cdecl * Dvar_SetString_t)(dvar_t* cvar, const char* value);
+	typedef void(__cdecl * Dvar_SetString_t)(const dvar_t* dvar, const char* value);
 	extern Dvar_SetString_t Dvar_SetString;
 
-	typedef void (__cdecl * Dvar_SetBool_t)(dvar_t* cvar, bool enabled);
+	typedef void(__cdecl * Dvar_SetBool_t)(const dvar_t* dvar, bool enabled);
 	extern Dvar_SetBool_t Dvar_SetBool;
 
-	typedef void (__cdecl * Dvar_SetFloat_t)(dvar_t* cvar, float value);
+	typedef void(__cdecl * Dvar_SetFloat_t)(const dvar_t* dvar, float value);
 	extern Dvar_SetFloat_t Dvar_SetFloat;
 
-	typedef void (__cdecl * Dvar_SetInt_t)(dvar_t* cvar, int integer);
+	typedef void(__cdecl * Dvar_SetInt_t)(const dvar_t* dvar, int integer);
 	extern Dvar_SetInt_t Dvar_SetInt;
 
-	typedef void(__cdecl * Dvar_GetUnpackedColorByName_t)(const char* name, float* color);
+	typedef void(__cdecl * Dvar_GetUnpackedColorByName_t)(const char* dvarName, float* expandedColor);
 	extern Dvar_GetUnpackedColorByName_t Dvar_GetUnpackedColorByName;
 
-	typedef dvar_t* (__cdecl * Dvar_FindVar_t)(const char *dvarName);
+	typedef char*(__cdecl*  Dvar_GetString_t)(const char* dvarName);
+	extern Dvar_GetString_t Dvar_GetString;
+
+	typedef char*(__cdecl * Dvar_GetVariantString_t)(const char* dvarName);
+	extern Dvar_GetVariantString_t Dvar_GetVariantString;
+
+	typedef dvar_t*(__cdecl * Dvar_FindVar_t)(const char* dvarName);
 	extern Dvar_FindVar_t Dvar_FindVar;
 
-	typedef char* (__cdecl* Dvar_InfoString_Big_t)(int typeMask);
+	typedef char*(__cdecl * Dvar_InfoString_Big_t)(int bit);
 	extern Dvar_InfoString_Big_t Dvar_InfoString_Big;
 
-	typedef dvar_t* (__cdecl * Dvar_SetCommand_t)(const char* name, const char* value);
+	typedef void(__cdecl * Dvar_SetCommand_t)(const char* dvarName, const char* string);
 	extern Dvar_SetCommand_t Dvar_SetCommand;
+
+	typedef const char*(__cdecl * Dvar_DisplayableValue_t)(const dvar_t* dvar);
+	extern Dvar_DisplayableValue_t Dvar_DisplayableValue;
+
+	typedef void(__cdecl * Dvar_Reset_t)(const dvar_t* dvar, DvarSetSource setSource);
+	extern Dvar_Reset_t Dvar_Reset;
 
 	typedef bool(__cdecl * Encode_Init_t)(const char* );
 	extern Encode_Init_t Encode_Init;
@@ -297,6 +360,9 @@ namespace Game
 
 	typedef void(__cdecl * FreeMemory_t)(void* buffer);
 	extern FreeMemory_t FreeMemory;
+
+	typedef void (__cdecl * Free_String_t)(const char* string);
+	extern Free_String_t Free_String;
 
 	typedef void(__cdecl * FS_FreeFile_t)(void* buffer);
 	extern FS_FreeFile_t FS_FreeFile;
@@ -320,16 +386,19 @@ namespace Game
 	typedef int(__cdecl * FS_FOpenFileReadForThread_t)(const char *filename, int *file, int thread);
 	extern FS_FOpenFileReadForThread_t FS_FOpenFileReadForThread;
 
-	typedef int(__cdecl * FS_FCloseFile_t)(int fh);
+	typedef int(__cdecl * FS_FCloseFile_t)(int stream);
 	extern FS_FCloseFile_t FS_FCloseFile;
 
 	typedef bool(__cdecl * FS_FileExists_t)(const char* file);
 	extern FS_FileExists_t FS_FileExists;
 
-	typedef bool(__cdecl * FS_WriteFile_t)(char* filename, char* folder, void* buffer, int size);
+	typedef bool(__cdecl * FS_WriteFile_t)(const char* filename, const char* folder, const void* buffer, int size);
 	extern FS_WriteFile_t FS_WriteFile;
 
-	typedef int(__cdecl * FS_Write_t)(const void* buffer, size_t size, int file);
+	typedef int(__cdecl * FS_WriteToDemo_t)(const void* buffer, int size, int file);
+	extern FS_WriteToDemo_t FS_WriteToDemo;
+
+	typedef int(__cdecl * FS_Write_t)(const void* buffer, int len, int h);
 	extern FS_Write_t FS_Write;
 
 	typedef int(__cdecl * FS_Printf_t)(int file, const char* fmt, ...);
@@ -356,11 +425,38 @@ namespace Game
 	typedef iwd_t*(__cdecl * FS_IsShippedIWD_t)(const char* fullpath, const char* iwd);
 	extern FS_IsShippedIWD_t FS_IsShippedIWD;
 
-	typedef int(__cdecl* G_GetWeaponIndexForName_t)(char*);
+	typedef int(__cdecl* FS_Delete_t)(const char* fileName);
+	extern FS_Delete_t FS_Delete;
+
+	typedef void(__cdecl * G_LogPrintf_t)(const char* fmt, ...);
+	extern G_LogPrintf_t G_LogPrintf;
+
+	typedef unsigned int(__cdecl * G_GetWeaponIndexForName_t)(const char*);
 	extern G_GetWeaponIndexForName_t G_GetWeaponIndexForName;
 
-	typedef void(__cdecl* G_SpawnEntitiesFromString_t)();
+	typedef void(__cdecl * G_SpawnEntitiesFromString_t)();
 	extern G_SpawnEntitiesFromString_t G_SpawnEntitiesFromString;
+
+	typedef gentity_s*(__cdecl * G_Spawn_t)();
+	extern G_Spawn_t G_Spawn;
+
+	typedef void(__cdecl * G_FreeEntity_t)(gentity_s* ed);
+	extern G_FreeEntity_t G_FreeEntity;
+
+	typedef void(__cdecl * G_SpawnItem_t)(gentity_s* ent, int item);
+	extern G_SpawnItem_t G_SpawnItem;
+
+	typedef void(__cdecl * G_GetItemClassname_t)(int item, gentity_s* ent);
+	extern G_GetItemClassname_t G_GetItemClassname;
+
+	typedef void(__cdecl * G_PrintEntities_t)();
+	extern G_PrintEntities_t G_PrintEntities;
+
+	typedef const char*(__cdecl * G_GetEntityTypeName_t)(const gentity_s* ent);
+	extern G_GetEntityTypeName_t G_GetEntityTypeName;
+
+	typedef void(__cdecl * Svcmd_EntityList_f_t)();
+	extern Svcmd_EntityList_f_t Svcmd_EntityList_f;
 
 	typedef void(__cdecl * GScr_LoadGameTypeScript_t)();
 	extern GScr_LoadGameTypeScript_t GScr_LoadGameTypeScript;
@@ -372,7 +468,7 @@ namespace Game
 	typedef void(__cdecl * Image_Release_t)(GfxImage* image);
 	extern Image_Release_t Image_Release;
 
-	typedef char*(__cdecl * Info_ValueForKey_t)(const char* infoString, const char* key);
+	typedef char*(__cdecl * Info_ValueForKey_t)(const char* s, const char* key);
 	extern Info_ValueForKey_t Info_ValueForKey;
 
 	typedef void(__cdecl * Key_SetCatcher_t)(int localClientNum, int catcher);
@@ -384,10 +480,13 @@ namespace Game
 	typedef bool(__cdecl * Key_IsKeyCatcherActive_t)(int localClientNum, int catcher);
 	extern Key_IsKeyCatcherActive_t Key_IsKeyCatcherActive;
 
+	typedef void(__cdecl * Key_SetBinding_t)(int localClientNum, int keyNum, const char* binding);
+	extern Key_SetBinding_t Key_SetBinding;
+
 	typedef void(__cdecl * LargeLocalInit_t)();
 	extern LargeLocalInit_t LargeLocalInit;
 
-	typedef bool(__cdecl * Load_Stream_t)(bool atStreamStart, const void *ptr, unsigned int size);
+	typedef bool(__cdecl * Load_Stream_t)(bool atStreamStart, const void* ptr, unsigned int size);
 	extern Load_Stream_t Load_Stream;
 
 	typedef void(__cdecl * Load_XString_t)(bool atStreamStart);
@@ -396,64 +495,64 @@ namespace Game
 	typedef void(__cdecl * Load_XModelPtr_t)(bool atStreamStart);
 	extern Load_XModelPtr_t Load_XModelPtr;
 
-	typedef void(__cdecl * Load_XModelSurfsFixup_t)(XModelSurfs **, XModelLodInfo *);
+	typedef void(__cdecl * Load_XModelSurfsFixup_t)(XModelSurfs**, XModelLodInfo*);
 	extern Load_XModelSurfsFixup_t Load_XModelSurfsFixup;
 
 	typedef void(__cdecl * Load_XStringArray_t)(bool atStreamStart, int count);
 	extern Load_XStringArray_t Load_XStringArray;
 
-	typedef void(__cdecl * Load_XStringCustom_t)(const char **str);
+	typedef void(__cdecl * Load_XStringCustom_t)(const char** str);
 	extern Load_XStringCustom_t Load_XStringCustom;
 
-	typedef void(__cdecl *Load_FxEffectDefHandle_t)(bool atStreamStart);
+	typedef void(__cdecl * Load_FxEffectDefHandle_t)(bool atStreamStart);
 	extern Load_FxEffectDefHandle_t Load_FxEffectDefHandle;
 
-	typedef void(__cdecl *Load_FxElemDef_t)(bool atStreamStart);
+	typedef void(__cdecl * Load_FxElemDef_t)(bool atStreamStart);
 	extern Load_FxElemDef_t Load_FxElemDef;
 
-	typedef void(__cdecl *Load_GfxImagePtr_t)(bool atStreamStart);
+	typedef void(__cdecl * Load_GfxImagePtr_t)(bool atStreamStart);
 	extern Load_GfxImagePtr_t Load_GfxImagePtr;
 
-	typedef void(__cdecl *Load_GfxTextureLoad_t)(bool atStreamStart);
+	typedef void(__cdecl * Load_GfxTextureLoad_t)(bool atStreamStart);
 	extern Load_GfxTextureLoad_t Load_GfxTextureLoad;
 
-	typedef int(__cdecl *Load_Texture_t)(GfxImageLoadDef **loadDef, GfxImage *image);
+	typedef int(__cdecl * Load_Texture_t)(GfxImageLoadDef** loadDef, GfxImage* image);
 	extern Load_Texture_t Load_Texture;
 
 	typedef void(__cdecl * Load_SndAliasCustom_t)(snd_alias_list_t** var);
 	extern Load_SndAliasCustom_t Load_SndAliasCustom;
 
-	typedef void(__cdecl *Load_MaterialHandle_t)(bool atStreamStart);
+	typedef void(__cdecl * Load_MaterialHandle_t)(bool atStreamStart);
 	extern Load_MaterialHandle_t Load_MaterialHandle;
 
-	typedef void(__cdecl *Load_PhysCollmapPtr_t)(bool atStreamStart);
+	typedef void(__cdecl * Load_PhysCollmapPtr_t)(bool atStreamStart);
 	extern Load_PhysCollmapPtr_t Load_PhysCollmapPtr;
 
-	typedef void(__cdecl *Load_PhysPresetPtr_t)(bool atStreamStart);
+	typedef void(__cdecl * Load_PhysPresetPtr_t)(bool atStreamStart);
 	extern Load_PhysPresetPtr_t Load_PhysPresetPtr;
 
-	typedef void(__cdecl *Load_TracerDefPtr_t)(bool atStreamStart);
+	typedef void(__cdecl * Load_TracerDefPtr_t)(bool atStreamStart);
 	extern Load_TracerDefPtr_t Load_TracerDefPtr;
 
-	typedef void(__cdecl *Load_snd_alias_list_nameArray_t)(bool atStreamStart, int count);
+	typedef void(__cdecl * Load_snd_alias_list_nameArray_t)(bool atStreamStart, int count);
 	extern Load_snd_alias_list_nameArray_t Load_snd_alias_list_nameArray;
 
-	typedef void(__cdecl * Menus_CloseAll_t)(UiContext *dc);
+	typedef void(__cdecl * Menus_CloseAll_t)(UiContext* dc);
 	extern Menus_CloseAll_t Menus_CloseAll;
 
-    typedef void(__cdecl * Menus_CloseRequest_t)(UiContext *dc, menuDef_t* menu);
-    extern Menus_CloseRequest_t Menus_CloseRequest;
+	typedef void(__cdecl * Menus_CloseRequest_t)(UiContext* dc, menuDef_t* menu);
+	extern Menus_CloseRequest_t Menus_CloseRequest;
 
-	typedef int(__cdecl * Menus_OpenByName_t)(UiContext *dc, const char *p);
+	typedef int(__cdecl * Menus_OpenByName_t)(UiContext* dc, const char* p);
 	extern Menus_OpenByName_t Menus_OpenByName;
 
-	typedef menuDef_t *(__cdecl * Menus_FindByName_t)(UiContext *dc, const char *name);
+	typedef menuDef_t *(__cdecl * Menus_FindByName_t)(UiContext* dc, const char* name);
 	extern Menus_FindByName_t Menus_FindByName;
 
-	typedef bool(__cdecl * Menu_IsVisible_t)(UiContext *dc, menuDef_t *menu);
+	typedef bool(__cdecl * Menu_IsVisible_t)(UiContext* dc, menuDef_t* menu);
 	extern Menu_IsVisible_t Menu_IsVisible;
 
-	typedef bool(__cdecl * Menus_MenuIsInStack_t)(UiContext *dc, menuDef_t *menu);
+	typedef bool(__cdecl * Menus_MenuIsInStack_t)(UiContext* dc, menuDef_t* menu);
 	extern Menus_MenuIsInStack_t Menus_MenuIsInStack;
 
 	typedef menuDef_t*(__cdecl * Menu_GetFocused_t)(UiContext* ctx);
@@ -465,16 +564,16 @@ namespace Game
 	typedef bool(__cdecl * UI_KeyEvent_t)(int clientNum, int key, int down);
 	extern UI_KeyEvent_t UI_KeyEvent;
 	
-	typedef const char* (__cdecl * UI_SafeTranslateString_t)(const char* reference);
+	typedef const char*(__cdecl * UI_SafeTranslateString_t)(const char* reference);
 	extern UI_SafeTranslateString_t UI_SafeTranslateString;
 	
 	typedef void(__cdecl * UI_ReplaceConversions_t)(const char* sourceString, ConversionArguments* arguments, char* outputString, size_t outputStringSize);
 	extern UI_ReplaceConversions_t UI_ReplaceConversions;
 	
-	typedef void(__cdecl * MSG_Init_t)(msg_t *buf, char *data, int length);
+	typedef void(__cdecl * MSG_Init_t)(msg_t* buf, char* data, int length);
 	extern MSG_Init_t MSG_Init;
 
-	typedef void(__cdecl * MSG_ReadData_t)(msg_t *msg, void *data, int len);
+	typedef void(__cdecl * MSG_ReadData_t)(msg_t* msg, void* data, int len);
 	extern MSG_ReadData_t MSG_ReadData;
 
 	typedef int(__cdecl * MSG_ReadLong_t)(msg_t* msg);
@@ -543,7 +642,7 @@ namespace Game
 	typedef bool(__cdecl * NET_IsLocalAddress_t)(netadr_t adr);
 	extern NET_IsLocalAddress_t NET_IsLocalAddress;
 
-	typedef bool(__cdecl * NET_StringToAdr_t)(const char *s, netadr_t *a);
+	typedef int(__cdecl * NET_StringToAdr_t)(const char *s, netadr_t *a);
 	extern NET_StringToAdr_t NET_StringToAdr;
 
 	typedef void(__cdecl * NET_OutOfBandPrint_t)(netsrc_t sock, netadr_t adr, const char *data);
@@ -564,8 +663,11 @@ namespace Game
 	typedef int(__cdecl * Live_GetXp_t)(int controllerIndex);
 	extern Live_GetXp_t Live_GetXp;
 
-	typedef char* (__cdecl * LoadModdableRawfile_t)(int a1, const char* filename);
-	extern LoadModdableRawfile_t LoadModdableRawfile;
+	typedef int(__cdecl * LiveStorage_GetStat_t)(int controllerIndex, int index);
+	extern LiveStorage_GetStat_t LiveStorage_GetStat;
+
+	typedef char*(__cdecl * Scr_AddSourceBuffer_t)(const char* filename, const char* extFilename, const char* codePos, bool archive);
+	extern Scr_AddSourceBuffer_t Scr_AddSourceBuffer;
 
 	typedef int(__cdecl * PC_ReadToken_t)(source_t*, token_t*);
 	extern PC_ReadToken_t PC_ReadToken;
@@ -576,22 +678,22 @@ namespace Game
 	typedef void(__cdecl * PC_SourceError_t)(int, const char*, ...);
 	extern PC_SourceError_t PC_SourceError;
 
-	typedef int(__cdecl * Party_GetMaxPlayers_t)(party_s* party);
+	typedef int(__cdecl * Party_GetMaxPlayers_t)(PartyData* party);
 	extern Party_GetMaxPlayers_t Party_GetMaxPlayers;
 
-	typedef int(__cdecl * PartyHost_CountMembers_t)(PartyData_s* party);
+	typedef int(__cdecl * PartyHost_CountMembers_t)(PartyData* party);
 	extern PartyHost_CountMembers_t PartyHost_CountMembers;
 
 	typedef netadr_t *(__cdecl * PartyHost_GetMemberAddressBySlot_t)(int unk, void *party, const int slot);
 	extern PartyHost_GetMemberAddressBySlot_t PartyHost_GetMemberAddressBySlot;
 
-	typedef const char *(__cdecl * PartyHost_GetMemberName_t)(PartyData_s* party, const int clientNum);
+	typedef const char *(__cdecl * PartyHost_GetMemberName_t)(PartyData* party, const int clientNum);
 	extern PartyHost_GetMemberName_t PartyHost_GetMemberName;
 
 	typedef void(__cdecl * Playlist_ParsePlaylists_t)(const char* data);
 	extern Playlist_ParsePlaylists_t Playlist_ParsePlaylists;
 
-	typedef Font_s* (__cdecl * R_RegisterFont_t)(const char* asset, int safe);
+	typedef Font_s*(__cdecl * R_RegisterFont_t)(const char* asset, int safe);
 	extern R_RegisterFont_t R_RegisterFont;
 
 	typedef void(__cdecl * R_AddCmdDrawText_t)(const char *text, int maxChars, Font_s *font, float x, float y, float xScale, float yScale, float rotation, const float *color, int style);
@@ -624,16 +726,22 @@ namespace Game
 	typedef void(__cdecl * RemoveRefToObject_t)(unsigned int id);
 	extern RemoveRefToObject_t RemoveRefToObject;
 
-	typedef void(__cdecl * Scr_AddEntity_t)(gentity_s const*);
+	typedef void(__cdecl * Scr_AddEntity_t)(const gentity_s* ent);
 	extern Scr_AddEntity_t Scr_AddEntity;
 
-	typedef void(__cdecl * Scr_AddString_t)(const char* str);
+	typedef void(__cdecl * Scr_AddString_t)(const char* value);
 	extern Scr_AddString_t Scr_AddString;
 
-	typedef void(__cdecl * Scr_AddInt_t)(int num);
+	typedef void(__cdecl * Scr_AddConstString_t)(unsigned int value);
+	extern Scr_AddConstString_t Scr_AddConstString;
+
+	typedef void(__cdecl * Scr_AddIString_t)(const char* value);
+	extern Scr_AddIString_t Scr_AddIString;
+
+	typedef void(__cdecl * Scr_AddInt_t)(int value);
 	extern Scr_AddInt_t Scr_AddInt;
 
-	typedef void(__cdecl * Scr_AddFloat_t)(float);
+	typedef void(__cdecl * Scr_AddFloat_t)(float value);
 	extern Scr_AddFloat_t Scr_AddFloat;
 
 	typedef void(__cdecl * Scr_AddObject_t)(unsigned int id);
@@ -642,34 +750,49 @@ namespace Game
 	typedef void(__cdecl * Scr_ShutdownAllocNode_t)();
 	extern Scr_ShutdownAllocNode_t Scr_ShutdownAllocNode;
 
-	typedef int(__cdecl * Scr_LoadGameType_t)();
+	typedef void(__cdecl * Scr_LoadGameType_t)();
 	extern Scr_LoadGameType_t Scr_LoadGameType;
+
+	typedef void(__cdecl * Scr_StartupGameType_t)();
+	extern Scr_StartupGameType_t Scr_StartupGameType;
 
 	typedef int(__cdecl * Scr_LoadScript_t)(const char*);
 	extern Scr_LoadScript_t Scr_LoadScript;
 
-	typedef char* (__cdecl * Scr_GetString_t)(int);
+	typedef const char*(__cdecl * Scr_GetString_t)(unsigned int index);
 	extern Scr_GetString_t Scr_GetString;
 
-	typedef float(__cdecl * Scr_GetFloat_t)(int);
+	typedef scr_string_t(__cdecl * Scr_GetConstString_t)(unsigned int index);
+	extern Scr_GetConstString_t Scr_GetConstString;
+
+	typedef const char*(__cdecl * Scr_GetDebugString_t)(unsigned int index);
+	extern Scr_GetDebugString_t Scr_GetDebugString;
+
+	typedef float(__cdecl * Scr_GetFloat_t)(unsigned int index);
 	extern Scr_GetFloat_t Scr_GetFloat;
 
-	typedef int(__cdecl * Scr_GetInt_t)(int);
+	typedef int(__cdecl * Scr_GetInt_t)(unsigned int index);
 	extern Scr_GetInt_t Scr_GetInt;
 
-	typedef unsigned int(__cdecl * Scr_GetObject_t)(int);
+	typedef unsigned int(__cdecl * Scr_GetObject_t)(unsigned int index);
 	extern Scr_GetObject_t Scr_GetObject;
 
-	typedef int(__cdecl * Scr_GetNumParam_t)();
+	typedef unsigned int(__cdecl * Scr_GetNumParam_t)();
 	extern Scr_GetNumParam_t Scr_GetNumParam;
 
-	typedef int(__cdecl * Scr_GetFunctionHandle_t)(const char*, const char*);
+	typedef unsigned int(__cdecl * Scr_GetEntityId_t)(int entnum, unsigned int classnum);
+	extern Scr_GetEntityId_t Scr_GetEntityId;
+
+	typedef int(__cdecl * Scr_GetFunctionHandle_t)(const char* filename, const char* name);
 	extern Scr_GetFunctionHandle_t Scr_GetFunctionHandle;
 
-	typedef int(__cdecl * Scr_ExecThread_t)(int, int);
+	typedef int(__cdecl * Scr_ExecThread_t)(int handle, unsigned int paramcount);
 	extern Scr_ExecThread_t Scr_ExecThread;
 
-	typedef int(__cdecl * Scr_FreeThread_t)(int);
+	typedef int(__cdecl * Scr_ExecEntThread_t)(gentity_s* ent, int handle, unsigned int paramcount);
+	extern Scr_ExecEntThread_t Scr_ExecEntThread;
+
+	typedef void(__cdecl * Scr_FreeThread_t)(unsigned __int16 handle);
 	extern Scr_FreeThread_t Scr_FreeThread;
 
 	typedef void(__cdecl * Scr_Notify_t)(gentity_t *ent, unsigned __int16 stringValue, unsigned int paramcount);
@@ -681,17 +804,47 @@ namespace Game
 	typedef void(__cdecl * Scr_ClearOutParams_t)();
 	extern Scr_ClearOutParams_t Scr_ClearOutParams;
 
-	typedef void(__cdecl * Scr_RegisterFunction_t)(scr_function_t function);
+	typedef void(__cdecl * Scr_RegisterFunction_t)(int func, const char* name);
 	extern Scr_RegisterFunction_t Scr_RegisterFunction;
 
 	typedef bool(__cdecl * Scr_IsSystemActive_t)();
 	extern Scr_IsSystemActive_t Scr_IsSystemActive;
 
-	typedef int(__cdecl* Scr_GetType_t)(int);
+	typedef int(__cdecl * Scr_GetType_t)(unsigned int index);
 	extern Scr_GetType_t Scr_GetType;
 
-	typedef void(__cdecl* Scr_Error_t)(const char*);
+	typedef int(__cdecl * Scr_GetPointerType_t)(unsigned int index);
+	extern Scr_GetPointerType_t Scr_GetPointerType;
+
+	typedef void(__cdecl * Scr_Error_t)(const char*);
 	extern Scr_Error_t Scr_Error;
+
+	typedef void(__cdecl * Scr_ObjectError_t)(const char*);
+	extern Scr_ObjectError_t Scr_ObjectError;
+
+	typedef void(__cdecl * Scr_ParamError_t)(unsigned int paramIndex, const char*);
+	extern Scr_ParamError_t Scr_ParamError;
+
+	typedef void(__cdecl * Scr_GetObjectField_t)(unsigned int classnum, int entnum, int offset);
+	extern Scr_GetObjectField_t Scr_GetObjectField;
+
+	typedef int(__cdecl * Scr_SetObjectField_t)(unsigned int classnum, int entnum, int offset);
+	extern Scr_SetObjectField_t Scr_SetObjectField;
+
+	typedef void(__cdecl * Scr_SetClientField_t)(gclient_s* client, int offset);
+	extern Scr_SetClientField_t Scr_SetClientField;
+
+	typedef void(__cdecl * Scr_GetEntityField_t)(int entnum, int offset);
+	extern Scr_GetEntityField_t Scr_GetEntityField;
+
+	typedef void(__cdecl * Scr_AddClassField_t)(unsigned int classnum, const char* name, unsigned int offset);
+	extern Scr_AddClassField_t Scr_AddClassField;
+
+	typedef gentity_s*(__cdecl * GetPlayerEntity_t)(scr_entref_t entref);
+	extern GetPlayerEntity_t GetPlayerEntity;
+
+	typedef gentity_s*(__cdecl * GetEntity_t)(scr_entref_t entref);
+	extern GetEntity_t GetEntity;
 
 	typedef script_t* (__cdecl * Script_Alloc_t)(int length);
 	extern Script_Alloc_t Script_Alloc;
@@ -702,20 +855,29 @@ namespace Game
 	typedef int(__cdecl * Script_CleanString_t)(char* buffer);
 	extern Script_CleanString_t Script_CleanString;
 
-	typedef char* (__cdecl * SE_Load_t)(const char* file, int Unk);
+	typedef char*(__cdecl * SE_Load_t)(const char* file, int Unk);
 	extern SE_Load_t SE_Load;
 
-	typedef char* (__cdecl * SEH_StringEd_GetString_t)(const char* string);
+	typedef char*(__cdecl * SEH_StringEd_GetString_t)(const char* string);
 	extern SEH_StringEd_GetString_t SEH_StringEd_GetString;
 
-	typedef unsigned int(__cdecl* SEH_ReadCharFromString_t)(const char** text, int* isTrailingPunctuation);
+	typedef unsigned int(__cdecl * SEH_ReadCharFromString_t)(const char** text, int* isTrailingPunctuation);
 	extern SEH_ReadCharFromString_t SEH_ReadCharFromString;
 
-	typedef char* (__cdecl * SL_ConvertToString_t)(unsigned short stringValue);
+	typedef int (__cdecl * SEH_GetCurrentLanguage_t)();
+	extern SEH_GetCurrentLanguage_t SEH_GetCurrentLanguage;
+
+	typedef const char*(__cdecl * SL_ConvertToString_t)(scr_string_t stringValue);
 	extern SL_ConvertToString_t SL_ConvertToString;
 
 	typedef short(__cdecl * SL_GetString_t)(const char *str, unsigned int user);
 	extern SL_GetString_t SL_GetString;
+
+	typedef void(__cdecl * SL_AddRefToString_t)(unsigned int stringValue);
+	extern SL_AddRefToString_t SL_AddRefToString;
+
+	typedef void(__cdecl * SL_RemoveRefToString_t)(unsigned int stringValue);
+	extern SL_RemoveRefToString_t SL_RemoveRefToString;
 
 	typedef void(__cdecl * SND_Init_t)(int a1, int a2, int a3);
 	extern SND_Init_t SND_Init;
@@ -729,8 +891,11 @@ namespace Game
 	typedef void(__cdecl * Steam_JoinLobby_t)(SteamID, char);
 	extern Steam_JoinLobby_t Steam_JoinLobby;
 
-	typedef const char*(__cdecl * StringTable_Lookup_t)(StringTable *table, const int comparisonColumn, const char *value, const int valueColumn);
+	typedef const char*(__cdecl * StringTable_Lookup_t)(const StringTable *table, const int comparisonColumn, const char *value, const int valueColumn);
 	extern StringTable_Lookup_t StringTable_Lookup;
+
+	typedef const char* (__cdecl * StringTable_GetColumnValueForRow_t)(const StringTable* table, int, int column);
+	extern StringTable_GetColumnValueForRow_t StringTable_GetColumnValueForRow;
 
 	typedef int(__cdecl * StringTable_HashString_t)(const char* string);
 	extern StringTable_HashString_t StringTable_HashString;
@@ -738,10 +903,13 @@ namespace Game
 	typedef gentity_t*(__cdecl* SV_AddTestClient_t)();
 	extern SV_AddTestClient_t SV_AddTestClient;
 
+	typedef int(__cdecl * SV_IsTestClient_t)(int clientNum);
+	extern SV_IsTestClient_t SV_IsTestClient;
+
 	typedef int(__cdecl* SV_GameClientNum_Score_t)(int clientID);
 	extern SV_GameClientNum_Score_t SV_GameClientNum_Score;
 
-	typedef void(__cdecl * SV_GameSendServerCommand_t)(int clientNum, /*svscmd_type*/int type, const char* text);
+	typedef void(__cdecl * SV_GameSendServerCommand_t)(int clientNum, svscmd_type type, const char* text);
 	extern SV_GameSendServerCommand_t SV_GameSendServerCommand;
 
 	typedef void(__cdecl * SV_Cmd_TokenizeString_t)(const char* string);
@@ -749,6 +917,9 @@ namespace Game
 
 	typedef void(__cdecl * SV_Cmd_EndTokenizedString_t)();
 	extern SV_Cmd_EndTokenizedString_t SV_Cmd_EndTokenizedString;
+
+	typedef void(__cdecl * SV_Cmd_ArgvBuffer_t)(int arg, char* buf, int size);
+	extern SV_Cmd_ArgvBuffer_t SV_Cmd_ArgvBuffer;
 
 	typedef void(__cdecl * SV_SetConfigstring_t)(int index, const char* string);
 	extern SV_SetConfigstring_t SV_SetConfigstring;
@@ -759,19 +930,28 @@ namespace Game
 	typedef bool(__cdecl * SV_Loaded_t)();
 	extern SV_Loaded_t SV_Loaded;
 
-	typedef void(__cdecl* SV_ClientThink_t)(client_s*, usercmd_s*);
+	typedef void(__cdecl * SV_ClientThink_t)(client_s*, usercmd_s*);
 	extern SV_ClientThink_t SV_ClientThink;
 
-	typedef int(__cdecl * Sys_Error_t)(int, char *, ...);
+	typedef void(__cdecl * SV_DropClient_t)(client_t* drop, const char* reason, bool tellThem);
+	extern SV_DropClient_t SV_DropClient;
+
+	typedef client_t*(__cdecl * SV_GetPlayerByName_t)();
+	extern SV_GetPlayerByName_t SV_GetPlayerByName;
+
+	typedef client_t*(__cdecl * SV_GetPlayerByNum_t)();
+	extern SV_GetPlayerByNum_t SV_GetPlayerByNum;
+
+	typedef void(__cdecl * Sys_Error_t)(const char* error, ...);
 	extern Sys_Error_t Sys_Error;
 
 	typedef void(__cdecl * Sys_FreeFileList_t)(char** list);
 	extern Sys_FreeFileList_t Sys_FreeFileList;
 
-	typedef bool(__cdecl * Sys_IsDatabaseReady_t)();
+	typedef int(__cdecl * Sys_IsDatabaseReady_t)();
 	extern Sys_IsDatabaseReady_t Sys_IsDatabaseReady;
 
-	typedef bool(__cdecl * Sys_IsDatabaseReady2_t)();
+	typedef int(__cdecl * Sys_IsDatabaseReady2_t)();
 	extern Sys_IsDatabaseReady2_t Sys_IsDatabaseReady2;
 
 	typedef bool(__cdecl * Sys_IsMainThread_t)();
@@ -786,11 +966,20 @@ namespace Game
 	typedef bool(__cdecl * Sys_IsDatabaseThread_t)();
 	extern Sys_IsDatabaseThread_t Sys_IsDatabaseThread;
 
-	typedef char** (__cdecl * Sys_ListFiles_t)(const char *directory, const char *extension, const char *filter, int *numfiles, int wantsubs);
+	typedef char**(__cdecl * Sys_ListFiles_t)(const char* directory, const char* extension, const char* filter, int* numfiles, int wantsubs);
 	extern Sys_ListFiles_t Sys_ListFiles;
 
 	typedef int(__cdecl * Sys_Milliseconds_t)();
 	extern Sys_Milliseconds_t Sys_Milliseconds;
+
+	typedef void(__cdecl * Sys_LockWrite_t)(FastCriticalSection* critSect);
+	extern Sys_LockWrite_t Sys_LockWrite;
+
+	typedef void(__cdecl * Sys_TempPriorityAtLeastNormalBegin_t)(TempPriority*);
+	extern Sys_TempPriorityAtLeastNormalBegin_t Sys_TempPriorityAtLeastNormalBegin;
+
+	typedef void(__cdecl * Sys_TempPriorityEnd_t)(TempPriority*);
+	extern Sys_TempPriorityEnd_t Sys_TempPriorityEnd;
 
 	typedef void(__cdecl * TeleportPlayer_t)(gentity_t* entity, float* pos, float* orientation);
 	extern TeleportPlayer_t TeleportPlayer;
@@ -804,16 +993,16 @@ namespace Game
 	typedef void(__cdecl * Sys_SuspendOtherThreads_t)();
 	extern Sys_SuspendOtherThreads_t Sys_SuspendOtherThreads;
 
-	typedef void(__cdecl * UI_AddMenuList_t)(UiContext *dc, MenuList *menuList, int close);
+	typedef void(__cdecl * UI_AddMenuList_t)(UiContext* dc, MenuList* menuList, int close);
 	extern UI_AddMenuList_t UI_AddMenuList;
 	
 	typedef uiMenuCommand_t(__cdecl * UI_GetActiveMenu_t)(int localClientNum);
 	extern UI_GetActiveMenu_t UI_GetActiveMenu;
 
-	typedef char* (__cdecl * UI_CheckStringTranslation_t)(char*, char*);
+	typedef char*(__cdecl * UI_CheckStringTranslation_t)(char*, char*);
 	extern UI_CheckStringTranslation_t UI_CheckStringTranslation;
 
-	typedef MenuList *(__cdecl * UI_LoadMenus_t)(const char *menuFile, int imageTrack);
+	typedef MenuList*(__cdecl * UI_LoadMenus_t)(const char* menuFile, int imageTrack);
 	extern UI_LoadMenus_t UI_LoadMenus;
 
 	typedef void(__cdecl * UI_UpdateArenas_t)();
@@ -822,28 +1011,31 @@ namespace Game
 	typedef void(__cdecl * UI_SortArenas_t)();
 	extern UI_SortArenas_t UI_SortArenas;
 
-	typedef void(__cdecl * UI_DrawHandlePic_t)(/*ScreenPlacement*/void *scrPlace, float x, float y, float w, float h, int horzAlign, int vertAlign, const float *color, Material *material);
+	typedef void(__cdecl * UI_DrawHandlePic_t)(ScreenPlacement* scrPlace, float x, float y, float w, float h, int horzAlign, int vertAlign, const float* color, Material* material);
 	extern UI_DrawHandlePic_t UI_DrawHandlePic;
 
-	typedef ScreenPlacement* (__cdecl * ScrPlace_GetActivePlacement_t)(int localClientNum);
+	typedef ScreenPlacement*(__cdecl * ScrPlace_GetActivePlacement_t)(int localClientNum);
 	extern ScrPlace_GetActivePlacement_t ScrPlace_GetActivePlacement;
 
-	typedef int(__cdecl * UI_TextWidth_t)(const char *text, int maxChars, Font_s *font, float scale);
+	typedef int(__cdecl * UI_TextWidth_t)(const char* text, int maxChars, Font_s* font, float scale);
 	extern UI_TextWidth_t UI_TextWidth;
 
-	typedef void(__cdecl * UI_DrawText_t)(void* scrPlace, const char *text, int maxChars, Font_s *font, float x, float y, int horzAlign, int vertAlign, float scale, const float *color, int style);
+	typedef int(__cdecl * UI_TextHeight_t)(Font_s* font, float scale);
+	extern UI_TextHeight_t UI_TextHeight;
+
+	typedef void(__cdecl * UI_DrawText_t)(const ScreenPlacement* scrPlace, const char* text, int maxChars, Font_s* font, float x, float y, int horzAlign, int vertAlign, float scale, const float* color, int style);
 	extern UI_DrawText_t UI_DrawText;
 	
 	typedef Font_s* (__cdecl* UI_GetFontHandle_t)(ScreenPlacement* scrPlace, int fontEnum, float scale);
 	extern UI_GetFontHandle_t UI_GetFontHandle;
 	
-	typedef void(__cdecl* ScrPlace_ApplyRect_t)(ScreenPlacement* a1, float* x, float* y, float* w, float* h, int horzAlign, int vertAlign);
+	typedef void(__cdecl* ScrPlace_ApplyRect_t)(const ScreenPlacement* scrPlace, float* x, float* y, float* w, float* h, int horzAlign, int vertAlign);
 	extern ScrPlace_ApplyRect_t ScrPlace_ApplyRect;
 
-	typedef const char * (__cdecl * Win_GetLanguage_t)();
+	typedef const char*(__cdecl * Win_GetLanguage_t)();
 	extern Win_GetLanguage_t Win_GetLanguage;
 
-	typedef void (__cdecl * Vec3UnpackUnitVec_t)(PackedUnitVec, vec3_t *);
+	typedef void(__cdecl * Vec3UnpackUnitVec_t)(PackedUnitVec, vec3_t*);
 	extern Vec3UnpackUnitVec_t Vec3UnpackUnitVec;
 	
 	typedef float(__cdecl * vectoyaw_t)(vec2_t* vec);
@@ -882,16 +1074,76 @@ namespace Game
 	typedef void(__cdecl * AimAssist_ApplyAutoMelee_t)(const AimInput* input, AimOutput* output);
 	extern AimAssist_ApplyAutoMelee_t AimAssist_ApplyAutoMelee;
 
+	typedef gentity_s*(__cdecl * Weapon_RocketLauncher_Fire_t)(gentity_s* ent, unsigned int weaponIndex, float spread, weaponParms* wp, const float* gunVel, lockonFireParms* lockParms, bool a7);
+	extern Weapon_RocketLauncher_Fire_t Weapon_RocketLauncher_Fire;
+
+	typedef void(__cdecl * Jump_ClearState_t)(playerState_s* ps);
+	extern Jump_ClearState_t Jump_ClearState;
+
+	typedef void(__cdecl * PM_playerTrace_t)(pmove_s* pm, trace_t* results, const float* start, const float* end, const Bounds* bounds, int passEntityNum, int contentMask);
+	extern PM_playerTrace_t PM_playerTrace;
+
+	typedef void(__cdecl * PM_Trace_t)(pmove_s* pm, trace_t* results, const float* start, const float* end, const Bounds* bounds, int passEntityNum, int contentMask);
+	extern PM_Trace_t PM_Trace;
+
+	typedef EffectiveStance(__cdecl * PM_GetEffectiveStance_t)(const playerState_s* ps);
+	extern PM_GetEffectiveStance_t PM_GetEffectiveStance;
+
+	typedef int(__cdecl * CL_MouseEvent_t)(int x, int y, int dx, int dy);
+	extern CL_MouseEvent_t CL_MouseEvent;
+
+	typedef void(__cdecl * IN_RecenterMouse_t)();
+	extern IN_RecenterMouse_t IN_RecenterMouse;
+
+	typedef void(__cdecl * IN_MouseMove_t)();
+	extern IN_MouseMove_t IN_MouseMove;
+
+	typedef void(__cdecl * IN_Init_t)();
+	extern IN_Init_t IN_Init;
+
+	typedef void(__cdecl * IN_Shutdown_t)();
+	extern IN_Shutdown_t IN_Shutdown;
+
+	typedef void(__cdecl * Touch_Item_t)(gentity_s* ent, gentity_s* other, int touched);
+	extern Touch_Item_t Touch_Item;
+
+	typedef void(__cdecl * Add_Ammo_t)(gentity_s* ent, unsigned int weaponIndex, unsigned char weaponModel, int count, int fillClip);
+	extern Add_Ammo_t Add_Ammo;
+
+	typedef void(__cdecl * ClientUserinfoChanged_t)(int clientNum);
+	extern ClientUserinfoChanged_t ClientUserinfoChanged;
+
+	typedef void(__cdecl * player_die_t)(gentity_s* self, const gentity_s* inflictor, gentity_s* attacker, int damage, int meansOfDeath, int iWeapon, const float* vDir, const hitLocation_t hitLoc, int psTimeOffset);
+	extern player_die_t player_die;
+
+	typedef float(__cdecl * Vec3Normalize_t)(float* v);
+	extern Vec3Normalize_t Vec3Normalize;
+
+	typedef void(__cdecl * Vec3NormalizeFast_t)(float* v);
+	extern Vec3NormalizeFast_t Vec3NormalizeFast;
+
+	typedef float(__cdecl * Vec2Normalize_t)(float* v);
+	extern Vec2Normalize_t Vec2Normalize;
+
+	typedef void(__cdecl * Vec2NormalizeFast_t)(float* v);
+	extern Vec2NormalizeFast_t Vec2NormalizeFast;
+
+	typedef void*(__cdecl * Z_VirtualAlloc_t)(int size);
+	extern Z_VirtualAlloc_t Z_VirtualAlloc;
+
+	typedef void(__cdecl * I_strncpyz_t)(char* dest, const char* src, int destsize);
+	extern I_strncpyz_t I_strncpyz;
+
+	constexpr std::size_t STATIC_MAX_LOCAL_CLIENTS = 1;
+	constexpr std::size_t MAX_LOCAL_CLIENTS = 1;
+	constexpr std::size_t MAX_CLIENTS = 18;
+
 	extern XAssetHeader* DB_XAssetPool;
 	extern unsigned int* g_poolSize;
 
-	extern DWORD* cmd_id;
-	extern DWORD* cmd_argc;
-	extern char*** cmd_argv;
-
-	extern DWORD* cmd_id_sv;
-	extern DWORD* cmd_argc_sv;
-	extern char*** cmd_argv_sv;
+	constexpr auto CMD_MAX_NESTING = 8;
+	extern CmdArgs* cmd_args;
+	extern CmdArgs* sv_cmd_args;
 
 	extern cmd_function_t** cmd_functions;
 
@@ -899,13 +1151,13 @@ namespace Game
 	extern float* cgameFOVSensitivityScale;
 
 	extern int* svs_time;
-	extern int* svs_numclients;
+	extern int* svs_clientCount;
 	extern client_t* svs_clients;
 
 	extern source_t **sourceFiles;
 	extern keywordHash_t **menuParseKeywordHash;
 
-	extern UiContext *uiContext;
+	extern UiContext* uiContext;
 
 	extern int* arenaCount;
 	extern mapArena_t* arenas;
@@ -920,8 +1172,8 @@ namespace Game
 	extern int* g_streamPosIndex;
 
 	extern bool* g_lobbyCreateInProgress;
-	extern party_t** partyIngame;
-	extern PartyData_s** partyData;
+	extern PartyData* g_lobbyData;
+	extern PartyData* g_partyData;
 
 	extern int* numIP;
 	extern netIP_t* localIP;
@@ -931,6 +1183,8 @@ namespace Game
 	extern int* demoRecording;
 	extern int* serverMessageSequence;
 
+	constexpr std::size_t MAX_GENTITIES = 2048;
+	constexpr std::size_t ENTITYNUM_NONE = MAX_GENTITIES - 1;
 	extern gentity_t* g_entities;
 
 	extern netadr_t* connectedHost;
@@ -960,27 +1214,37 @@ namespace Game
 	extern PhysPreset*** varPhysPresetPtr;
 	extern Game::MaterialPass** varMaterialPass;
 	extern snd_alias_list_t*** varsnd_alias_list_name;
+	extern MaterialVertexShader*** varMaterialVertexShader;
 
 	extern FxElemField* s_elemFields;
+
+	extern visField_t* visionDefFields;
 
 	extern infoParm_t* infoParams;
 
 	extern XZone* g_zones;
 	extern unsigned short* db_hashTable;
 
-	extern ScriptContainer* scriptContainer;
+	extern scrVmPub_t* scrVmPub;
+	extern scrVarPub_t* scrVarPub;
 
-	extern clientstate_t* clcState;
+	extern clientState_t* clcState;
 
 	extern GfxScene* scene;
 
+	extern Console* con;
 	extern ConDrawInputGlob* conDrawInputGlob;
+
+	extern int* g_console_field_width;
+	extern float* g_console_char_height;
 	extern field_t* g_consoleField;
 
 	extern clientStatic_t* cls;
+	extern clientUIActive_t* clientUIActives;
 
 	extern sharedUiInfo_t* sharedUiInfo;
 	extern ScreenPlacement* scrPlaceFull;
+	extern ScreenPlacement* scrPlaceFullUnsafe;
 	extern ScreenPlacement* scrPlaceView;
 	
 	extern clientActive_t* clients;
@@ -1000,6 +1264,58 @@ namespace Game
 	constexpr auto AIM_ASSIST_GRAPH_COUNT = 4u;
 	extern GraphFloat* aaInputGraph;
 
+	extern const char* MY_CMDS;
+
+	constexpr auto MAX_MODELS = 512;
+	extern XModel** cached_models;
+
+	extern float (*CorrectSolidDeltas)[26][3];
+
+	extern FastCriticalSection* db_hashCritSect;
+
+	extern level_locals_t* level;
+
+	extern float (*penetrationDepthTable)[PENETRATE_TYPE_COUNT][SURF_TYPE_COUNT];
+
+	extern WinMouseVars_t* s_wmv;
+
+	extern int* window_center_x;
+	extern int* window_center_y;
+
+	extern DeferredQueue* deferredQueue;
+
+	extern int* g_waitingForKey;
+
+	extern Material** whiteMaterial;
+
+	extern unsigned long* _tls_index;
+
+	extern int* cls_uiStarted;
+
+	extern int* com_fixedConsolePosition;
+
+	extern int* com_errorPrintsCount;
+
+	extern scr_const_t* scr_const;
+
+	extern clientConnection_t* clientConnections;
+
+	constexpr std::size_t PLAYER_CARD_UI_STRING_COUNT = 18;
+	extern unsigned int* playerCardUIStringIndex;
+	extern char (*playerCardUIStringBuf)[PLAYER_CARD_UI_STRING_COUNT][38];
+
+	extern GamerSettingState* gamerSettings;
+
+	void Sys_LockRead(FastCriticalSection* critSect);
+	void Sys_UnlockRead(FastCriticalSection* critSect);
+
+	XModel* G_GetModel(int index);
+
+	ScreenPlacement* ScrPlace_GetFullPlacement();
+	ScreenPlacement* ScrPlace_GetUnsafeFullPlacement();
+
+	void UI_FilterStringForButtonAnimation(char* str, unsigned int strMaxSize);
+
 	XAssetHeader ReallocateAssetPool(XAssetType type, unsigned int newSize);
 	void Menu_FreeItemMemory(Game::itemDef_s* item);
 	void Menu_SetNextCursorItem(Game::UiContext* ctx, Game::menuDef_t* currentMenu, int unk = 1);
@@ -1013,13 +1329,13 @@ namespace Game
 	XAssetType DB_GetXAssetNameType(const char* name);
 	int DB_GetZoneIndex(const std::string& name);
 	bool DB_IsZoneLoaded(const char* zone);
-	void DB_EnumXAssetEntries(XAssetType type, std::function<void(XAssetEntry*)> callback, bool overrides, bool lock);
+	void DB_EnumXAssetEntries(XAssetType type, std::function<void(XAssetEntry*)> callback, bool overrides);
 	XAssetHeader DB_FindXAssetDefaultHeaderInternal(XAssetType type);
 	XAssetEntry* DB_FindXAssetEntry(XAssetType type, const char* name);
 
 	void FS_AddLocalizedGameDirectory(const char *path, const char *dir);
 
-	bool PM_IsAdsAllowed(Game::playerState_s* playerState);
+	bool PM_IsAdsAllowed(playerState_s* ps);
 
 	void ShowMessageBox(const std::string& message, const std::string& title);
 
@@ -1028,12 +1344,15 @@ namespace Game
 	void R_LoadSunThroughDvars(const char* mapname, sunflare_t* sun);
 	void R_SetSunFromDvars(sunflare_t* sun);
 
-	void SV_KickClient(client_t* client, const char* reason);
-	void SV_KickClientError(client_t* client, const std::string& reason);
+	void SV_GameDropClient(int clientNum, const char* reason);
+	void SV_DropAllBots();
+	void SV_BotUserMove(client_t* client);
 
-	void Scr_iPrintLn(int clientNum, const std::string& message);
-	void Scr_iPrintLnBold(int clientNum, const std::string& message);
+	void RuntimeErrorInternal(int channel, const char* codePos, unsigned int index, const char* msg);
+	void IncInParam();
+
 	void Scr_NotifyId(unsigned int id, unsigned __int16 stringValue, unsigned int paramcount);
+	void Scr_AddBool(int value);
 
 	void IN_KeyUp(kbutton_t* button);
 	void IN_KeyDown(kbutton_t* button);
@@ -1050,8 +1369,6 @@ namespace Game
 
 	void Image_Setup(GfxImage* image, unsigned int width, unsigned int height, unsigned int depth, unsigned int flags, _D3DFORMAT format);
 
-	float Vec2Normalize(vec2_t& vec);
-	float Vec3Normalize(vec3_t& vec);
 	void Vec2UnpackTexCoords(const PackedTexCoords in, vec2_t* out);
 	void MatrixVecMultiply(const float(&mulMat)[3][3], const vec3_t& mulVec, vec3_t& solution);
 	void QuatRot(vec3_t* vec, const vec4_t* quat);
@@ -1074,4 +1391,9 @@ namespace Game
 
 	void AimAssist_UpdateTweakables(int localClientNum);
 	void AimAssist_UpdateAdsLerp(const AimInput* input);
+
+	void Dvar_SetVariant(dvar_t* var, DvarValue value, DvarSetSource source);
+	void Dvar_SetFromStringFromSource(const dvar_t* dvar, const char* string, DvarSetSource source);
+
+	bool ApplyTokenToField(unsigned int fieldNum, const char* token, visionSetVars_t* settings);
 }

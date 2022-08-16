@@ -1,4 +1,4 @@
-#include "STDInclude.hpp"
+#include <STDInclude.hpp>
 
 namespace Steam
 {
@@ -54,7 +54,7 @@ namespace Steam
 
 		for (auto result : results)
 		{
-			if (Callbacks::ResultHandlers.find(result.call) != Callbacks::ResultHandlers.end())
+			if (Callbacks::ResultHandlers.contains(result.call))
 			{
 				Callbacks::ResultHandlers[result.call]->Run(result.data, false, result.call);
 			}

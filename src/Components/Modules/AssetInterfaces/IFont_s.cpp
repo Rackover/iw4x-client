@@ -1,4 +1,5 @@
-#include "STDInclude.hpp"
+#include <STDInclude.hpp>
+#include "IFont_s.hpp"
 
 #define STB_TRUETYPE_IMPLEMENTATION
 #include <stb_truetype.h>
@@ -61,7 +62,7 @@ namespace Assets
 				glyph.pixelHeight = static_cast<char>(gh);
 				glyph.x0 = static_cast<char>(x0);
 				glyph.y0 = static_cast<char>(y0 + yOffset);
-				glyph.dx = static_cast<char>(roundf(scale * advance));
+				glyph.dx = static_cast<char>(std::roundf(scale * advance));
 
 				// Advance to next col
 				x = x + gw + 1;
@@ -92,48 +93,52 @@ namespace Assets
 		}
 	}
 
-	void IFont_s::load(Game::XAssetHeader* header, const std::string& name, Components::ZoneBuilder::Zone*)
+	void IFont_s::load(Game::XAssetHeader* header, const std::string& name, Components::ZoneBuilder::Zone* builder)
 	{
 		Components::FileSystem::File fontDefFile(Utils::String::VA("%s.json", name.data()));
 		Components::FileSystem::File fontFile(Utils::String::VA("%s.ttf", name.data()));
 
 		if (fontDefFile.exists() && fontFile.exists())
 		{
-			std::string errors;
-			auto fontDef = json11::Json::parse(fontDefFile.getBuffer(), errors);
-
-			if (!errors.empty())
-			{
-				Components::Logger::Error("Font define %s is broken: %s.", name.data(), errors.data());
-			}
+			auto fontDef = nlohmann::json::parse(fontDefFile.getBuffer());
 
 			if (!fontDef.is_object())
 			{
-				Components::Logger::Error("Font define %s is invaild.", name.data(), errors.data());
+				Components::Logger::Error(Game::ERR_FATAL, "Font define {} is invalid", name);
+				return;
 			}
 
-			int w = fontDef["textureWidth"].int_value();
-			int h = fontDef["textureHeight"].int_value();
+			int w = fontDef["textureWidth"].get<int>();
+			int h = fontDef["textureHeight"].get<int>();
 			
-			int size = fontDef["size"].int_value();
-			int yOffset = fontDef["yOffset"].int_value();
+			int size = fontDef["size"].get<int>();
+			int yOffset = fontDef["yOffset"].get<int>();
 
-			uint8_t* pixels = Utils::Memory::AllocateArray<uint8_t>(w * h);
+			auto* pixels = builder->getAllocator()->allocateArray<uint8_t>(w * h);
 
 			// Setup assets
-			auto* texName = Utils::Memory::DuplicateString(Utils::String::VA("if_%s", name.data() + 6 /* skip "fonts/" */));
-			auto* fontName = Utils::Memory::DuplicateString(name.data());
-			auto* glowMaterialName = Utils::Memory::DuplicateString(Utils::String::VA("%s_glow", name.data()));
+			const auto* texName = builder->getAllocator()->duplicateString(Utils::String::VA("if_%s", name.data() + 6 /* skip "fonts/" */));
+			const auto* fontName = builder->getAllocator()->duplicateString(name.data());
+			const auto* glowMaterialName = builder->getAllocator()->duplicateString(Utils::String::VA("%s_glow", name.data()));
 
-			auto* image = Utils::Memory::Duplicate(Game::DB_FindXAssetHeader(Game::ASSET_TYPE_IMAGE, "gamefonts_pc").image);
+			auto* image = builder->getAllocator()->allocate<Game::GfxImage>();
+			std::memcpy(image, Game::DB_FindXAssetHeader(Game::ASSET_TYPE_IMAGE, "gamefonts_pc").image, sizeof(Game::GfxImage));
+
 			image->name = texName;
-			
-			auto* material = Utils::Memory::Duplicate(Game::DB_FindXAssetHeader(Game::ASSET_TYPE_MATERIAL, "fonts/gamefonts_pc").material);
-			material->textureTable = Utils::Memory::Duplicate(material->textureTable);
+
+			auto* material = builder->getAllocator()->allocate<Game::Material>();
+			std::memcpy(material, Game::DB_FindXAssetHeader(Game::ASSET_TYPE_MATERIAL, "fonts/gamefonts_pc").material, sizeof(Game::Material));
+
+			auto textureTable = builder->getAllocator()->allocate<Game::MaterialTextureDef>();
+			std::memcpy(textureTable, material->textureTable, sizeof(Game::MaterialTextureDef));
+
+			material->textureTable = textureTable;
 			material->textureTable->u.image = image;
 			material->info.name = fontName;
 
-			auto* glowMaterial = Utils::Memory::Duplicate(Game::DB_FindXAssetHeader(Game::ASSET_TYPE_MATERIAL, "fonts/gamefonts_pc_glow").material);
+			auto* glowMaterial = builder->getAllocator()->allocate<Game::Material>();
+			std::memcpy(glowMaterial, Game::DB_FindXAssetHeader(Game::ASSET_TYPE_MATERIAL, "fonts/gamefonts_pc_glow").material, sizeof(Game::Material));
+
 			glowMaterial->textureTable = material->textureTable;
 			glowMaterial->info.name = glowMaterialName;
 
@@ -141,8 +146,9 @@ namespace Assets
 
 			if (fontDef["charset"].is_array())
 			{
-				for (auto& ch : fontDef["charset"].array_items())
-					charset.push_back(static_cast<uint16_t>(ch.int_value()));
+				nlohmann::json::array_t charsetArray = fontDef["charset"];
+				for (auto& ch : charsetArray)
+					charset.push_back(static_cast<uint16_t>(ch.get<int>()));
 
 				// order matters
 				std::sort(charset.begin(), charset.end());
@@ -151,7 +157,7 @@ namespace Assets
 				{
 					if (std::find(charset.begin(), charset.end(), i) == charset.end())
 					{
-						Components::Logger::Error("Font %s missing codepoint %d.", name.data(), i);
+						Components::Logger::Error(Game::ERR_FATAL, "Font {} missing codepoint {}", name.data(), i);
 					}
 				}
 			}
@@ -161,29 +167,29 @@ namespace Assets
 					charset.push_back(i);
 			}
 
-			auto* font = Utils::Memory::Allocate<Game::Font_s>();
+			auto* font = builder->getAllocator()->allocate<Game::Font_s>();
 
 			font->fontName = fontName;
 			font->pixelHeight = size;
 			font->material = material;
 			font->glowMaterial = glowMaterial;
 			font->glyphCount = charset.size();
-			font->glyphs = Utils::Memory::AllocateArray<Game::Glyph>(charset.size());
+			font->glyphs = builder->getAllocator()->allocateArray<Game::Glyph>(charset.size());
 
 			// Generate glyph data
 			int result = PackFonts(reinterpret_cast<const uint8_t*>(fontFile.getBuffer().data()), charset, font->glyphs, static_cast<float>(size), pixels, w, h, yOffset);
 
 			if (result == -1)
 			{
-				Components::Logger::Error("Truetype font %s is broken.", name.data());
+				Components::Logger::Error(Game::ERR_FATAL, "Truetype font {} is broken", name);
 			}
 			else if (result < 0)
 			{
-				Components::Logger::Error("Texture size of font %s is not enough.", name.data());
+				Components::Logger::Error(Game::ERR_FATAL, "Texture size of font {} is not enough", name);
 			}
 			else if(h - result > size)
 			{
-				Components::Logger::Print("Warn: Texture of font %s have too much left over space: %d\n", name.data(), h - result);
+				Components::Logger::Warning(Game::CON_CHANNEL_DONT_FILTER, "Texture of font {} have too much left over space: {}\n", name, h - result);
 			}
 
 			header->font = font;
@@ -239,7 +245,6 @@ namespace Assets
 			}
 
 			Utils::IO::WriteFile(Utils::String::VA("userraw\\images\\%s.iwi", texName), outIwi);
-			Utils::Memory::Free(pixels);
 		}
 	}
 

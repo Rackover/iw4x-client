@@ -1,4 +1,4 @@
-#include "STDInclude.hpp"
+#include <STDInclude.hpp>
 #ifdef ENABLE_BASE128
 #include "base128.h"
 #endif
@@ -23,16 +23,32 @@ namespace Utils
 			return result;
 		}
 
-		std::string ToLower(std::string input)
+		std::string ToLower(std::string text)
 		{
-			std::transform(input.begin(), input.end(), input.begin(), ::tolower);
-			return input;
+			std::transform(text.begin(), text.end(), text.begin(), [](const unsigned char input)
+			{
+				return static_cast<char>(std::tolower(input));
+			});
+
+			return text;
 		}
 
-		std::string ToUpper(std::string input)
+		std::string ToUpper(std::string text)
 		{
-			std::transform(input.begin(), input.end(), input.begin(), ::toupper);
-			return input;
+			std::transform(text.begin(), text.end(), text.begin(), [](const unsigned char input)
+			{
+				return static_cast<char>(std::toupper(input));
+			});
+
+			return text;
+		}
+
+		bool Compare(const std::string& lhs, const std::string& rhs)
+		{
+			return std::ranges::equal(lhs, rhs, [](const unsigned char a, const unsigned char b)
+			{
+				return std::tolower(a) == std::tolower(b);
+			});
 		}
 
 		std::string DumpHex(const std::string& data, const std::string& separator)
@@ -62,25 +78,18 @@ namespace Utils
 			return str;
 		}
 
-		std::vector<std::string> Explode(const std::string& str, char delim)
+		std::vector<std::string> Split(const std::string& str, const char delim)
 		{
-			std::vector<std::string> result;
-			std::istringstream iss(str);
+			std::stringstream ss(str);
+			std::string item;
+			std::vector<std::string> elems;
 
-			for (std::string token; std::getline(iss, token, delim);)
+			while (std::getline(ss, item, delim))
 			{
-				std::string _entry = std::move(token);
-
-				// Remove trailing 0x0 bytes
-				while (_entry.size() && !_entry.back())
-				{
-					_entry = _entry.substr(0, _entry.size() - 1);
-				}
-
-				result.push_back(_entry);
+				elems.push_back(item); // elems.push_back(std::move(item)); // if C++11 (based on comment from S1x)
 			}
 
-			return result;
+			return elems;
 		}
 
 		void Replace(std::string &string, const std::string& find, const std::string& replace)
@@ -96,44 +105,73 @@ namespace Utils
 
 		bool StartsWith(const std::string& haystack, const std::string& needle)
 		{
-			return (haystack.size() >= needle.size() && haystack.substr(0, needle.size()) == needle);
+			return haystack.find(needle) == 0; // If the pos of the first found char is 0, string starts with 'needle'
 		}
 
 		bool EndsWith(const std::string& haystack, const std::string& needle)
 		{
-			return (haystack.size() >= needle.size() && haystack.substr(haystack.size() - needle.size()) == needle);
+			if (needle.size() > haystack.size()) return false;
+			return std::equal(needle.rbegin(), needle.rend(), haystack.rbegin());
 		}
 
-		int IsSpace(int c)
+		bool IsNumber(const std::string& str)
 		{
-			if (c < -1) return 0;
-			return _isspace_l(c, nullptr);
+			return !str.empty() && std::find_if(str.begin(),
+				str.end(), [](unsigned char input) { return !std::isdigit(input); }) == str.end();
 		}
 
-		// trim from start
-		std::string &LTrim(std::string &s)
+		// Trim from start
+		std::string& LTrim(std::string& str)
 		{
-			s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](int val)
+			str.erase(str.begin(), std::find_if(str.begin(), str.end(), [](const unsigned char input)
 			{
-				return !IsSpace(val);
+				return !std::isspace(input);
 			}));
-			return s;
+
+			return str;
 		}
 
-		// trim from end
-		std::string &RTrim(std::string &s)
+		// Trim from end
+		std::string& RTrim(std::string& str)
 		{
-			s.erase(std::find_if(s.rbegin(), s.rend(), [](int val)
+			str.erase(std::find_if(str.rbegin(), str.rend(), [](const  unsigned char input)
 			{
-				return !IsSpace(val);
-			}).base(), s.end());
-			return s;
+				return !std::isspace(input);
+			}).base(), str.end());
+
+			return str;
 		}
 
-		// trim from both ends
-		std::string &Trim(std::string &s)
+		// Trim from both ends
+		std::string& Trim(std::string& str)
 		{
-			return LTrim(RTrim(s));
+			return LTrim(RTrim(str));
+		}
+
+		std::string Convert(const std::wstring& wstr)
+		{
+			std::string result;
+			result.reserve(wstr.size());
+
+			for (const auto& chr : wstr)
+			{
+				result.push_back(static_cast<char>(chr));
+			}
+
+			return result;
+		}
+
+		std::wstring Convert(const std::string& str)
+		{
+			std::wstring result;
+			result.reserve(str.size());
+
+			for (const auto& chr : str)
+			{
+				result.push_back(static_cast<wchar_t>(chr));
+			}
+
+			return result;
 		}
 
 		std::string FormatTimeSpan(int milliseconds)

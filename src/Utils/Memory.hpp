@@ -34,7 +34,7 @@ namespace Utils
 
 				this->refMemory.clear();
 
-				for (auto& data : this->pool)
+				for (const auto& data : this->pool)
 				{
 					Memory::Free(data);
 				}
@@ -81,10 +81,12 @@ namespace Utils
 				this->pool.push_back(data);
 				return data;
 			}
+
 			template <typename T> inline T* allocate()
 			{
 				return this->allocateArray<T>(1);
 			}
+
 			template <typename T> inline T* allocateArray(size_t count = 1)
 			{
 				return static_cast<T*>(this->allocate(count * sizeof(T)));
@@ -106,7 +108,7 @@ namespace Utils
 
 			bool isPointerMapped(void* ptr)
 			{
-				return this->ptrMap.find(ptr) != this->ptrMap.end();
+				return this->ptrMap.contains(ptr);
 			}
 
 			template <typename T> T* getPointer(void* oldPtr)

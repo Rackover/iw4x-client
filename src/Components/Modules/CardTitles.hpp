@@ -11,17 +11,6 @@ namespace Components
 		std::uint8_t padding3[4];
 		std::int32_t tableColumn;
 	};
-	struct playercarddata_s
-	{
-		std::uint32_t padding;
-		std::uint32_t playercardNumber;
-		std::uint32_t unknown;
-		std::uint32_t unknown2;
-		std::uint32_t level; //Level is counted from 0 -> Value 69 is Level 70
-		std::uint32_t prestige;
-		std::uint32_t padding2;
-		char name[40];
-	};
 
 	struct CClient
 	{
@@ -53,22 +42,21 @@ namespace Components
 	class CardTitles : public Component
 	{
 	public:
-		static Dvar::Var CustomTitleDvar;
+		AssertOffset(Game::PlayerCardData, Game::PlayerCardData::name, 0x1C);
+
+		static Dvar::Var CustomTitle;
 		static std::string CustomTitles[18];
 
 		static void SendCustomTitlesToClients();
-		static void ParseCustomTitles(const char * msg);
+		static void ParseCustomTitles(const char* msg);
 
 		CardTitles();
-		~CardTitles();
 
 	private:
-		static CClient * GetClientByIndex(std::uint32_t index);
-		static std::int32_t GetPlayerCardClientInfo(std::int32_t lookupResult, playercarddata_s * data);
+		static CClient* GetClientByIndex(std::uint32_t index);
+		static std::int32_t GetPlayerCardClientInfo(std::int32_t lookupResult, Game::PlayerCardData* data);
 		static void GetPlayerCardClientInfoStub();
-		static const char* TableLookupByRowHook(Game::Operand * operand, tablelookuprequest_s * request);
+		static const char* TableLookupByRowHook(Game::Operand* operand, tablelookuprequest_s* request);
 		static void TableLookupByRowHookStub();
-
-
 	};
 }

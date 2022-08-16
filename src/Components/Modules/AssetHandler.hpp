@@ -41,13 +41,13 @@ namespace Components
 
 		static void ResetBypassState();
 
-        static void ExposeTemporaryAssets(bool expose);
+		static void ExposeTemporaryAssets(bool expose);
 
 		static void OffsetToAlias(Utils::Stream::Offset* offset);
 		
 	private:
 		static thread_local int BypassState;
-        static bool ShouldSearchTempAssets;
+		static bool ShouldSearchTempAssets;
 
 		static std::map<std::string, Game::XAssetHeader> TemporaryAssets[Game::XAssetType::ASSET_TYPE_COUNT];
 
@@ -62,7 +62,7 @@ namespace Components
 		static void RegisterInterface(IAsset* iAsset);
 
 		static Game::XAssetHeader FindAsset(Game::XAssetType type, const char* filename);
-        static Game::XAssetHeader FindTemporaryAsset(Game::XAssetType type, const char* filename);
+		static Game::XAssetHeader FindTemporaryAsset(Game::XAssetType type, const char* filename);
 		static bool IsAssetEligible(Game::XAssetType type, Game::XAssetHeader* asset);
 		static void FindAssetStub();
 		static void AddAssetStub();
@@ -80,37 +80,3 @@ namespace Components
 		void reallocateEntryPool();
 	};
 }
-
-#include "AssetInterfaces/IFont_s.hpp"
-#include "AssetInterfaces/IWeapon.hpp"
-#include "AssetInterfaces/IXModel.hpp"
-#include "AssetInterfaces/IFxWorld.hpp"
-#include "AssetInterfaces/IMapEnts.hpp"
-#include "AssetInterfaces/IRawFile.hpp"
-#include "AssetInterfaces/IComWorld.hpp"
-#include "AssetInterfaces/IGfxImage.hpp"
-#include "AssetInterfaces/IGfxWorld.hpp"
-#include "AssetInterfaces/IMaterial.hpp"
-#include "AssetInterfaces/ISndCurve.hpp"
-#include "AssetInterfaces/IMenuList.hpp"
-#include "AssetInterfaces/IclipMap_t.hpp"
-#include "AssetInterfaces/ImenuDef_t.hpp"
-#include "AssetInterfaces/ITracerDef.hpp"
-#include "AssetInterfaces/IPhysPreset.hpp"
-#include "AssetInterfaces/IXAnimParts.hpp"
-#include "AssetInterfaces/IFxEffectDef.hpp"
-#include "AssetInterfaces/IGameWorldMp.hpp"
-#include "AssetInterfaces/IGameWorldSp.hpp"
-#include "AssetInterfaces/IGfxLightDef.hpp"
-#include "AssetInterfaces/ILoadedSound.hpp"
-#include "AssetInterfaces/IPhysCollmap.hpp"
-#include "AssetInterfaces/IStringTable.hpp"
-#include "AssetInterfaces/IXModelSurfs.hpp"
-#include "AssetInterfaces/ILocalizeEntry.hpp"
-#include "AssetInterfaces/Isnd_alias_list_t.hpp"
-#include "AssetInterfaces/IMaterialPixelShader.hpp"
-#include "AssetInterfaces/IMaterialTechniqueSet.hpp"
-#include "AssetInterfaces/IMaterialVertexShader.hpp"
-#include "AssetInterfaces/IStructuredDataDefSet.hpp"
-#include "AssetInterfaces/IMaterialVertexDeclaration.hpp"
-

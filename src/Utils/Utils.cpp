@@ -1,4 +1,4 @@
-#include "STDInclude.hpp"
+#include <STDInclude.hpp>
 
 namespace Utils
 {
@@ -10,7 +10,7 @@ namespace Utils
 		if (mimeType)
 		{
 			std::wstring wMimeType(mimeType);
-			return std::string(wMimeType.begin(), wMimeType.end());
+			return String::Convert(wMimeType);
 		}
 
 		return "application/octet-stream";
@@ -107,12 +107,12 @@ namespace Utils
 	void SetEnvironment()
 	{
 		wchar_t exeName[512];
-		GetModuleFileName(GetModuleHandle(nullptr), exeName, sizeof(exeName) / 2);
+		GetModuleFileNameW(GetModuleHandle(nullptr), exeName, sizeof(exeName) / sizeof(wchar_t));
 
-		wchar_t* exeBaseName = wcsrchr(exeName, L'\\');
+		auto* exeBaseName = wcsrchr(exeName, L'\\');
 		exeBaseName[0] = L'\0';
 
-		SetCurrentDirectory(exeName);
+		SetCurrentDirectoryW(exeName);
 	}
 
 	HMODULE GetNTDLL()
@@ -123,11 +123,7 @@ namespace Utils
 
 	void SafeShellExecute(HWND hwnd, LPCSTR lpOperation, LPCSTR lpFile, LPCSTR lpParameters, LPCSTR lpDirectory, INT nShowCmd)
 	{
-#ifndef DISABLE_ANTICHEAT
-		Components::AntiCheat::LibUnlocker _;
-#endif
-
-		[=]()
+		[=]
 		{
 			__try
 			{

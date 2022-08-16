@@ -1,4 +1,4 @@
-#include "STDInclude.hpp"
+#include <STDInclude.hpp>
 
 namespace Steam
 {
@@ -36,7 +36,7 @@ namespace Steam
 
 	std::pair<void*, uint16_t> Interface::getMethod(const std::string& method)
 	{
-		if(this->methodCache.find(method) != this->methodCache.end())
+		if(this->methodCache.contains(method))
 		{
 			return this->methodCache[method];
 		}
@@ -156,13 +156,13 @@ namespace Steam
 		gameID.type = 1; // k_EGameIDTypeGameMod
 		gameID.appID = Proxy::AppId & 0xFFFFFF;
 
-		char* modId = const_cast<char*>("IW4x");
-		gameID.modID = *reinterpret_cast<unsigned int*>(modId) | 0x80000000;
+		const char* modId = "IW4x";
+		gameID.modID = *reinterpret_cast<const unsigned int*>(modId) | 0x80000000;
 
 		Interface clientUtils(Proxy::ClientEngine->GetIClientUtils(Proxy::SteamPipe));
 		clientUtils.invoke<void>("SetAppIDForCurrentPipe", Proxy::AppId, false);
 
-		char ourPath[MAX_PATH] = { 0 };
+		char ourPath[MAX_PATH] = {0};
 		GetModuleFileNameA(GetModuleHandle(nullptr), ourPath, sizeof(ourPath));
 
 		char ourDirectory[MAX_PATH] = { 0 };

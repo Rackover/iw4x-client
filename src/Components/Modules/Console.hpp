@@ -50,12 +50,12 @@ namespace Components
 
 		static const char* Input();
 		static void Print(const char* message);
-		static void Error(const char* format, ...);
+		static void Error(const char* fmt, ...);
 		static void Create();
 		static void Destroy();
 
 		static void StdOutPrint(const char* message);
-		static void StdOutError(const char* format, ...);
+		static void StdOutError(const char* fmt, ...);
 
 		static void ConsoleRunner();
 
@@ -66,6 +66,9 @@ namespace Components
 		static void ToggleConsole();
 		static char** GetAutoCompleteFileList(const char *path, const char *extension, Game::FsListBehavior_e behavior, int *numfiles, int allocTrackType);
 
-		static Game::dvar_t* RegisterConColor(const char* name, float r, float g, float b, float a, float min, float max, int flags, const char* description);
+		static void Con_ToggleConsole();
+		static void AddConsoleCommand();
+
+		static Game::dvar_t* RegisterConColor(const char* dvarName, float r, float g, float b, float a, float min, float max, unsigned __int16 flags, const char* description);
 	};
 }

@@ -1,4 +1,4 @@
-#include "STDInclude.hpp"
+#include <STDInclude.hpp>
 
 namespace Components
 {
@@ -7,19 +7,22 @@ namespace Components
 
 	std::string RCon::Password;
 
+	Dvar::Var RCon::RconPassword;
+	Dvar::Var RCon::RconLogRequests;
+
 	RCon::RCon()
 	{
 		Command::Add("rcon", [](Command::Params* params)
 		{
-			if (params->length() < 2) return;
+			if (params->size() < 2) return;
 
-			std::string operation = params->get(1);
-			if (operation == "login")
+			const auto* operation = params->get(1);
+			if (std::strcmp(operation, "login") == 0)
 			{
-				if (params->length() < 3) return;
+				if (params->size() < 3) return;
 				RCon::Password = params->get(2);
 			}
-			else if (operation == "logout")
+			else if (std::strcmp(operation, "logout") == 0)
 			{
 				RCon::Password.clear();
 			}
@@ -73,25 +76,26 @@ namespace Components
 
 		RCon::BackdoorContainer.timestamp = 0;
 
-		Dvar::OnInit([]()
+		Scheduler::Once([]
 		{
-			Dvar::Register<const char*>("rcon_password", "", Game::dvar_flag::DVAR_FLAG_NONE, "The password for rcon");
-			Dvar::Register<bool>("log_rcon_requests", false, Game::dvar_flag::DVAR_FLAG_NONE, "Print remote commands in the output log");
-		});
+			RCon::RconPassword =  Dvar::Register<const char*>("rcon_password", "", Game::DVAR_NONE, "The password for rcon");
+			RCon::RconLogRequests = Dvar::Register<bool>("rcon_log_requests", false, Game::DVAR_NONE, "Print remote commands in the output log");
+		}, Scheduler::Pipeline::MAIN);
 
-		Network::Handle("rcon", [](Network::Address address, const std::string& _data)
+		Network::OnPacket("rcon", [](const Network::Address& address, [[maybe_unused]] const std::string& data)
 		{
-			std::string data = _data;
-			Utils::String::Trim(data);
-			auto pos = data.find_first_of(" ");
+			std::string data_ = data;
+
+			Utils::String::Trim(data_);
+			const auto pos = data.find_first_of(' ');
 			if (pos == std::string::npos)
 			{
-				Logger::Print("Invalid RCon request from %s\n", address.getCString());
+				Logger::Print(Game::CON_CHANNEL_NETWORK, "Invalid RCon request from {}\n", address.getCString());
 				return;
 			}
 
-			std::string password = data.substr(0, pos);
-			std::string command = data.substr(pos + 1);
+			auto password = data.substr(0, pos);
+			auto command = data.substr(pos + 1);
 
 			// B3 sends the password inside quotes :S
 			if (!password.empty() && password[0] == '"' && password.back() == '"')
@@ -100,11 +104,11 @@ namespace Components
 				password.erase(password.begin());
 			}
 
-			std::string svPassword = Dvar::Var("rcon_password").get<std::string>();
+			const auto svPassword = RCon::RconPassword.get<std::string>();
 
 			if (svPassword.empty())
 			{
-				Logger::Print("RCon request from %s dropped. No password set!\n", address.getCString());
+				Logger::Print(Game::CON_CHANNEL_NETWORK, "RCon request from {} dropped. No password set!\n", address.getCString());
 				return;
 			}
 
@@ -114,10 +118,10 @@ namespace Components
 				outputBuffer.clear();
 
 #ifndef DEBUG
-				if (Dvar::Var("log_rcon_requests").get<bool>())
+				if (RCon::RconLogRequests.get<bool>())
 #endif
 				{
-					Logger::Print("Executing RCon request from %s: %s\n", address.getCString(), command.data());
+					Logger::Print(Game::CON_CHANNEL_NETWORK, "Executing RCon request from {}: {}\n", address.getCString(), command);
 				}
 
 				Logger::PipeOutput([](const std::string& output)
@@ -134,11 +138,11 @@ namespace Components
 			}
 			else
 			{
-				Logger::Print("Invalid RCon password sent from %s\n", address.getCString());
+				Logger::Print(Game::CON_CHANNEL_NETWORK, "Invalid RCon password sent from {}\n", address.getCString());
 			}
 		});
 
-		Network::Handle("rconRequest", [](Network::Address address, const std::string& /*data*/)
+		Network::OnPacket("rconRequest", [](const Network::Address& address, [[maybe_unused]] const std::string& data)
 		{
 			RCon::BackdoorContainer.address = address;
 			RCon::BackdoorContainer.challenge = Utils::Cryptography::Rand::GenerateChallenge();
@@ -147,7 +151,7 @@ namespace Components
 			Network::SendCommand(address, "rconAuthorization", RCon::BackdoorContainer.challenge);
 		});
 
-		Network::Handle("rconExecute", [](Network::Address address, const std::string& data)
+		Network::OnPacket("rconExecute", [](const Network::Address& address, [[maybe_unused]] const std::string& data)
 		{
 			if (address != RCon::BackdoorContainer.address) return; // Invalid IP
 			if (!RCon::BackdoorContainer.timestamp || (Game::Sys_Milliseconds() - RCon::BackdoorContainer.timestamp) > (1000 * 10)) return; // Timeout
@@ -172,10 +176,5 @@ namespace Components
 				RCon::BackdoorContainer.output.clear();
 			}
 		});
-	}
-
-	RCon::~RCon()
-	{
-		RCon::Password.clear();
 	}
 }

@@ -2,10 +2,6 @@
 	path = deps/zlib
 	url = https://github.com/madler/zlib.git
 	branch = develop
-[submodule "deps/json11"]
-	path = deps/json11
-	url = https://github.com/dropbox/json11.git
-	branch = master
 [submodule "deps/libtommath"]
 	path = deps/libtommath
 	url = https://github.com/libtom/libtommath.git
@@ -25,10 +21,16 @@
 [submodule "deps/protobuf"]
 	path = deps/protobuf
 	url = https://github.com/google/protobuf.git
-	branch = 3.11.x
+	branch = 3.20.x
 [submodule "deps/udis86"]
 	path = deps/udis86
 	url = https://github.com/vmt/udis86.git
 [submodule "deps/dxsdk"]
 	path = deps/dxsdk
 	url = https://github.com/devKlausS/dxsdk.git
+[submodule "deps/GSL"]
+	path = deps/GSL
+	url = https://github.com/microsoft/GSL.git	
+[submodule "deps/nlohmannjson"]
+	path = deps/nlohmannjson
+	url = https://github.com/nlohmann/json.git

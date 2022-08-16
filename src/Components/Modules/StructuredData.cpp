@@ -1,4 +1,4 @@
-#include "STDInclude.hpp"
+#include <STDInclude.hpp>
 
 namespace Components
 {
@@ -53,7 +53,7 @@ namespace Components
 				{
 					value = *i;
 					dataVector.erase(i);
-					Logger::Print("Playerdatadef entry '%s' will be rebased!\n", value);
+					Logger::Print("Playerdatadef entry '{}' will be rebased!\n", value);
 					break;
 				}
 			}
@@ -182,13 +182,13 @@ namespace Components
 
 			if (data->defCount != 1)
 			{
-				Logger::Error("PlayerDataDefSet contains more than 1 definition!");
+				Logger::Error(Game::ERR_FATAL, "PlayerDataDefSet contains more than 1 definition!");
 				return;
 			}
 
 			if (data->defs[0].version != 155)
 			{
-				Logger::Error("Initial PlayerDataDef is not version 155, patching not possible!");
+				Logger::Error(Game::ERR_FATAL, "Initial PlayerDataDef is not version 155, patching not possible!");
 				return;
 			}
 
@@ -205,21 +205,21 @@ namespace Components
 				std::unordered_map<std::string, std::string> otherPatches;
 
 				std::string errors;
-				json11::Json defData = json11::Json::parse(definition.getBuffer(), errors);
+				nlohmann::json defData = nlohmann::json::parse(definition.getBuffer());
 
 				if (!errors.empty())
 				{
-					Logger::Error("Parsing patch file '%s' for PlayerDataDef version %d failed: %s", definition.getName().data(), i, errors.data());
+					Logger::Error(Game::ERR_FATAL, "Parsing patch file '{}' for PlayerDataDef version {} failed: {}", definition.getName(), i, errors);
 					return;
 				}
 
 				if (!defData.is_object())
 				{
-					Logger::Error("PlayerDataDef patch for version %d is invalid!", i);
+					Logger::Error(Game::ERR_FATAL, "PlayerDataDef patch for version {} is invalid!", i);
 					return;
 				}
 
-				for (unsigned int pType = 0; pType < StructuredData::PlayerDataType::ENUM_MAX; ++pType)
+				for (std::size_t pType = 0; pType < StructuredData::PlayerDataType::ENUM_MAX; ++pType)
 				{
 					auto enumData = defData[StructuredData::EnumTranslation[pType]];
 
@@ -227,11 +227,11 @@ namespace Components
 
 					if (enumData.is_array())
 					{
-						for (auto rawEntry : enumData.array_items())
+						for (auto rawEntry : enumData)
 						{
 							if (rawEntry.is_string())
 							{
-								entryData.push_back(rawEntry.string_value());
+								entryData.push_back(rawEntry.get<std::string>());
 							}
 						}
 					}
@@ -243,11 +243,11 @@ namespace Components
 
 				if (other.is_object())
 				{
-					for (auto& item : other.object_items())
+					for (auto& item : other.items())
 					{
-						if (item.second.is_string())
+						if (item.value().is_string())
 						{
-							otherPatches[item.first] = item.second.string_value();
+							otherPatches[item.key()] = item.value().get<std::string>();
 						}
 					}
 				}
@@ -285,7 +285,7 @@ namespace Components
 				// No need to patch version 155
 				if (newData[i].version == 155) continue;
 
-				if (patchDefinitions.find(newData[i].version) != patchDefinitions.end())
+				if (patchDefinitions.contains(newData[i].version))
 				{
 					auto patchData = patchDefinitions[newData[i].version];
 					auto otherData = otherPatchDefinitions[newData[i].version];
@@ -293,7 +293,7 @@ namespace Components
 					// Invalid patch data
 					if (patchData.size() != StructuredData::PlayerDataType::ENUM_MAX)
 					{
-						Logger::Error("PlayerDataDef patch for version %d wasn't parsed correctly!", newData[i].version);
+						Logger::Error(Game::ERR_FATAL, "PlayerDataDef patch for version {} wasn't parsed correctly!", newData[i].version);
 						continue;
 					}
 
@@ -310,10 +310,5 @@ namespace Components
 				}
 			}
 		});
-	}
-
-	StructuredData::~StructuredData()
-	{
-		StructuredData::MemAllocator.clear();
 	}
 }

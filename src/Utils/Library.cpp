@@ -1,4 +1,4 @@
-#include "STDInclude.hpp"
+#include <STDInclude.hpp>
 
 namespace Utils
 {
@@ -19,20 +19,14 @@ namespace Utils
 		return Library(handle);
 	}
 
-	Library::Library(const std::string& buffer, bool _freeOnDestroy) : _module(nullptr), freeOnDestroy(_freeOnDestroy)
+	Library::Library(const std::string& name, bool _freeOnDestroy) : module_(nullptr), freeOnDestroy(_freeOnDestroy)
 	{
-		this->_module = LoadLibraryExA(buffer.data(), nullptr, 0);
-	}
-
-	Library::Library(const std::string& buffer)
-	{
-		this->_module = GetModuleHandleA(buffer.data());
-		this->freeOnDestroy = true;
+		this->module_ = LoadLibraryExA(name.data(), nullptr, 0);
 	}
 
 	Library::Library(const HMODULE handle)
 	{
-		this->_module = handle;
+		this->module_ = handle;
 		this->freeOnDestroy = true;
 	}
 
@@ -44,23 +38,38 @@ namespace Utils
 		}
 	}
 
-	bool Library::isValid() const
+	bool Library::operator==(const Library& obj) const
 	{
-		return this->_module != nullptr;
+		return this->module_ == obj.module_;
 	}
 
-	HMODULE Library::getModule()
+	Library::operator bool() const
 	{
-		return this->_module;
+		return this->isValid();
+	}
+
+	Library::operator HMODULE() const
+	{
+		return this->getModule();
+	}
+
+	bool Library::isValid() const
+	{
+		return this->module_ != nullptr;
+	}
+
+	HMODULE Library::getModule() const
+	{
+		return this->module_;
 	}
 
 	void Library::free()
 	{
 		if (this->isValid())
 		{
-			FreeLibrary(this->_module);
+			FreeLibrary(this->module_);
 		}
 
-		this->_module = nullptr;
+		this->module_ = nullptr;
 	}
 }

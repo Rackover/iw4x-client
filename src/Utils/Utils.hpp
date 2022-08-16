@@ -25,7 +25,7 @@ namespace Utils
 
 	bool HasIntercection(unsigned int base1, unsigned int len1, unsigned int base2, unsigned int len2);
 
-	template <typename T> inline void RotLeft(T& object, size_t bits)
+	template <typename T> void RotLeft(T& object, size_t bits)
 	{
 		bits %= sizeof(T) * 8;
 
@@ -38,13 +38,13 @@ namespace Utils
 		object |= T(negative) << ((sizeof(T) * 8 - 1 + bits) % (sizeof(T) * 8));
 	}
 
-	template <typename T> inline void RotRight(T& object, size_t bits)
+	template <typename T> void RotRight(T& object, size_t bits)
 	{
 		bits %= (sizeof(T) * 8);
 		RotLeft<T>(object, ((sizeof(T) * 8) - bits));
 	}
 
-	template <typename T> inline void Merge(std::vector<T>* target, T* source, size_t length)
+	template <typename T> void Merge(std::vector<T>* target, T* source, size_t length)
 	{
 		if (source)
 		{
@@ -55,7 +55,7 @@ namespace Utils
 		}
 	}
 
-	template <typename T> inline void Merge(std::vector<T>* target, std::vector<T> source)
+	template <typename T> void Merge(std::vector<T>* target, std::vector<T> source)
 	{
 		for (auto &entry : source)
 		{
@@ -68,12 +68,7 @@ namespace Utils
 	class Signal
 	{
 	public:
-		Signal()
-		{
-			std::lock_guard<std::recursive_mutex> _(this->mutex);
-
-			this->slots.clear();
-		}
+		Signal() = default;
 
 		Signal(Signal& obj) : Signal()
 		{
@@ -83,13 +78,13 @@ namespace Utils
 			Utils::Merge(&this->slots, obj.getSlots());
 		}
 
-		void connect(Slot<T> slot)
+		void connect(const Slot<T> slot)
 		{
 			std::lock_guard<std::recursive_mutex> _(this->mutex);
 
 			if (slot)
 			{
-				this->slots.push_back(slot);
+				this->slots.emplace_back(slot);
 			}
 		}
 

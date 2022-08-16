@@ -1,9 +1,42 @@
-#include "STDInclude.hpp"
+#include <STDInclude.hpp>
+
+#include "AssetInterfaces/IFont_s.hpp"
+#include "AssetInterfaces/IWeapon.hpp"
+#include "AssetInterfaces/IXModel.hpp"
+#include "AssetInterfaces/IFxWorld.hpp"
+#include "AssetInterfaces/IMapEnts.hpp"
+#include "AssetInterfaces/IRawFile.hpp"
+#include "AssetInterfaces/IComWorld.hpp"
+#include "AssetInterfaces/IGfxImage.hpp"
+#include "AssetInterfaces/IGfxWorld.hpp"
+#include "AssetInterfaces/IMaterial.hpp"
+#include "AssetInterfaces/ISndCurve.hpp"
+#include "AssetInterfaces/IMenuList.hpp"
+#include "AssetInterfaces/IclipMap_t.hpp"
+#include "AssetInterfaces/ImenuDef_t.hpp"
+#include "AssetInterfaces/ITracerDef.hpp"
+#include "AssetInterfaces/IPhysPreset.hpp"
+#include "AssetInterfaces/IXAnimParts.hpp"
+#include "AssetInterfaces/IFxEffectDef.hpp"
+#include "AssetInterfaces/IGameWorldMp.hpp"
+#include "AssetInterfaces/IGameWorldSp.hpp"
+#include "AssetInterfaces/IGfxLightDef.hpp"
+#include "AssetInterfaces/ILoadedSound.hpp"
+#include "AssetInterfaces/IPhysCollmap.hpp"
+#include "AssetInterfaces/IStringTable.hpp"
+#include "AssetInterfaces/IXModelSurfs.hpp"
+#include "AssetInterfaces/ILocalizeEntry.hpp"
+#include "AssetInterfaces/Isnd_alias_list_t.hpp"
+#include "AssetInterfaces/IMaterialPixelShader.hpp"
+#include "AssetInterfaces/IMaterialTechniqueSet.hpp"
+#include "AssetInterfaces/IMaterialVertexShader.hpp"
+#include "AssetInterfaces/IStructuredDataDefSet.hpp"
+#include "AssetInterfaces/IMaterialVertexDeclaration.hpp"
 
 namespace Components
 {
 	thread_local int AssetHandler::BypassState = 0;
-    bool AssetHandler::ShouldSearchTempAssets = false;
+	bool AssetHandler::ShouldSearchTempAssets = false;
 	std::map<Game::XAssetType, AssetHandler::IAsset*> AssetHandler::AssetInterfaces;
 	std::map<Game::XAssetType, Utils::Slot<AssetHandler::Callback>> AssetHandler::TypeCallbacks;
 	Utils::Signal<AssetHandler::RestrictCallback> AssetHandler::RestrictSignal;
@@ -28,14 +61,14 @@ namespace Components
 			return;
 		}
 
-		if (AssetHandler::AssetInterfaces.find(iAsset->getType()) != AssetHandler::AssetInterfaces.end())
+		if (AssetHandler::AssetInterfaces.contains(iAsset->getType()))
 		{
-			Logger::Print("Duplicate asset interface: %s\n", Game::DB_GetXAssetTypeName(iAsset->getType()));
+			Logger::Print("Duplicate asset interface: {}\n", Game::DB_GetXAssetTypeName(iAsset->getType()));
 			delete AssetHandler::AssetInterfaces[iAsset->getType()];
 		}
 		else
 		{
-			Logger::Print("Asset interface registered: %s\n", Game::DB_GetXAssetTypeName(iAsset->getType()));
+			Logger::Print("Asset interface registered: {}\n", Game::DB_GetXAssetTypeName(iAsset->getType()));
 		}
 
 		AssetHandler::AssetInterfaces[iAsset->getType()] = iAsset;
@@ -63,7 +96,7 @@ namespace Components
 			// Allow call DB_FindXAssetHeader within the hook
 			AssetHandler::SetBypassState(true);
 
-			if (AssetHandler::TypeCallbacks.find(type) != AssetHandler::TypeCallbacks.end())
+			if (AssetHandler::TypeCallbacks.contains(type))
 			{
 				header = AssetHandler::TypeCallbacks[type](type, filename);
 			}
@@ -75,20 +108,20 @@ namespace Components
 		return header;
 	}
 
-    Game::XAssetHeader AssetHandler::FindTemporaryAsset(Game::XAssetType type, const char* filename)
-    {
-        Game::XAssetHeader header = { nullptr };
-        if (type >= Game::XAssetType::ASSET_TYPE_COUNT) return header;
+	Game::XAssetHeader AssetHandler::FindTemporaryAsset(Game::XAssetType type, const char* filename)
+	{
+		Game::XAssetHeader header = { nullptr };
+		if (type >= Game::XAssetType::ASSET_TYPE_COUNT) return header;
 
-        auto tempPool = &AssetHandler::TemporaryAssets[type];
-        auto entry = tempPool->find(filename);
-        if (entry != tempPool->end())
-        {
-            header = { entry->second };
-        }
+		auto tempPool = &AssetHandler::TemporaryAssets[type];
+		auto entry = tempPool->find(filename);
+		if (entry != tempPool->end())
+		{
+			header = { entry->second };
+		}
 
-        return header;
-    }    
+		return header;
+	}    
 
 	int AssetHandler::HasThreadBypass()
 	{
@@ -101,7 +134,7 @@ namespace Components
 		if (AssetHandler::BypassState < 0)
 		{
 			AssetHandler::BypassState = 0;
-			Logger::Error("Bypass state is below 0!");
+			Logger::Error(Game::ERR_FATAL, "Bypass state is below 0!");
 		}
 	}
 
@@ -124,7 +157,6 @@ namespace Components
 			push esi
 			push edi
 
-
 			push eax
 			pushad
 
@@ -135,13 +167,11 @@ namespace Components
 			popad
 			pop eax
 
-
 			test al, al
 			jnz checkTempAssets
 
 			mov ecx, [esp + 18h] // Asset type
 			mov ebx, [esp + 1Ch] // Filename
-
 
 			push eax
 			pushad
@@ -157,31 +187,30 @@ namespace Components
 			popad
 			pop eax
 
+			test eax, eax
+			jnz finishFound
+
+		checkTempAssets:
+			mov al, AssetHandler::ShouldSearchTempAssets // check to see if enabled
+			test eax, eax
+			jz finishOriginal
+
+			mov ecx, [esp + 18h] // Asset type
+			mov ebx, [esp + 1Ch] // Filename
+
+			push ebx
+			push ecx
+
+			call AssetHandler::FindTemporaryAsset
+
+			add esp, 8h
 
 			test eax, eax
 			jnz finishFound
-            
-        checkTempAssets:
-            mov al, AssetHandler::ShouldSearchTempAssets // check to see if enabled
-            test eax, eax
-            jz finishOriginal
 
-            mov ecx, [esp + 18h] // Asset type
-            mov ebx, [esp + 1Ch] // Filename
-
-            push ebx
-            push ecx
-
-            call AssetHandler::FindTemporaryAsset
-
-            add esp, 8h
-
-            test eax, eax
-            jnz finishFound
-            
-        finishOriginal:
+		finishOriginal:
 			// Asset not found using custom handlers or in temp assets or bypasses were enabled
-            // redirect to DB_FindXAssetHeader
+			// redirect to DB_FindXAssetHeader
 			mov ebx, ds:6D7190h // InterlockedDecrement
 			mov eax, 40793Bh
 			jmp eax
@@ -244,6 +273,13 @@ namespace Components
 					}
 				}
 			}
+		}
+
+		if (type == Game::XAssetType::ASSET_TYPE_GFXWORLD && Zones::Version() >= 316)
+		{
+			asset.gfxWorld->sortKeyEffectDecal = 39;
+			asset.gfxWorld->sortKeyEffectAuto = 48;
+			asset.gfxWorld->sortKeyDistortion = 43;
 		}
 	}
 
@@ -338,35 +374,35 @@ namespace Components
 	{
 		void* pointer = (*Game::g_streamBlocks)[offset->getUnpackedBlock()].data + offset->getUnpackedOffset();
 
-		if (AssetHandler::Relocations.find(pointer) != AssetHandler::Relocations.end())
+		if (AssetHandler::Relocations.contains(pointer))
 		{
 			pointer = AssetHandler::Relocations[pointer];
 		}
 
-		offset->pointer = *reinterpret_cast<void**>(pointer);
+		offset->pointer = *static_cast<void**>(pointer);
 	}
 
 	void AssetHandler::ZoneSave(Game::XAsset asset, ZoneBuilder::Zone* builder)
 	{
-		if (AssetHandler::AssetInterfaces.find(asset.type) != AssetHandler::AssetInterfaces.end())
+		if (AssetHandler::AssetInterfaces.contains(asset.type))
 		{
 			AssetHandler::AssetInterfaces[asset.type]->save(asset.header, builder);
 		}
 		else
 		{
-			Logger::Error("No interface for type '%s'!", Game::DB_GetXAssetTypeName(asset.type));
+			Logger::Error(Game::ERR_FATAL, "No interface for type '{}'!", Game::DB_GetXAssetTypeName(asset.type));
 		}
 	}
 
 	void AssetHandler::ZoneMark(Game::XAsset asset, ZoneBuilder::Zone* builder)
 	{
-		if (AssetHandler::AssetInterfaces.find(asset.type) != AssetHandler::AssetInterfaces.end())
+		if (AssetHandler::AssetInterfaces.contains(asset.type))
 		{
 			AssetHandler::AssetInterfaces[asset.type]->mark(asset.header, builder);
 		}
 		else
 		{
-			Logger::Error("No interface for type '%s'!", Game::DB_GetXAssetTypeName(asset.type));
+			Logger::Error(Game::ERR_FATAL, "No interface for type '{}'!", Game::DB_GetXAssetTypeName(asset.type));
 		}
 	}
 
@@ -384,7 +420,7 @@ namespace Components
 			return { entry->second };
 		}
 
-		if (AssetHandler::AssetInterfaces.find(type) != AssetHandler::AssetInterfaces.end())
+		if (AssetHandler::AssetInterfaces.contains(type))
 		{
 			AssetHandler::AssetInterfaces[type]->load(&header, filename, builder);
 
@@ -494,16 +530,16 @@ namespace Components
 		Utils::Hook::Set<Game::XAssetEntry*>(0x5BAEA2, entryPool + 1);
 	}
 
-    void AssetHandler::ExposeTemporaryAssets(bool expose)
-    {
-        AssetHandler::ShouldSearchTempAssets = expose;
-    }
+	void AssetHandler::ExposeTemporaryAssets(bool expose)
+	{
+		AssetHandler::ShouldSearchTempAssets = expose;
+	}
 
 	AssetHandler::AssetHandler()
 	{
 		this->reallocateEntryPool();
 
-		Dvar::Register<bool>("r_noVoid", false, Game::DVAR_FLAG_SAVED, "Disable void model (red fx)");
+		Dvar::Register<bool>("r_noVoid", false, Game::DVAR_ARCHIVE, "Disable void model (red fx)");
 
 		AssetHandler::ClearTemporaryAssets();
 
@@ -523,18 +559,18 @@ namespace Components
 		if (!ZoneBuilder::IsEnabled()) Utils::Hook(0x5BB3F2, AssetHandler::MissingAssetError, HOOK_CALL).install()->quick();
 
 		// Log missing empty assets
-		Scheduler::OnFrame([]()
+		Scheduler::Loop([]
 		{
 			if (FastFiles::Ready() && !AssetHandler::EmptyAssets.empty())
 			{
 				for (auto& asset : AssetHandler::EmptyAssets)
 				{
-					Game::Sys_Error(25, reinterpret_cast<char*>(0x724428), Game::DB_GetXAssetTypeName(asset.first), asset.second.data());
+					Logger::Warning(Game::CON_CHANNEL_FILES, "Could not load {} \"{}\".\n", Game::DB_GetXAssetTypeName(asset.first), asset.second);
 				}
 
 				AssetHandler::EmptyAssets.clear();
 			}
-		});
+		}, Scheduler::Pipeline::MAIN);
 
 		AssetHandler::OnLoad([](Game::XAssetType type, Game::XAssetHeader asset, std::string name, bool*)
 		{
@@ -551,10 +587,10 @@ namespace Components
 				for (int i = 0; i < vertexdecl->streamCount; i++)
 				{
 					routingData.push_back(json11::Json::object
-						{
-							{ "source", (int)vertexdecl->routing.data[i].source },
-							{ "dest", (int)vertexdecl->routing.data[i].dest },
-						});
+					{
+						{ "source", (int)vertexdecl->routing.data[i].source },
+						{ "dest", (int)vertexdecl->routing.data[i].dest },
+					});
 				}
 
 				std::vector<json11::Json> declData;
@@ -570,7 +606,7 @@ namespace Components
 					}
 				}
 
-				json11::Json vertexData = json11::Json::object
+				nlohmann::json vertexData = json11::Json::object
 				{
 					{ "name", vertexdecl->name },
 					{ "streamCount", vertexdecl->streamCount },
@@ -620,7 +656,7 @@ namespace Components
 										literalConsts.push_back(curArg->u.literalConst[3]);
 									}
 
-									json11::Json argData = json11::Json::object
+									nlohmann::json argData = json11::Json::object
 									{
 										{ "type", curArg->type },
 										{ "value", literalConsts },
@@ -629,7 +665,7 @@ namespace Components
 								}
 								else if (curArg->type == 3 || curArg->type == 5)
 								{
-									json11::Json argData = json11::Json::object
+									nlohmann::json argData = json11::Json::object
 									{
 										{ "type", curArg->type },
 										{ "firstRow", curArg->u.codeConst.firstRow },
@@ -640,7 +676,7 @@ namespace Components
 								}
 								else
 								{
-									json11::Json argData = json11::Json::object
+									nlohmann::json argData = json11::Json::object
 									{
 										{ "type", curArg->type },
 										{ "value", static_cast<int>(curArg->u.codeSampler) },
@@ -649,7 +685,7 @@ namespace Components
 								}
 							}
 
-							json11::Json passData = json11::Json::object
+							nlohmann::json passData = json11::Json::object
 							{
 								{ "perObjArgCount", curPass->perObjArgCount },
 								{ "perPrimArgCount", curPass->perPrimArgCount },
@@ -662,7 +698,7 @@ namespace Components
 							passDataArray.push_back(passData);
 						}
 
-						json11::Json techData = json11::Json::object
+						nlohmann::json techData = json11::Json::object
 						{
 							{ "name", curTech->name },
 							{ "index", technique },
@@ -677,7 +713,7 @@ namespace Components
 						fwrite(&stringData[0], stringData.size(), 1, fp);
 						fclose(fp);
 						
-						json11::Json techsetTechnique = json11::Json::object
+						nlohmann::json techsetTechnique = json11::Json::object
 						{
 							{ "name", curTech->name },
 							{ "index", technique },
@@ -690,7 +726,7 @@ namespace Components
 					}
 				}
 
-				json11::Json techsetData = json11::Json::object
+				nlohmann::json techsetData = json11::Json::object
 				{
 					{ "name", techset->name },
 					{ "techniques", techniques },
@@ -776,7 +812,7 @@ namespace Components
 		}
 		{
 			AssetHandler::RegisterInterface(new Assets::IFont_s());
-            AssetHandler::RegisterInterface(new Assets::IWeapon());
+			AssetHandler::RegisterInterface(new Assets::IWeapon());
 			AssetHandler::RegisterInterface(new Assets::IXModel());
 			AssetHandler::RegisterInterface(new Assets::IFxWorld());
 			AssetHandler::RegisterInterface(new Assets::IMapEnts());
@@ -787,9 +823,9 @@ namespace Components
 			AssetHandler::RegisterInterface(new Assets::ISndCurve());
 			AssetHandler::RegisterInterface(new Assets::IMaterial());
 			AssetHandler::RegisterInterface(new Assets::IMenuList());
-            AssetHandler::RegisterInterface(new Assets::IclipMap_t());
+			AssetHandler::RegisterInterface(new Assets::IclipMap_t());
 			AssetHandler::RegisterInterface(new Assets::ImenuDef_t());
-            AssetHandler::RegisterInterface(new Assets::ITracerDef());
+			AssetHandler::RegisterInterface(new Assets::ITracerDef());
 			AssetHandler::RegisterInterface(new Assets::IPhysPreset());
 			AssetHandler::RegisterInterface(new Assets::IXAnimParts());
 			AssetHandler::RegisterInterface(new Assets::IFxEffectDef());

@@ -5,64 +5,65 @@ namespace Components
 	class Command : public Component
 	{
 	public:
+		static_assert(sizeof(Game::cmd_function_t) == 0x18);
+
 		class Params
 		{
 		public:
-			Params() {};
-			virtual ~Params() {};
-			virtual char* get(size_t index) = 0;
-			virtual size_t length() = 0;
+			Params() = default;
+			virtual ~Params() = default;
 
-			virtual std::string join(size_t startIndex);
-			virtual char* operator[](size_t index);
+			virtual int size() = 0;
+			virtual const char* get(int index) = 0;
+			virtual std::string join(int index);
+
+			virtual const char* operator[](const int index)
+			{
+				return this->get(index);
+			}
 		};
 
-		class ClientParams : public Params
+		class ClientParams final : public Params
 		{
 		public:
-			ClientParams(unsigned int id) : commandId(id) {};
-			ClientParams(const ClientParams &obj) : commandId(obj.commandId) {};
-			ClientParams() : ClientParams(*Game::cmd_id) {};
+			ClientParams();
 
-			char* get(size_t index) override;
-			size_t length() override;
+			int size() override;
+			const char* get(int index) override;
 
 		private:
-			unsigned int commandId;
+			int nesting_;
 		};
 
-		class ServerParams : public Params
+		class ServerParams final : public Params
 		{
 		public:
-			ServerParams(unsigned int id) : commandId(id) {};
-			ServerParams(const ServerParams &obj) : commandId(obj.commandId) {};
-			ServerParams() : ServerParams(*Game::cmd_id_sv) {};
+			ServerParams();
 
-			char* get(size_t index) override;
-			size_t length() override;
+			int size() override;
+			const char* get(int index) override;
 
 		private:
-			unsigned int commandId;
+			int nesting_;
 		};
 
-		typedef void(Callback)(Command::Params* params);
-
-		Command();
-		~Command();
+		Command() = default;
 
 		static Game::cmd_function_t* Allocate();
 
-		static void Add(const char* name, Utils::Slot<Callback> callback);
-		static void AddSV(const char* name, Utils::Slot<Callback> callback);
+		static void Add(const char* name, const std::function<void()>& callback);
+		static void Add(const char* name, const std::function<void(Command::Params*)>& callback);
 		static void AddRaw(const char* name, void(*callback)(), bool key = false);
-		static void AddRawSV(const char* name, void(*callback)());
+		static void AddSV(const char* name, const std::function<void(Command::Params*)>& callback);
 		static void Execute(std::string command, bool sync = true);
 
 		static Game::cmd_function_t* Find(const std::string& command);
 
 	private:
-		static std::unordered_map<std::string, Utils::Slot<Callback>> FunctionMap;
-		static std::unordered_map<std::string, Utils::Slot<Callback>> FunctionMapSV;
+		static std::unordered_map<std::string, std::function<void(Command::Params*)>> FunctionMap;
+		static std::unordered_map<std::string, std::function<void(Command::Params*)>> FunctionMapSV;
+
+		static void AddRawSV(const char* name, void(*callback)());
 
 		static void MainCallback();
 		static void MainCallbackSV();
