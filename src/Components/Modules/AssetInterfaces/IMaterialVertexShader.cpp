@@ -1,7 +1,7 @@
 #include <STDInclude.hpp>
 #include "IMaterialVertexShader.hpp"
 
-#define IW4X_TECHSET_VERSION 1
+#define GFX_RENDERER_SHADER_SM3 0
 
 namespace Assets
 {
@@ -18,35 +18,18 @@ namespace Assets
 
 	void IMaterialVertexShader::loadBinary(Game::XAssetHeader* header, const std::string& name, Components::ZoneBuilder::Zone* builder)
 	{
-		Components::FileSystem::File vsFile(Utils::String::VA("vs/%s.iw4xVS", name.data()));
+		Components::FileSystem::File vsFile(Utils::String::VA("vs/%s.cso", name.data()));
 		if (!vsFile.exists()) return;
 
-		Utils::Stream::Reader reader(builder->getAllocator(), vsFile.getBuffer());
+		auto buff = vsFile.getBuffer();
+		auto programSize = buff.size() / 4;
+		Game::MaterialVertexShader* asset = builder->getAllocator()->allocate<Game::MaterialVertexShader>();
 
-		char* magic = reader.readArray<char>(8);
-		if (std::memcmp(magic, "IW4xVERT", 8))
-		{
-			Components::Logger::Error(Game::ERR_FATAL, "Reading vertex shader '{}' failed, header is invalid!", name);
-		}
-
-		auto version = reader.read<char>();
-		if (version != IW4X_TECHSET_VERSION)
-		{
-			Components::Logger::Error(Game::ERR_FATAL, "Reading vertex shader '{}' failed, expected version is {}, but it was {}!",
-				name, IW4X_TECHSET_VERSION, static_cast<int>(version));
-		}
-
-		Game::MaterialVertexShader* asset = reader.readObject<Game::MaterialVertexShader>();
-
-		if (asset->name)
-		{
-			asset->name = reader.readCString();
-		}
-
-		if (asset->prog.loadDef.program)
-		{
-			asset->prog.loadDef.program = reader.readArray<unsigned int>(asset->prog.loadDef.programSize);
-		}
+		asset->name = builder->getAllocator()->duplicateString(name);
+		asset->prog.loadDef.loadForRenderer = GFX_RENDERER_SHADER_SM3;
+		asset->prog.loadDef.programSize = static_cast<unsigned short>(programSize);
+		asset->prog.loadDef.program = builder->getAllocator()->allocateArray<unsigned int>(programSize);
+		memcpy_s(asset->prog.loadDef.program, buff.size(), buff.data(), buff.size());
 
 		header->vertexShader = asset;
 	}

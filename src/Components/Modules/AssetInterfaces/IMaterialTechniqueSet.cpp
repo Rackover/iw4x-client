@@ -88,9 +88,6 @@ namespace Assets
 				pass->stableArgCount = jsonPass["stableArgCount"].get<char>();
 				pass->customSamplerFlags = jsonPass["customSamplerFlags"].get<char>();
 
-				{
-				}
-
 
 				if (jsonPass["arguments"].is_array()) 
 				{
