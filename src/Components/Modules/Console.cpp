@@ -1,5 +1,9 @@
 ﻿#include <STDInclude.hpp>
 
+#define OUTPUT_BOX 0x64
+#define INPUT_BOX 0x65
+#define REMOVE_HEADERBAR 1
+
 namespace Components
 {
 	WINDOW* Console::OutputWindow;
@@ -19,6 +23,13 @@ namespace Components
 
 	bool Console::HasConsole = false;
 	bool Console::SkipShutdown = false;
+
+	COLORREF Console::TextColor = RGB(120, 237, 122);
+	COLORREF Console::BackgroundColor = RGB(25, 32, 25);
+	HBRUSH Console::ForegroundBrush = CreateSolidBrush(TextColor);
+	HBRUSH Console::BackgroundBrush = CreateSolidBrush(BackgroundColor);
+
+	HANDLE Console::CustomConsoleFont;
 
 	std::thread Console::ConsoleThread;
 
@@ -374,10 +385,186 @@ namespace Components
 		Console::RefreshOutput();
 	}
 
+	HFONT __stdcall Console::ReplaceFont(
+		int    cHeight,
+		int    cWidth,
+		int    cEscapement,
+		int    cOrientation,
+		int    cWeight,
+		DWORD  bItalic,
+		DWORD  bUnderline,
+		DWORD  bStrikeOut,
+		DWORD  iCharSet,
+		DWORD  iOutPrecision,
+		DWORD  iClipPrecision,
+		DWORD  iQuality,
+		DWORD  iPitchAndFamily,
+		LPCSTR pszFaceName)
+	{
+		auto font = CreateFontA(
+			12, 
+			cWidth, 
+			cEscapement, 
+			cOrientation, 
+			700, 
+			bItalic, 
+			bUnderline,
+			bStrikeOut, 
+			iCharSet, 
+			OUT_RASTER_PRECIS,
+			iClipPrecision, 
+			NONANTIALIASED_QUALITY,
+			0x31, 
+			"Terminus (TTF)"); // Terminus (TTF)
+
+		return font;
+	}
+
+	void Console::GetWindowPos(HWND hWnd, int* x, int* y)
+	{
+		HWND hWndParent = GetParent(hWnd);
+		POINT p = { 0 };
+
+		MapWindowPoints(hWnd, hWndParent, &p, 1);
+
+		(*x) = p.x;
+		(*y) = p.y;
+	}
+
+	BOOL CALLBACK Console::ResizeChildWindow(HWND hwndChild, LPARAM lParam)
+	{
+		auto id = GetWindowLong(hwndChild, GWL_ID);
+		bool isInputBox = id == INPUT_BOX;
+		bool isOutputBox = id == OUTPUT_BOX;
+
+		if (isInputBox || isOutputBox) 
+		{
+			RECT newParentRect = *((LPRECT)lParam);
+
+			RECT childRect;
+
+			if (GetWindowRect(hwndChild, &childRect)) {
+
+				int childX, childY;
+
+				GetWindowPos(hwndChild, &childX, &childY);
+
+
+				if (isInputBox) {
+
+					int newX = childX; // No change!
+					int newY = (newParentRect.bottom - newParentRect.top) - 65;
+					int newWidth = (newParentRect.right - newParentRect.left) - 29;
+					int newHeight = childRect.bottom - childRect.top; // No change!
+
+					MoveWindow(hwndChild, newX, newY, newWidth, newHeight, TRUE);
+				}
+				
+				if (isOutputBox)
+				{
+					int newX = childX; // No change!
+					int newY = childY; // No change!
+					int newWidth = (newParentRect.right - newParentRect.left) - 29;
+
+					int margin = 70;
+
+#if REMOVE_HEADERBAR
+					margin = 10;
+#endif
+					int newHeight = (newParentRect.bottom - newParentRect.top) - 74 - margin;
+
+					MoveWindow(hwndChild, newX, newY, newWidth, newHeight, TRUE);
+				}
+			}
+		}
+
+		return TRUE;
+	}
+
+
+	LRESULT CALLBACK Console::ConWndProc(HWND hWnd, UINT Msg, WPARAM wParam, unsigned int lParam)
+	{
+		switch (Msg)
+		{
+
+		
+		case WM_CREATE:
+		{
+			BOOL darkMode = true;
+
+#define DWMWA_USE_IMMERSIVE_DARK_MODE 20
+			if (SUCCEEDED(DwmSetWindowAttribute(hWnd, DWMWA_USE_IMMERSIVE_DARK_MODE, (LPCVOID)&darkMode, sizeof(darkMode))))
+			{
+				// cool !
+			}
+
+			break;
+		}
+
+		case WM_CTLCOLORSTATIC:
+		case WM_CTLCOLOREDIT:
+		{
+			SetBkColor((HDC)wParam, BackgroundColor);
+			SetTextColor((HDC)wParam, TextColor);
+			return (LRESULT)BackgroundBrush;
+		}
+
+		case WM_SIZE:
+			RECT rect;
+
+			if (GetWindowRect(hWnd, &rect))
+			{
+				EnumChildWindows(hWnd, ResizeChildWindow, (LPARAM)&rect);
+			}
+
+			return 0;
+		}
+
+		// Fall through to basegame
+		return Utils::Hook::Call<LRESULT CALLBACK(HWND, UINT, WPARAM, unsigned int)>(0x64DC50)(hWnd, Msg, wParam, lParam);
+	}
+
+	ATOM CALLBACK Console::RegisterClassHook(WNDCLASSA* lpWndClass)
+	{
+		DeleteObject(lpWndClass->hbrBackground);
+		HBRUSH brush = CreateSolidBrush(BackgroundColor);
+		lpWndClass->hbrBackground = brush;
+
+		return RegisterClassA(lpWndClass);
+	}
+
+	void Console::ShowStyledConsole() 
+	{
+		DWORD fontsInstalled;
+		CustomConsoleFont = AddFontMemResourceEx(const_cast<void*>(reinterpret_cast<const void*>(Font::Terminus::DATA)), Font::Terminus::LENGTH, NULL, &fontsInstalled);
+	
+		if (fontsInstalled > 0)
+		{
+			Utils::Hook::Nop(0x428A44, 6);
+			Utils::Hook(0x428A44, ReplaceFont, HOOK_CALL).install()->quick();
+		}
+
+		Utils::Hook::Nop(0x42892D, 6);
+		Utils::Hook(0x42892D, RegisterClassHook, HOOK_CALL).install()->quick();
+
+		Utils::Hook::Set(0x4288EA, &ConWndProc);
+
+		auto style = WS_CAPTION | WS_SIZEBOX | WS_SYSMENU | WS_MINIMIZEBOX | WS_MAXIMIZEBOX;
+		Utils::Hook::Set(0x42893F + 1, style);
+		Utils::Hook::Set(0x4289E2 + 1, style);
+
+#if REMOVE_HEADERBAR
+		// Remove that hideous header window -rox
+		Utils::Hook::Set(0x428A7C, static_cast<char>(0xEB));
+		Utils::Hook::Set(0X428AF1+1, static_cast<char>(10));
+#endif
+		Game::Sys_ShowConsole();
+	}
+
 	void Console::ConsoleRunner()
 	{
 		Console::SkipShutdown = false;
-		Game::Sys_ShowConsole();
+		ShowStyledConsole();
 
 		MSG message;
 		while (IsWindow(Console::GetWindow()) != FALSE && GetMessageA(&message, nullptr, 0, 0))
