@@ -397,20 +397,20 @@ namespace Components
 	}
 
 	HFONT __stdcall Console::ReplaceFont(
-		int    cHeight,
+		[[maybe_unused]] int    cHeight,
 		int    cWidth,
 		int    cEscapement,
 		int    cOrientation,
-		int    cWeight,
+		[[maybe_unused]] int    cWeight,
 		DWORD  bItalic,
 		DWORD  bUnderline,
 		DWORD  bStrikeOut,
 		DWORD  iCharSet,
-		DWORD  iOutPrecision,
+		[[maybe_unused]] DWORD  iOutPrecision,
 		DWORD  iClipPrecision,
-		DWORD  iQuality,
-		DWORD  iPitchAndFamily,
-		LPCSTR pszFaceName)
+		[[maybe_unused]] DWORD  iQuality,
+		[[maybe_unused]] DWORD  iPitchAndFamily,
+		[[maybe_unused]] LPCSTR pszFaceName)
 	{
 		auto font = CreateFontA(
 			12, 
