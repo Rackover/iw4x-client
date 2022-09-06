@@ -24,8 +24,19 @@ namespace Components
 	bool Console::HasConsole = false;
 	bool Console::SkipShutdown = false;
 
-	COLORREF Console::TextColor = RGB(120, 237, 122);
-	COLORREF Console::BackgroundColor = RGB(25, 32, 25);
+	COLORREF Console::TextColor = 
+#if DEBUG
+		RGB(255, 200, 117);
+#else
+		RGB(120, 237, 122);
+#endif
+
+	COLORREF Console::BackgroundColor =
+#if DEBUG
+		RGB(35, 21, 0);
+#else
+		RGB(25, 32, 25);
+#endif
 	HBRUSH Console::ForegroundBrush = CreateSolidBrush(TextColor);
 	HBRUSH Console::BackgroundBrush = CreateSolidBrush(BackgroundColor);
 
