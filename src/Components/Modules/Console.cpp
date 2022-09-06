@@ -492,6 +492,61 @@ namespace Components
 		return TRUE;
 	}
 
+	void Console::MakeRoomForText([[maybe_unused]] int addedCharacters)
+	{
+		constexpr unsigned int maxChars = 0x4000;
+		constexpr unsigned int maxAffectedChars = 0x100;
+		HWND outputBox = Utils::Hook::Get<HWND>(0x64A328C);
+
+		unsigned int totalChars;
+		unsigned int totalClearLength = 0;
+
+		char str[maxAffectedChars];
+		unsigned int fetchedCharacters = static_cast<unsigned int>(GetWindowText(outputBox, str, maxAffectedChars));
+
+		totalChars = GetWindowTextLengthA(outputBox);
+
+		while (totalChars - totalClearLength > maxChars)
+		{
+			unsigned int clearLength = maxAffectedChars; // Default to full clear
+
+			for (size_t i = 0; i < fetchedCharacters; i++)
+			{
+				if (str[i] == '\n')
+				{
+					// Shorter clear if I meet a linebreak
+					clearLength = i + 1;
+					break;
+				}
+			}
+
+			totalClearLength += clearLength;
+		}
+
+		if (totalClearLength > 0)
+		{
+			SendMessage(outputBox, WM_SETREDRAW, FALSE, 0);
+			SendMessage(outputBox, EM_SETSEL, 0, totalClearLength);
+			SendMessage(outputBox, EM_REPLACESEL, FALSE, 0);
+			SendMessage(outputBox, WM_SETREDRAW, TRUE, 0);
+		}
+
+		Utils::Hook::Set(0x64A38B8, totalChars - totalClearLength);
+	}
+
+	void __declspec(naked) Console::MakeRoomForTextStub()
+	{
+		__asm
+		{
+			push edi
+			call MakeRoomForText
+			pop edi
+
+			// Go back to AppendText
+			push 0x4F57F8
+			ret
+		}
+	}
 
 	LRESULT CALLBACK Console::ConWndProc(HWND hWnd, UINT Msg, WPARAM wParam, unsigned int lParam)
 	{
@@ -569,6 +624,11 @@ namespace Components
 		Utils::Hook::Set(0x428A7C, static_cast<char>(0xEB));
 		Utils::Hook::Set(0X428AF1+1, static_cast<char>(10));
 #endif
+		
+		// Never reset text
+		Utils::Hook::Nop(0x4F57DF, 0x4F57F6 - 0x4F57DF);
+		Utils::Hook(0x4F57DF, Console::MakeRoomForTextStub, HOOK_JUMP).install()->quick();
+
 		Game::Sys_ShowConsole();
 	}
 
