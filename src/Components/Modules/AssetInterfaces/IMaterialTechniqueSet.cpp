@@ -187,14 +187,9 @@ namespace Assets
 		{
 			auto remapped = techset["remappedTechniqueSet"].get<std::string>();
 
-			if (remapped == asset->name)
+			if (remapped != asset->name)
 			{
-				asset->remappedTechniqueSet = asset;
-			}
-			else
-			{
-				asset->remappedTechniqueSet =
-					Components::AssetHandler::FindAssetForZone(Game::XAssetType::ASSET_TYPE_TECHNIQUE_SET, techset["remappedTechniqueSet"].get<std::string>(), builder).techniqueSet;
+				builder->loadAssetByName(Game::XAssetType::ASSET_TYPE_TECHNIQUE_SET, remapped, false);
 			}
 		}
 

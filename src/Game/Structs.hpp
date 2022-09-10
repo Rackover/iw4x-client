@@ -95,6 +95,155 @@ namespace Game
 		ASSET_TYPE_INVALID = -1,
 	};
 
+	enum ShaderCodeConstants
+	{
+		CONST_SRC_CODE_MAYBE_DIRTY_PS_BEGIN = 0x0,
+		CONST_SRC_CODE_LIGHT_POSITION = 0x0,
+		CONST_SRC_CODE_LIGHT_DIFFUSE = 0x1,
+		CONST_SRC_CODE_LIGHT_SPECULAR = 0x2,
+		CONST_SRC_CODE_LIGHT_SPOTDIR = 0x3,
+		CONST_SRC_CODE_LIGHT_SPOTFACTORS = 0x4,
+		CONST_SRC_CODE_LIGHT_FALLOFF_PLACEMENT = 0x5,
+		CONST_SRC_CODE_PARTICLE_CLOUD_COLOR = 0x6,
+		CONST_SRC_CODE_GAMETIME = 0x7,
+		CONST_SRC_CODE_MAYBE_DIRTY_PS_END = 0x8,
+		CONST_SRC_CODE_ALWAYS_DIRTY_PS_BEGIN = 0x8,
+		CONST_SRC_CODE_PIXEL_COST_FRACS = 0x8,
+		CONST_SRC_CODE_PIXEL_COST_DECODE = 0x9,
+		CONST_SRC_CODE_FILTER_TAP_0 = 0xA,
+		CONST_SRC_CODE_FILTER_TAP_1 = 0xB,
+		CONST_SRC_CODE_FILTER_TAP_2 = 0xC,
+		CONST_SRC_CODE_FILTER_TAP_3 = 0xD,
+		CONST_SRC_CODE_FILTER_TAP_4 = 0xE,
+		CONST_SRC_CODE_FILTER_TAP_5 = 0xF,
+		CONST_SRC_CODE_FILTER_TAP_6 = 0x10,
+		CONST_SRC_CODE_FILTER_TAP_7 = 0x11,
+		CONST_SRC_CODE_COLOR_MATRIX_R = 0x12,
+		CONST_SRC_CODE_COLOR_MATRIX_G = 0x13,
+		CONST_SRC_CODE_COLOR_MATRIX_B = 0x14,
+		CONST_SRC_CODE_SHADOWMAP_POLYGON_OFFSET = 0x15,
+		CONST_SRC_CODE_RENDER_TARGET_SIZE = 0x16,
+		CONST_SRC_CODE_ALWAYS_DIRTY_PS_END = 0x17,
+		CONST_SRC_CODE_FIXED_PS_BEGIN = 0x17,
+		CONST_SRC_CODE_DOF_EQUATION_VIEWMODEL_AND_FAR_BLUR = 0x17,
+		CONST_SRC_CODE_DOF_EQUATION_SCENE = 0x18,
+		CONST_SRC_CODE_DOF_LERP_SCALE = 0x19,
+		CONST_SRC_CODE_DOF_LERP_BIAS = 0x1A,
+		CONST_SRC_CODE_DOF_ROW_DELTA = 0x1B,
+		CONST_SRC_CODE_MOTION_MATRIX_X = 0x1C,
+		CONST_SRC_CODE_MOTION_MATRIX_Y = 0x1D,
+		CONST_SRC_CODE_MOTION_MATRIX_W = 0x1E,
+		CONST_SRC_CODE_SHADOWMAP_SWITCH_PARTITION = 0x1F,
+		CONST_SRC_CODE_SHADOWMAP_SCALE = 0x20,
+		CONST_SRC_CODE_ZNEAR = 0x21,
+		CONST_SRC_CODE_LIGHTING_LOOKUP_SCALE = 0x22,
+		CONST_SRC_CODE_DEBUG_BUMPMAP = 0x23,
+		CONST_SRC_CODE_MATERIAL_COLOR = 0x24,
+		CONST_SRC_CODE_FOG = 0x25,
+		CONST_SRC_CODE_FOG_COLOR_LINEAR = 0x26,
+		CONST_SRC_CODE_FOG_COLOR_GAMMA = 0x27,
+		CONST_SRC_CODE_FOG_SUN_CONSTS = 0x28,
+		CONST_SRC_CODE_FOG_SUN_COLOR_LINEAR = 0x29,
+		CONST_SRC_CODE_FOG_SUN_COLOR_GAMMA = 0x2A,
+		CONST_SRC_CODE_FOG_SUN_DIR = 0x2B,
+		CONST_SRC_CODE_GLOW_SETUP = 0x2C,
+		CONST_SRC_CODE_GLOW_APPLY = 0x2D,
+		CONST_SRC_CODE_COLOR_BIAS = 0x2E,
+		CONST_SRC_CODE_COLOR_TINT_BASE = 0x2F,
+		CONST_SRC_CODE_COLOR_TINT_DELTA = 0x30,
+		CONST_SRC_CODE_COLOR_TINT_QUADRATIC_DELTA = 0x31,
+		CONST_SRC_CODE_OUTDOOR_FEATHER_PARMS = 0x32,
+		CONST_SRC_CODE_ENVMAP_PARMS = 0x33,
+		CONST_SRC_CODE_SUN_SHADOWMAP_PIXEL_ADJUST = 0x34,
+		CONST_SRC_CODE_SPOT_SHADOWMAP_PIXEL_ADJUST = 0x35,
+		CONST_SRC_CODE_COMPOSITE_FX_DISTORTION = 0x36,
+		CONST_SRC_CODE_POSTFX_FADE_EFFECT = 0x37,
+		CONST_SRC_CODE_VIEWPORT_DIMENSIONS = 0x38,
+		CONST_SRC_CODE_FRAMEBUFFER_READ = 0x39,
+		CONST_SRC_CODE_FIXED_PS_END = 0x3A,
+		CONST_SRC_CODE_NON_PS_BEGIN = 0x3A,
+		CONST_SRC_CODE_BASE_LIGHTING_COORDS = 0x3A,
+		CONST_SRC_CODE_LIGHT_PROBE_AMBIENT = 0x3B,
+		CONST_SRC_CODE_NEARPLANE_ORG = 0x3C,
+		CONST_SRC_CODE_NEARPLANE_DX = 0x3D,
+		CONST_SRC_CODE_NEARPLANE_DY = 0x3E,
+		CONST_SRC_CODE_CLIP_SPACE_LOOKUP_SCALE = 0x3F,
+		CONST_SRC_CODE_CLIP_SPACE_LOOKUP_OFFSET = 0x40,
+		CONST_SRC_CODE_PARTICLE_CLOUD_MATRIX0 = 0x41,
+		CONST_SRC_CODE_PARTICLE_CLOUD_MATRIX1 = 0x42,
+		CONST_SRC_CODE_PARTICLE_CLOUD_MATRIX2 = 0x43,
+		CONST_SRC_CODE_PARTICLE_CLOUD_SPARK_COLOR0 = 0x44,
+		CONST_SRC_CODE_PARTICLE_CLOUD_SPARK_COLOR1 = 0x45,
+		CONST_SRC_CODE_PARTICLE_CLOUD_SPARK_COLOR2 = 0x46,
+		CONST_SRC_CODE_PARTICLE_FOUNTAIN_PARM0 = 0x47,
+		CONST_SRC_CODE_PARTICLE_FOUNTAIN_PARM1 = 0x48,
+		CONST_SRC_CODE_DEPTH_FROM_CLIP = 0x49,
+		CONST_SRC_CODE_CODE_MESH_ARG_0 = 0x4A,
+		CONST_SRC_CODE_CODE_MESH_ARG_1 = 0x4B,
+		CONST_SRC_CODE_CODE_MESH_ARG_LAST = 0x4B,
+		CONST_SRC_CODE_NON_PS_END = 0x4C,
+		CONST_SRC_CODE_COUNT_FLOAT4 = 0x4C,
+		CONST_SRC_FIRST_CODE_MATRIX = 0x4C,
+		CONST_SRC_CODE_VIEW_MATRIX = 0x4C,
+		CONST_SRC_CODE_INVERSE_VIEW_MATRIX = 0x4D,
+		CONST_SRC_CODE_TRANSPOSE_VIEW_MATRIX = 0x4E,
+		CONST_SRC_CODE_INVERSE_TRANSPOSE_VIEW_MATRIX = 0x4F,
+		CONST_SRC_CODE_PROJECTION_MATRIX = 0x50,
+		CONST_SRC_CODE_INVERSE_PROJECTION_MATRIX = 0x51,
+		CONST_SRC_CODE_TRANSPOSE_PROJECTION_MATRIX = 0x52,
+		CONST_SRC_CODE_INVERSE_TRANSPOSE_PROJECTION_MATRIX = 0x53,
+		CONST_SRC_CODE_VIEW_PROJECTION_MATRIX = 0x54,
+		CONST_SRC_CODE_INVERSE_VIEW_PROJECTION_MATRIX = 0x55,
+		CONST_SRC_CODE_TRANSPOSE_VIEW_PROJECTION_MATRIX = 0x56,
+		CONST_SRC_CODE_INVERSE_TRANSPOSE_VIEW_PROJECTION_MATRIX = 0x57,
+		CONST_SRC_CODE_SHADOW_LOOKUP_MATRIX = 0x58,
+		CONST_SRC_CODE_INVERSE_SHADOW_LOOKUP_MATRIX = 0x59,
+		CONST_SRC_CODE_TRANSPOSE_SHADOW_LOOKUP_MATRIX = 0x5A,
+		CONST_SRC_CODE_INVERSE_TRANSPOSE_SHADOW_LOOKUP_MATRIX = 0x5B,
+		CONST_SRC_CODE_WORLD_OUTDOOR_LOOKUP_MATRIX = 0x5C,
+		CONST_SRC_CODE_INVERSE_WORLD_OUTDOOR_LOOKUP_MATRIX = 0x5D,
+		CONST_SRC_CODE_TRANSPOSE_WORLD_OUTDOOR_LOOKUP_MATRIX = 0x5E,
+		CONST_SRC_CODE_INVERSE_TRANSPOSE_WORLD_OUTDOOR_LOOKUP_MATRIX = 0x5F,
+		CONST_SRC_CODE_WORLD_MATRIX0 = 0x60,
+		CONST_SRC_CODE_INVERSE_WORLD_MATRIX0 = 0x61,
+		CONST_SRC_CODE_TRANSPOSE_WORLD_MATRIX0 = 0x62,
+		CONST_SRC_CODE_INVERSE_TRANSPOSE_WORLD_MATRIX0 = 0x63,
+		CONST_SRC_CODE_WORLD_VIEW_MATRIX0 = 0x64,
+		CONST_SRC_CODE_INVERSE_WORLD_VIEW_MATRIX0 = 0x65,
+		CONST_SRC_CODE_TRANSPOSE_WORLD_VIEW_MATRIX0 = 0x66,
+		CONST_SRC_CODE_INVERSE_TRANSPOSE_WORLD_VIEW_MATRIX0 = 0x67,
+		CONST_SRC_CODE_WORLD_VIEW_PROJECTION_MATRIX0 = 0x68,
+		CONST_SRC_CODE_INVERSE_WORLD_VIEW_PROJECTION_MATRIX0 = 0x69,
+		CONST_SRC_CODE_TRANSPOSE_WORLD_VIEW_PROJECTION_MATRIX0 = 0x6A,
+		CONST_SRC_CODE_INVERSE_TRANSPOSE_WORLD_VIEW_PROJECTION_MATRIX0 = 0x6B,
+		CONST_SRC_CODE_WORLD_MATRIX1 = 0x6C,
+		CONST_SRC_CODE_INVERSE_WORLD_MATRIX1 = 0x6D,
+		CONST_SRC_CODE_TRANSPOSE_WORLD_MATRIX1 = 0x6E,
+		CONST_SRC_CODE_INVERSE_TRANSPOSE_WORLD_MATRIX1 = 0x6F,
+		CONST_SRC_CODE_WORLD_VIEW_MATRIX1 = 0x70,
+		CONST_SRC_CODE_INVERSE_WORLD_VIEW_MATRIX1 = 0x71,
+		CONST_SRC_CODE_TRANSPOSE_WORLD_VIEW_MATRIX1 = 0x72,
+		CONST_SRC_CODE_INVERSE_TRANSPOSE_WORLD_VIEW_MATRIX1 = 0x73,
+		CONST_SRC_CODE_WORLD_VIEW_PROJECTION_MATRIX1 = 0x74,
+		CONST_SRC_CODE_INVERSE_WORLD_VIEW_PROJECTION_MATRIX1 = 0x75,
+		CONST_SRC_CODE_TRANSPOSE_WORLD_VIEW_PROJECTION_MATRIX1 = 0x76,
+		CONST_SRC_CODE_INVERSE_TRANSPOSE_WORLD_VIEW_PROJECTION_MATRIX1 = 0x77,
+		CONST_SRC_CODE_WORLD_MATRIX2 = 0x78,
+		CONST_SRC_CODE_INVERSE_WORLD_MATRIX2 = 0x79,
+		CONST_SRC_CODE_TRANSPOSE_WORLD_MATRIX2 = 0x7A,
+		CONST_SRC_CODE_INVERSE_TRANSPOSE_WORLD_MATRIX2 = 0x7B,
+		CONST_SRC_CODE_WORLD_VIEW_MATRIX2 = 0x7C,
+		CONST_SRC_CODE_INVERSE_WORLD_VIEW_MATRIX2 = 0x7D,
+		CONST_SRC_CODE_TRANSPOSE_WORLD_VIEW_MATRIX2 = 0x7E,
+		CONST_SRC_CODE_INVERSE_TRANSPOSE_WORLD_VIEW_MATRIX2 = 0x7F,
+		CONST_SRC_CODE_WORLD_VIEW_PROJECTION_MATRIX2 = 0x80,
+		CONST_SRC_CODE_INVERSE_WORLD_VIEW_PROJECTION_MATRIX2 = 0x81,
+		CONST_SRC_CODE_TRANSPOSE_WORLD_VIEW_PROJECTION_MATRIX2 = 0x82,
+		CONST_SRC_CODE_INVERSE_TRANSPOSE_WORLD_VIEW_PROJECTION_MATRIX2 = 0x83,
+		CONST_SRC_TOTAL_COUNT = 0x84,
+		CONST_SRC_NONE = 0x85,
+	};
+
 	enum FsThread
 	{
 		FS_THREAD_MAIN = 0x0,
@@ -266,6 +415,19 @@ namespace Game
 		SS_DEAD = 0x0,
 		SS_LOADING = 0x1,
 		SS_GAME = 0x2,
+	};
+
+	enum GfxLightType
+	{
+		GFX_LIGHT_TYPE_NONE = 0x0,
+		GFX_LIGHT_TYPE_DIR = 0x1,
+		GFX_LIGHT_TYPE_SPOT = 0x2,
+		GFX_LIGHT_TYPE_OMNI = 0x3,
+		GFX_LIGHT_TYPE_COUNT = 0x4,
+		GFX_LIGHT_TYPE_DIR_SHADOWMAP = 0x4,
+		GFX_LIGHT_TYPE_SPOT_SHADOWMAP = 0x5,
+		GFX_LIGHT_TYPE_OMNI_SHADOWMAP = 0x6,
+		GFX_LIGHT_TYPE_COUNT_WITH_SHADOWMAP_VERSIONS = 0x7,
 	};
 
 	enum errorParm_t
@@ -1324,15 +1486,7 @@ namespace Game
 		int flags;
 	};
 
-	struct game_hudelem_s
-	{
-		hudelem_s elem;
-		int clientNum;
-		int team;
-		int archived;
-	};
-
-	enum
+	enum playerStateFlag
 	{
 		PMF_PRONE = 1 << 0,
 		PMF_DUCKED = 1 << 1,
@@ -1359,7 +1513,7 @@ namespace Game
 		PMF_DIVING = 1 << 22,
 	};
 
-	enum
+	enum playerStateOtherFlag
 	{
 		POF_INVULNERABLE = 1 << 0,
 		POF_REMOTE_EYES = 1 << 1,
@@ -1395,7 +1549,7 @@ namespace Game
 		PM_DEAD_LINKED = 0x9,
 	};
 
-	enum
+	enum playerEFlag
 	{
 		EF_NONSOLID_BMODEL = 1 << 0,
 		EF_TELEPORT_BIT = 1 << 1,
@@ -1423,14 +1577,14 @@ namespace Game
 		EF_SOFT = 1 << 23,
 	};
 
-	enum
+	enum playerLinkFlag
 	{
 		PLF_ANGLES_LOCKED = 1 << 0,
 		PLF_USES_OFFSET = 1 << 1,
 		PLF_WEAPONVIEW_ONLY = 1 << 2,
 	};
 
-	enum
+	enum playerWeaponFlag
 	{
 		PWF_USE_RELOAD = 1 << 0,
 		PWF_USING_OFFHAND = 1 << 1,
@@ -5432,6 +5586,27 @@ namespace Game
 		XNKEY keyExchangeKey;
 	};
 
+	struct GfxSunShadowMapMetrics
+	{
+		unsigned int pixelsPerTile;
+		unsigned int tilesPerTexture;
+		unsigned int usefulSize;
+		unsigned int minCoord;
+		float nearClip;
+		float farClip;
+	};
+
+	struct GfxSunShadowProjectionSetup
+	{
+		float sunAxis[3][3];
+		float nearShadowMinDist;
+		float frustumRayDistToEdgeOfNearMap;
+		float shadowOrg[2];
+		float shadowOrgPixelCenter[2];
+		float snappedShadowOrg[2][2];
+		float sampleSize[2];
+	};
+
 	struct mapArena_t
 	{
 		char uiName[32];
@@ -7235,13 +7410,14 @@ namespace Game
 		GfxMatrix inverseViewProjectionMatrix;
 		GfxCamera camera;
 	};
-	
+
+	class GfxBackEndData;
 	struct GfxCmdBufInput
 	{
 		float consts[76][4];
 		GfxImage* codeImages[27];
 		char codeImageSamplerStates[27];
-		/*GfxBackEndData*/ void* data;
+		GfxBackEndData* data;
 	};
 
 
@@ -7258,6 +7434,253 @@ namespace Game
 		GFX_USE_VIEWPORT_FOR_VIEW = 0x0,
 		GFX_USE_VIEWPORT_FULL = 0x1,
 	};
+
+	enum ShadowType
+	{
+		SHADOW_NONE = 0x0,
+		SHADOW_MAP = 0x1,
+	};
+
+	struct GfxDepthOfField
+	{
+		float viewModelStart;
+		float viewModelEnd;
+		float nearStart;
+		float nearEnd;
+		float farStart;
+		float farEnd;
+		float nearBlur;
+		float farBlur;
+	};
+
+	struct GfxFilm
+	{
+		bool enabled;
+		float brightness;
+		float contrast;
+		float desaturation;
+		float desaturationDark;
+		bool invert;
+		float tintDark[3];
+		float tintMedium[3];
+		float tintLight[3];
+	};
+
+	struct GfxGlow
+	{
+		bool enabled;
+		float bloomCutoff;
+		float bloomDesaturation;
+		float bloomIntensity;
+		float radius;
+	};
+
+	struct GfxLightScale
+	{
+		float diffuseScale;
+		float specularScale;
+	};
+
+	struct __declspec(align(4)) GfxStageInfo
+	{
+		Stage activeStage;
+		bool activeStageValid;
+	};
+
+	struct __declspec(align(4)) GfxCompositeFx
+	{
+		GfxFilm film;
+		float distortionScale[3];
+		float blurRadius;
+		float distortionMagnitude;
+		float frameRate;
+		int lastUpdate;
+		int frame;
+		int startMSec;
+		int currentTime;
+		int duration;
+		bool enabled;
+		bool scriptEnabled;
+	};
+
+	struct GfxVertexBufferState
+	{
+		volatile int used;
+		int total;
+		IDirect3DVertexBuffer9* buffer;
+		char* verts;
+	};
+
+	struct GfxMeshData
+	{
+		unsigned int indexCount;
+		unsigned int totalIndexCount;
+		unsigned __int16* indices;
+		GfxVertexBufferState vb;
+		unsigned int vertSize;
+	};
+
+	struct GfxQuadMeshData
+	{
+		float x;
+		float y;
+		float width;
+		float height;
+		GfxMeshData meshData;
+	};
+
+	/* 2583 */
+	struct GfxSparkSurfList
+	{
+		GfxSparkSurf* surfs;
+		unsigned int count;
+	};
+
+	enum GfxCodeSurfListType
+	{
+		GFX_CODE_SURFLIST_INVALID = 0xFFFFFFFF,
+		GFX_CODE_SURFLIST_TRANS = 0x0,
+		GFX_CODE_SURFLIST_EMISSIVE = 0x1,
+		GFX_CODE_SURFLIST_TYPE_COUNT = 0x2,
+	};
+
+
+	struct GfxViewInfo;
+
+	struct GfxDrawListInfo
+	{
+		MaterialTechniqueType baseTechType;
+		GfxViewInfo* viewInfo;
+		float eyeOffset[3];
+		unsigned int sceneLightIndex;
+		int cameraView;
+		GfxCodeSurfListType codeSurfListType;
+	};
+
+	struct GfxBspSurfList
+	{
+		unsigned int count;
+		const unsigned __int16* stream;
+	};
+
+	struct GfxSModelSurfList
+	{
+		unsigned int surfDataBytes;
+		const char* surfData;
+		const char* visData;
+	};
+
+	struct GfxDrawSurfList
+	{
+		GfxDrawSurf* array;
+		unsigned int count;
+	};
+
+	struct GfxPreTessSurf
+	{
+		GfxDrawGroupSetup drawGroup;
+		char lightmapIndex;
+		char reflectionProbeIndex;
+		unsigned __int16 triCount;
+		unsigned int baseIndex;
+		unsigned int firstVertex;
+		IDirect3DVertexBuffer9* vb;
+		unsigned int vertexCount;
+	};
+
+	struct GfxPreTessSurfList
+	{
+		GfxPreTessSurf* surfs;
+		unsigned int count;
+	};
+
+	struct GfxCodeSurfList
+	{
+		GfxCodeSurf* surfs;
+		unsigned int count;
+	};
+
+	struct GfxMarkSurfList
+	{
+		GfxMarkSurf* surfs;
+		unsigned int count;
+	};
+
+	struct GfxGlassSurfList
+	{
+		GfxGlassSurf* surfs;
+		unsigned int count;
+	};
+
+	struct GfxScaledPlacement
+	{
+		GfxPlacement base;
+		float scale;
+	};
+
+	struct GfxParticleCloud
+	{
+		GfxScaledPlacement placement;
+		float endpos[3];
+		GfxColor color;
+		float radius[2];
+		unsigned int flags;
+		float timeOffset;
+	};
+
+	struct GfxCloudSurfList
+	{
+		GfxParticleCloud* particles;
+		GfxCloudSurf* surfs;
+		unsigned int count;
+	};
+
+	struct GfxDrawList
+	{
+		GfxBspSurfList bspSurfList;
+		GfxPreTessSurfList bspPreTessSurfList;
+		GfxSModelSurfList smodelSurfList[4];
+		GfxDrawSurfList drawSurfList;
+		GfxCodeSurfList codeSurfList;
+		GfxMarkSurfList markSurfList;
+		GfxGlassSurfList glassSurfList;
+		GfxCloudSurfList cloudSurfList;
+		GfxSparkSurfList sparkSurfList;
+		GfxDrawListInfo info;
+	};
+
+	struct GfxViewInfo
+	{
+		GfxViewParms viewParms;
+		GfxViewport sceneViewport;
+		GfxViewport displayViewport;
+		GfxViewport scissorViewport;
+		GfxSceneDef sceneDef;
+		ShadowType dynamicShadowType;
+		char floatZUsage;
+		bool needsDistortionResolve;
+		bool viewModelHasDistortion;
+		char forceSunShadowsGenerate;
+		unsigned int sceneLightCount;
+		float blurRadius;
+		float frustumPlanes[4][4];
+		GfxDepthOfField dof;
+		GfxFilm film;
+		GfxGlow glow;
+		GfxLightScale charPrimaryLightScale;
+		GfxStageInfo stageInfo;
+		GfxCompositeFx waterSheetingFx;
+		const void* displayCmds;
+		GfxQuadMeshData* fullSceneViewMesh;
+		GfxDrawList drawList[10];
+		//__declspec(align(16)) GfxCmdBufInput input;
+		GfxRenderTargetId renderTargetId;
+		bool useShadows;
+		unsigned int sunShadowResolution;
+		GfxRenderTargetId sunShadowRenderTargetId;
+		unsigned int sunShadowTileCount;
+	};
+
 
 	struct GfxLight
 	{
@@ -7348,12 +7771,6 @@ namespace Game
 		DObj* obj;
 		GfxSceneEntityInfo info;
 		char reflectionProbeIndex;
-	};
-
-	struct GfxScaledPlacement
-	{
-		GfxPlacement base;
-		float scale;
 	};
 
 	struct GfxCmdBufSourceState
@@ -9406,6 +9823,375 @@ namespace Game
 		ET_VEHICLE_SPAWNER = 0x11,
 		ET_EVENTS = 0x12,
 	};
+
+	struct GfxBackEndPrimitiveData
+	{
+		int hasSunDirChanged;
+	};
+
+
+	struct GfxFog
+	{
+		int startTime;
+		int finishTime;
+		GfxColor color;
+		float fogStart;
+		float density;
+		float fogMaxOpacity;
+		bool sunFogEnabled;
+		GfxColor sunColor;
+		float sunDir[3];
+		float sunBeginFadeAngle;
+		float sunEndFadeAngle;
+		float sunFogScale;
+	};
+
+	struct GfxCmdHeader
+	{
+		unsigned __int16 id;
+		unsigned __int16 byteCount;
+	};
+
+	struct GfxCmdArray
+	{
+		char* cmds;
+		int usedTotal;
+		int usedCritical;
+		GfxCmdHeader* lastCmd;
+	};
+
+	struct GfxCmdBuf
+	{
+		IDirect3DDevice9* device;
+	};
+
+	struct GfxDrawCallOutput
+	{
+		GfxCmdBuf cmdBuf;
+	};
+
+	/* 1693 */
+	struct __declspec(align(4)) GfxDebugPoly
+	{
+		float color[4];
+		int firstVert;
+		int vertCount;
+		bool outline;
+	};
+
+	/* 1694 */
+	struct GfxDebugPlume
+	{
+		float origin[3];
+		float color[4];
+		int score;
+		int startTime;
+		int duration;
+	};
+
+	/* 1695 */
+	struct DebugGlobals
+	{
+		float(*verts)[3];
+		int vertCount;
+		int vertLimit;
+		GfxDebugPoly* polys;
+		int polyCount;
+		int polyLimit;
+		trDebugString_t* strings;
+		int stringCount;
+		int stringLimit;
+		trDebugString_t* externStrings;
+		int externStringCount;
+		int externMaxStringCount;
+		trDebugLine_t* lines;
+		int lineCount;
+		int lineLimit;
+		trDebugLine_t* externLines;
+		int externLineCount;
+		int externMaxLineCount;
+		GfxDebugPlume* plumes;
+		int plumeCount;
+		int plumeLimit;
+	};
+
+	struct GfxSunShadowProjection
+	{
+		float switchPartition[4];
+		float shadowmapScale[4];
+	};
+
+	struct GfxSunShadowOverlaySetup
+	{
+		float shadowOrg[2];
+		float frustumShadowRays[4][2];
+		unsigned int clipPlaneCount[2];
+		float clipPlanes[2][8][3];
+	};
+
+	struct GfxViewportParms
+	{
+		GfxViewport viewport;
+		GfxViewParms viewParms;
+	};
+
+	/* 2704 */
+	struct GfxSunShadowPartition
+	{
+		GfxViewportParms viewportParms;
+	};
+
+	struct GfxSunShadow
+	{
+		GfxMatrix lookupMatrix;
+		GfxSunShadowProjection sunProj;
+		GfxSunShadowPartition partition[2];
+		GfxSunShadowOverlaySetup overlaySetup;
+	};
+
+	struct GfxSpotShadowSceneLight
+	{
+		GfxMatrix lookupMatrix;
+		float fade;
+		GfxImage* image;
+	};
+
+	struct GfxDrawSurfIter
+	{
+		GfxDrawSurf* current;
+		GfxDrawSurf* end;
+		GfxDrawSurf* mark;
+	};
+
+	struct GfxCodeSurfIter
+	{
+		GfxCodeSurf* current;
+		GfxCodeSurf* end;
+		GfxCodeSurf* mark;
+	};
+
+	struct GfxMarkSurfIter
+	{
+		GfxMarkSurf* current;
+		GfxMarkSurf* end;
+		GfxMarkSurf* mark;
+	};
+
+	struct GfxGlassSurfIter
+	{
+		GfxGlassSurf* current;
+		GfxGlassSurf* end;
+		GfxGlassSurf* mark;
+	};
+
+	struct GfxCloudSurfIter
+	{
+		GfxCloudSurf* current;
+		GfxCloudSurf* end;
+		GfxCloudSurf* mark;
+	};
+
+	struct GfxSparkSurfIter
+	{
+		GfxSparkSurf* current;
+		GfxSparkSurf* end;
+		GfxSparkSurf* mark;
+	};
+
+	struct GfxSModelSurfIter
+	{
+		const char* visData;
+		const char* current;
+		const char* end;
+		const char* mark;
+	};
+
+	struct GfxBspSurfIter
+	{
+		const unsigned __int16* current;
+		const unsigned __int16* end;
+		const unsigned __int16* mark;
+	};
+
+	struct GfxPreTessSurfIter
+	{
+		GfxPreTessSurf* current;
+		GfxPreTessSurf* end;
+		GfxPreTessSurf* mark;
+	};
+
+	struct GfxSunShadowClip
+	{
+		unsigned int planeCount[2];
+		unsigned int frustumPlaneCount[2];
+		DpvsPlane planes[2][10];
+	};
+
+	struct GfxSModelCachedSurfIter : GfxSModelSurfIter
+	{
+	};
+
+	struct GfxSModelRigidSurfIter : GfxSModelSurfIter
+	{
+	};
+
+	struct GfxSModelSkinnedSurfIter : GfxSModelSurfIter
+	{
+	};
+
+	struct GfxSModelPreTessSurfIter : GfxSModelSurfIter
+	{
+	};
+
+	struct GfxDrawListIter
+	{
+		GfxBspSurfIter bspSurfIter;
+		GfxPreTessSurfIter bspPreTessSurfIter;
+		GfxSModelRigidSurfIter smodelRigidSurfIter;
+		GfxSModelSkinnedSurfIter smodelSkinnedSurfIter;
+		GfxSModelCachedSurfIter smodelCachedSurfIter;
+		GfxSModelPreTessSurfIter smodelPreTessSurfIter;
+		GfxDrawSurfIter drawSurfIter;
+		GfxCodeSurfIter codeSurfIter;
+		GfxMarkSurfIter markSurfIter;
+		GfxGlassSurfIter glassSurfIter;
+		GfxCloudSurfIter cloudSurfIter;
+		GfxSparkSurfIter sparkSurfIter;
+	};
+
+	struct $5C4E5A598A7F10AE01B04D2C53999B6C
+	{
+		unsigned int spliceIndex;
+		unsigned int sortKey;
+	};
+
+	union GfxSurfsIteratorSortKey
+	{
+		$5C4E5A598A7F10AE01B04D2C53999B6C fields;
+		unsigned __int64 packed;
+	};
+
+	struct __declspec(align(16)) GfxSpotShadow
+	{
+		GfxSpotShadowSceneLight sceneLight;
+		GfxViewportParms viewportParms;
+		char sceneLightIndex;
+		char pad[3];
+		GfxLight* light;
+		GfxRenderTargetId renderTargetId;
+		float pixelAdjust[4];
+		int clearScreen;
+		GfxMeshData* clearMesh;
+	};
+
+	struct GfxDrawListArgs
+	{
+		GfxCmdBufContext context;
+		GfxDrawListInfo* listInfo;
+	};
+
+	struct GfxSurfsIterator
+	{
+		GfxSurfsIteratorSortKey key;
+		unsigned int(__cdecl* GetSortKeyCallback)(GfxDrawListIter*);
+		bool(__cdecl* RenderDrawGroupCallback)(GfxDrawListArgs*, GfxDrawListIter*);
+	};
+
+	struct GfxSurfsIterGroup
+	{
+		unsigned int iteratorBegin;
+		unsigned int iteratorCount;
+		GfxDrawListIter drawListIter;
+		GfxSurfsIterator iteratorPool[11];
+	};
+
+	struct GfxSpliceSurfs
+	{
+		unsigned int iteratorBegin;
+		unsigned int iteratorCount;
+		unsigned int spliceCount;
+		GfxDrawListIter drawListIter[5];
+		GfxViewport scissorViewport[5];
+		int isSceneScissorViewport[5];
+		GfxDrawListInfo* dynLightDrawListInfo[5];
+		GfxSurfsIterator iteratorPool[55];
+	};
+
+	struct FxSparkMeshData
+	{
+		unsigned int triCount;
+		unsigned __int16* indices;
+		unsigned int baseVertex;
+		char pad[4];
+		GfxParticleCloud cloud;
+	};
+
+	struct GfxBackEndData
+	{
+		char sceneLightTechType[13][256];
+		GfxSparkSurf sparkSurfs[64];
+		GfxViewParms viewParms[4];
+		GfxMeshData mesh[5];
+		int localClientNum;
+		GfxBackEndPrimitiveData prim;
+		volatile int bspSurfDataUsed;
+		volatile int smodelSurfDataUsed;
+		volatile int smodelSurfVisDataUsed;
+		unsigned int sceneLightHasShadowMap[8];
+		int drawSurfCount;
+		volatile int surfPos;
+		volatile int gfxEntCount;
+		unsigned int codeSurfCount[2];
+		unsigned int codeSurfArgsCount[2];
+		volatile int cloudDataCount;
+		unsigned int glassSurfCount;
+		unsigned int markSurfCount;
+		volatile int sparkSurfCount;
+		GfxVertexBufferState* skinnedCacheVb;
+		unsigned int endFence;
+		unsigned int endFrameFence;
+		int viewParmCount;
+		GfxFog fogSettings;
+		GfxCmdArray* commands;
+		unsigned int viewInfoIndex;
+		unsigned int viewInfoCount;
+		GfxViewInfo* viewInfo;
+		const void* cmds;
+		float sunShadowLightDir[3];
+		int hasApproxSunDirChanged;
+		int cmdBufValid[18];
+		GfxDrawCallOutput drawOutput[18];
+		DebugGlobals debugGlobals;
+		unsigned int imageRendered[112];
+		unsigned int drawType;
+		GfxDrawList dynLightDrawList[4];
+		unsigned int dynLightCount;
+		GfxDrawList* emissiveSpotShadowDrawList[1];
+		unsigned int emissiveSpotLightCount;
+		__declspec(align(16)) GfxSunShadow sunShadow;
+		unsigned int spotShadowCount;
+		__declspec(align(16)) GfxSpotShadow spotShadows[4];
+		GfxSurfsIterGroup prepassIterGroup[5];
+		GfxSpliceSurfs litTransSpliceSurfs;
+		__declspec(align(128)) char surfsBuffer[131072];
+		float codeSurfArgs[288][4];
+		GfxCodeSurf codeEmissiveSurfs[2048];
+		GfxCodeSurf codeTransSurfs[640];
+		GfxMarkSurf markSurfs[1536];
+		GfxGlassSurf glassSurfs[768];
+		unsigned __int16 bspSurfData[35328];
+		char smodelSurfData[35840];
+		char smodelSurfVisData[45056];
+		GfxCloudSurf cloudSurfs[256];
+		GfxEntity gfxEnts[128];
+		FxSparkMeshData sparkData[64];
+		GfxParticleCloud cloudData[256];
+		GfxDrawSurf drawSurfs[16384];
+		GfxLight sceneLights[253];
+	};
+
+
+
 
 #pragma endregion
 
