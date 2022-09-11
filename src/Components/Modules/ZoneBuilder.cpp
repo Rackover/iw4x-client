@@ -177,7 +177,10 @@ namespace Components
 					}
 				}
 
-				if (!this->loadAssetByName(this->dataMap.getElementAt(i, 0), this->dataMap.getElementAt(i, 1), false))
+				auto type = this->dataMap.getElementAt(i, 0);
+				auto assetName = this->dataMap.getElementAt(i, 1);
+
+				if (!this->loadAssetByName(type, assetName, false))
 				{
 					return false;
 				}
@@ -215,6 +218,9 @@ namespace Components
 		// Sanitize name for empty assets
 		if (name[0] == ',') name.erase(name.begin());
 
+		// Fix forward slashes for FXEffectDef (and probably other assets)
+		std::replace(name.begin(), name.end(), '\\', '/');
+
 		if (this->findAsset(type, name) != -1 || this->findSubAsset(type, name).data) return true;
 
 		if (type == Game::XAssetType::ASSET_TYPE_INVALID || type >= Game::XAssetType::ASSET_TYPE_COUNT)
@@ -222,8 +228,6 @@ namespace Components
 			Logger::Error(Game::ERR_FATAL, "Invalid asset type '{}'\n", typeName);
 			return false;
 		}
-
-		Logger::Print("Loading {}\n", name);
 
 		Game::XAssetHeader assetHeader = AssetHandler::FindAssetForZone(type, name, this, isSubAsset);
 
@@ -237,6 +241,9 @@ namespace Components
 		asset.type = type;
 		asset.header = assetHeader;
 
+		// Handle script strings
+		AssetHandler::ZoneMark(asset, this);
+
 		if (isSubAsset)
 		{
 			this->loadedSubAssets.push_back(asset);
@@ -246,8 +253,6 @@ namespace Components
 			this->loadedAssets.push_back(asset);
 		}
 
-		// Handle script strings
-		AssetHandler::ZoneMark(asset, this);
 
 		return true;
 	}

@@ -14,7 +14,13 @@ namespace Utils
 			if (length < 100) length *= 10;
 
 			char* buffer = allocator.allocateArray<char>(length);
-			if (compress2(reinterpret_cast<Bytef*>(buffer), &length, reinterpret_cast<Bytef*>(const_cast<char*>(data.data())), data.size(), Z_BEST_COMPRESSION) != Z_OK)
+			auto compression = Z_BEST_COMPRESSION;
+
+#if DEBUG
+			compression = Z_NO_COMPRESSION;
+#endif
+
+			if (compress2(reinterpret_cast<Bytef*>(buffer), &length, reinterpret_cast<Bytef*>(const_cast<char*>(data.data())), data.size(), compression) != Z_OK)
 			{
 				return "";
 			}
