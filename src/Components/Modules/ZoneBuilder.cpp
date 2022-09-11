@@ -171,23 +171,6 @@ namespace Components
 				}
 			}
 
-			if (this->dataMap.getColumns(i) > 2)
-			{
-				auto oldName = this->dataMap.getElementAt(i, 1);
-				auto newName = this->dataMap.getElementAt(i, 2);
-				auto typeName = this->dataMap.getElementAt(i, 0);
-				auto type = Game::DB_GetXAssetNameType(typeName.data());
-
-				if (type < Game::XAssetType::ASSET_TYPE_COUNT && type >= 0)
-				{
-					this->renameAsset(type, oldName, newName);
-				}
-				else
-				{
-					Logger::Error(Game::ERR_FATAL, "Unable to rename '{}' to '{}' as the asset type '{}' is invalid!", oldName, newName, typeName);
-				}
-			}
-
 			if (!this->loadAssetByName(this->dataMap.getElementAt(i, 0), this->dataMap.getElementAt(i, 1), false))
 			{
 				return false;
@@ -225,6 +208,9 @@ namespace Components
 		// Sanitize name for empty assets
 		if (name[0] == ',') name.erase(name.begin());
 
+		// Fix forward slashes for FXEffectDef (and probably other assets)
+		std::replace(name.begin(), name.end(), '\\', '/');
+
 		if (this->findAsset(type, name) != -1 || this->findSubAsset(type, name).data) return true;
 
 		if (type == Game::XAssetType::ASSET_TYPE_INVALID || type >= Game::XAssetType::ASSET_TYPE_COUNT)
@@ -232,8 +218,6 @@ namespace Components
 			Logger::Error(Game::ERR_FATAL, "Invalid asset type '{}'\n", typeName);
 			return false;
 		}
-
-		Logger::Print("Loading {}\n", name);
 
 		Game::XAssetHeader assetHeader = AssetHandler::FindAssetForZone(type, name, this, isSubAsset);
 
@@ -247,6 +231,9 @@ namespace Components
 		asset.type = type;
 		asset.header = assetHeader;
 
+		// Handle script strings
+		AssetHandler::ZoneMark(asset, this);
+
 		if (isSubAsset)
 		{
 			this->loadedSubAssets.push_back(asset);
@@ -256,8 +243,6 @@ namespace Components
 			this->loadedAssets.push_back(asset);
 		}
 
-		// Handle script strings
-		AssetHandler::ZoneMark(asset, this);
 
 		return true;
 	}
