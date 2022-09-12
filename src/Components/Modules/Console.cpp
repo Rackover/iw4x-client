@@ -134,9 +134,9 @@ namespace Components
 
 	float Console::GetDpiScale(const HWND hWnd)
 	{
-		const HMODULE user32 = LoadLibrary("user32.dll");
-		const auto getDpiForWindow = reinterpret_cast<UINT(WINAPI*)(HWND)>(GetProcAddress(user32, "GetDpiForWindow"));
-		const auto getDpiForMonitor = reinterpret_cast<HRESULT(WINAPI*)(HMONITOR, int, UINT*, UINT*)>(GetProcAddress(user32, "GetDpiForMonitor"));
+		const auto user32 = Utils::Library("user32.dll");
+		const auto getDpiForWindow = user32.getProc<UINT(WINAPI*)(HWND)>("GetDpiForWindow");
+		const auto getDpiForMonitor = user32.getProc<HRESULT(WINAPI*)(HMONITOR, int, UINT*, UINT*)>("GetDpiForMonitor");
 		
 		int dpi;
 
@@ -165,8 +165,8 @@ namespace Components
 			dpi = ydpi;
 		}
 
-		constexpr auto unawareDpi = 96.0;
-		return static_cast<float>(dpi / unawareDpi);
+		constexpr auto unawareDpi = 96.0f;
+		return dpi / unawareDpi;
 	}
 
 
@@ -488,11 +488,12 @@ namespace Components
 
 		if (isInputBox || isOutputBox) 
 		{
-			RECT newParentRect = *((LPRECT)lParam);
+			RECT newParentRect = *reinterpret_cast<LPRECT>(lParam);
 
 			RECT childRect;
 
-			if (GetWindowRect(hwndChild, &childRect)) {
+			if (GetWindowRect(hwndChild, &childRect)) 
+			{
 
 				int childX, childY;
 
@@ -502,7 +503,8 @@ namespace Components
 
 				float scale = GetDpiScale(parent);
 
-				if (isInputBox) {
+				if (isInputBox) 
+				{
 
 					int newX = childX; // No change!
 					int newY = static_cast<int>((newParentRect.bottom - newParentRect.top) - 65 * scale);
@@ -575,7 +577,7 @@ namespace Components
 		Utils::Hook::Set(0x64A38B8, totalChars - totalClearLength);
 	}
 
-	void __declspec(naked) Console::MakeRoomForTextStub()
+	void __declspec(naked) Console::Sys_PrintStub()
 	{
 		__asm
 		{
@@ -600,7 +602,7 @@ namespace Components
 			BOOL darkMode = true;
 
 #define DWMWA_USE_IMMERSIVE_DARK_MODE 20
-			if (SUCCEEDED(DwmSetWindowAttribute(hWnd, DWMWA_USE_IMMERSIVE_DARK_MODE, (LPCVOID)&darkMode, sizeof(darkMode))))
+			if (SUCCEEDED(DwmSetWindowAttribute(hWnd, DWMWA_USE_IMMERSIVE_DARK_MODE, reinterpret_cast<LPCVOID>(&darkMode), sizeof(darkMode))))
 			{
 				// cool !
 			}
@@ -611,9 +613,9 @@ namespace Components
 		case WM_CTLCOLORSTATIC:
 		case WM_CTLCOLOREDIT:
 		{
-			SetBkColor((HDC)wParam, BackgroundColor);
-			SetTextColor((HDC)wParam, TextColor);
-			return (LRESULT)BackgroundBrush;
+			SetBkColor(reinterpret_cast<HDC>(wParam), BackgroundColor);
+			SetTextColor(reinterpret_cast<HDC>(wParam), TextColor);
+			return reinterpret_cast<LRESULT>(BackgroundBrush);
 		}
 
 		case WM_SIZE:
@@ -621,7 +623,7 @@ namespace Components
 
 			if (GetWindowRect(hWnd, &rect))
 			{
-				EnumChildWindows(hWnd, ResizeChildWindow, (LPARAM)&rect);
+				EnumChildWindows(hWnd, ResizeChildWindow, reinterpret_cast<LPARAM>(&rect));
 			}
 
 			return 0;
@@ -643,7 +645,7 @@ namespace Components
 	void Console::ShowStyledConsole() 
 	{
 		DWORD fontsInstalled;
-		CustomConsoleFont = AddFontMemResourceEx(const_cast<void*>(reinterpret_cast<const void*>(Font::Terminus::DATA)), Font::Terminus::LENGTH, NULL, &fontsInstalled);
+		CustomConsoleFont = AddFontMemResourceEx(const_cast<void*>(reinterpret_cast<const void*>(Font::Terminus::DATA)), Font::Terminus::LENGTH, 0, &fontsInstalled);
 	
 		if (fontsInstalled > 0)
 		{
@@ -663,12 +665,12 @@ namespace Components
 #if REMOVE_HEADERBAR
 		// Remove that hideous header window -rox
 		Utils::Hook::Set(0x428A7C, static_cast<char>(0xEB));
-		Utils::Hook::Set(0X428AF1+1, static_cast<char>(10));
+		Utils::Hook::Set(0X428AF1 + 1, static_cast<char>(10));
 #endif
 		
 		// Never reset text
 		Utils::Hook::Nop(0x4F57DF, 0x4F57F6 - 0x4F57DF);
-		Utils::Hook(0x4F57DF, Console::MakeRoomForTextStub, HOOK_JUMP).install()->quick();
+		Utils::Hook(0x4F57DF, Console::Sys_PrintStub, HOOK_JUMP).install()->quick();
 
 		Game::Sys_ShowConsole();
 	}

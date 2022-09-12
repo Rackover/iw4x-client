@@ -99,7 +99,7 @@ namespace Components
 			LPCSTR pszFaceName);
 		static void ShowStyledConsole();
 		static void GetWindowPos(HWND hWnd, int* x, int* y);
-		static void MakeRoomForTextStub();
+		static void Sys_PrintStub();
 		static void MakeRoomForText(int addedCharacters);
 		static float GetDpiScale(const HWND hWnd);
 	};
