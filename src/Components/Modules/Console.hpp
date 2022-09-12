@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Utils/Terminus_4.49.1.ttf.hpp"
+#include "Terminus_4.49.1.ttf.hpp"
 
 #define OUTPUT_HEIGHT 250
 #define OUTPUT_MAX_TOP (OUTPUT_HEIGHT - (Console::Height - 2))
@@ -101,5 +101,6 @@ namespace Components
 		static void GetWindowPos(HWND hWnd, int* x, int* y);
 		static void MakeRoomForTextStub();
 		static void MakeRoomForText(int addedCharacters);
+		static float GetDpiScale(const HWND hWnd);
 	};
 }

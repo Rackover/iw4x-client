@@ -132,6 +132,44 @@ namespace Components
 		}
 	}
 
+	float Console::GetDpiScale(const HWND hWnd)
+	{
+		const HMODULE user32 = LoadLibrary("user32.dll");
+		const auto getDpiForWindow = reinterpret_cast<UINT(WINAPI*)(HWND)>(GetProcAddress(user32, "GetDpiForWindow"));
+		const auto getDpiForMonitor = reinterpret_cast<HRESULT(WINAPI*)(HMONITOR, int, UINT*, UINT*)>(GetProcAddress(user32, "GetDpiForMonitor"));
+		
+		int dpi;
+
+		if (getDpiForWindow)
+		{
+			dpi = getDpiForWindow(hWnd);
+		}
+		else if (getDpiForMonitor)
+		{
+			HMONITOR hMonitor = MonitorFromWindow(hWnd, MONITOR_DEFAULTTONEAREST);
+			UINT xdpi, ydpi;
+			LRESULT success = getDpiForMonitor(hMonitor, 0, &xdpi, &ydpi);
+			if (success == S_OK)
+			{
+				dpi = static_cast<int>(ydpi);
+			}
+			
+			dpi = 96;
+		}
+		else
+		{
+			HDC hDC = GetDC(hWnd);
+			INT ydpi = GetDeviceCaps(hDC, LOGPIXELSY);
+			ReleaseDC(NULL, hDC);
+			
+			dpi = ydpi;
+		}
+
+		constexpr auto unawareDpi = 96.0;
+		return static_cast<float>(dpi / unawareDpi);
+	}
+
+
 	const char* Console::Input()
 	{
 		if (!Console::HasConsole)
@@ -460,13 +498,16 @@ namespace Components
 
 				GetWindowPos(hwndChild, &childX, &childY);
 
+				HWND parent = Utils::Hook::Get<HWND>(0x64A3288);
+
+				float scale = GetDpiScale(parent);
 
 				if (isInputBox) {
 
 					int newX = childX; // No change!
-					int newY = (newParentRect.bottom - newParentRect.top) - 65;
-					int newWidth = (newParentRect.right - newParentRect.left) - 29;
-					int newHeight = childRect.bottom - childRect.top; // No change!
+					int newY = static_cast<int>((newParentRect.bottom - newParentRect.top) - 65 * scale);
+					int newWidth = static_cast<int>((newParentRect.right - newParentRect.left) - 29 * scale);
+					int newHeight = static_cast<int>((childRect.bottom - childRect.top) * scale); // No change!
 
 					MoveWindow(hwndChild, newX, newY, newWidth, newHeight, TRUE);
 				}
@@ -475,14 +516,14 @@ namespace Components
 				{
 					int newX = childX; // No change!
 					int newY = childY; // No change!
-					int newWidth = (newParentRect.right - newParentRect.left) - 29;
+					int newWidth = static_cast<int>((newParentRect.right - newParentRect.left) - 29);
 
 					int margin = 70;
 
 #if REMOVE_HEADERBAR
 					margin = 10;
 #endif
-					int newHeight = (newParentRect.bottom - newParentRect.top) - 74 - margin;
+					int newHeight = static_cast<int>((newParentRect.bottom - newParentRect.top) - 74 * scale - margin);
 
 					MoveWindow(hwndChild, newX, newY, newWidth, newHeight, TRUE);
 				}
