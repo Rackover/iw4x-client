@@ -22,6 +22,10 @@ namespace Components
 		static void ShowAsyncConsole();
 
 	private:
+
+		static constexpr int OUTPUT_BOX = 0x64;
+		static constexpr int INPUT_BOX = 0x65;
+
 		// Text-based console stuff
 		static WINDOW* OutputWindow;
 		static WINDOW* InputWindow;
@@ -97,7 +101,7 @@ namespace Components
 			DWORD  iQuality,
 			DWORD  iPitchAndFamily,
 			LPCSTR pszFaceName);
-		static void ShowStyledConsole();
+		static void ApplyConsoleStyle();
 		static void GetWindowPos(HWND hWnd, int* x, int* y);
 		static void Sys_PrintStub();
 		static void MakeRoomForText(int addedCharacters);

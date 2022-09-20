@@ -17,7 +17,7 @@ function fonts.project()
 		fonts.includes()
 
 		files {
-			path.join(dependencies.basePath, "extra/fonts/*.hpp"),
+			path.join(dependencies.basePath, "extra/font/*.hpp"),
 		}
 
 		warnings "Off"

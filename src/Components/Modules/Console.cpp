@@ -1,7 +1,5 @@
 ﻿#include <STDInclude.hpp>
 
-#define OUTPUT_BOX 0x64
-#define INPUT_BOX 0x65
 #define REMOVE_HEADERBAR 1
 
 namespace Components
@@ -522,7 +520,7 @@ namespace Components
 
 					int margin = 70;
 
-#if REMOVE_HEADERBAR
+#ifdef REMOVE_HEADERBAR
 					margin = 10;
 #endif
 					int newHeight = static_cast<int>((newParentRect.bottom - newParentRect.top) - 74 * scale - margin);
@@ -535,6 +533,10 @@ namespace Components
 		return TRUE;
 	}
 
+	// Instead of clearing fully the console text whenever the 0x400's character is written, we
+	//	clear it progressively when we run out of room by truncating the top line by line.
+	// A bit of trickery with SETREDRAW is required to avoid having the outputbox jump
+	//	around whenever clearing occurs.
 	void Console::MakeRoomForText([[maybe_unused]] int addedCharacters)
 	{
 		constexpr unsigned int maxChars = 0x4000;
@@ -581,9 +583,11 @@ namespace Components
 	{
 		__asm
 		{
+			pushad
 			push edi
 			call MakeRoomForText
 			pop edi
+			popad
 
 			// Go back to AppendText
 			push 0x4F57F8
@@ -642,11 +646,20 @@ namespace Components
 		return RegisterClassA(lpWndClass);
 	}
 
-	void Console::ShowStyledConsole() 
+	void Console::ApplyConsoleStyle() 
 	{
+		Utils::Hook::Set<BYTE>(0x428A8E, 0);    // Adjust logo Y pos
+		Utils::Hook::Set<BYTE>(0x428A90, 0);    // Adjust logo X pos
+		Utils::Hook::Set<BYTE>(0x428AF2, 67);   // Adjust output Y pos
+		Utils::Hook::Set<DWORD>(0x428AC5, 397); // Adjust input Y pos
+		Utils::Hook::Set<DWORD>(0x428951, 609); // Reduce window width
+		Utils::Hook::Set<DWORD>(0x42895D, 423); // Reduce window height
+		Utils::Hook::Set<DWORD>(0x428AC0, 597); // Reduce input width
+		Utils::Hook::Set<DWORD>(0x428AED, 596); // Reduce output width
+
 		DWORD fontsInstalled;
 		CustomConsoleFont = AddFontMemResourceEx(const_cast<void*>(reinterpret_cast<const void*>(Font::Terminus::DATA)), Font::Terminus::LENGTH, 0, &fontsInstalled);
-	
+
 		if (fontsInstalled > 0)
 		{
 			Utils::Hook::Nop(0x428A44, 6);
@@ -656,29 +669,28 @@ namespace Components
 		Utils::Hook::Nop(0x42892D, 6);
 		Utils::Hook(0x42892D, RegisterClassHook, HOOK_CALL).install()->quick();
 
-		Utils::Hook::Set(0x4288EA, &ConWndProc);
+		Utils::Hook::Set(0x4288E6 + 4, &ConWndProc);
 
 		auto style = WS_CAPTION | WS_SIZEBOX | WS_SYSMENU | WS_MINIMIZEBOX | WS_MAXIMIZEBOX;
 		Utils::Hook::Set(0x42893F + 1, style);
 		Utils::Hook::Set(0x4289E2 + 1, style);
 
-#if REMOVE_HEADERBAR
+#ifdef REMOVE_HEADERBAR
 		// Remove that hideous header window -rox
 		Utils::Hook::Set(0x428A7C, static_cast<char>(0xEB));
 		Utils::Hook::Set(0X428AF1 + 1, static_cast<char>(10));
 #endif
-		
+
 		// Never reset text
 		Utils::Hook::Nop(0x4F57DF, 0x4F57F6 - 0x4F57DF);
 		Utils::Hook(0x4F57DF, Console::Sys_PrintStub, HOOK_JUMP).install()->quick();
 
-		Game::Sys_ShowConsole();
 	}
 
 	void Console::ConsoleRunner()
 	{
 		Console::SkipShutdown = false;
-		ShowStyledConsole();
+		Game::Sys_ShowConsole();
 
 		MSG message;
 		while (IsWindow(Console::GetWindow()) != FALSE && GetMessageA(&message, nullptr, 0, 0))
@@ -889,14 +901,7 @@ namespace Components
 		Utils::Hook(0x482AC3, Console::RegisterConColor, HOOK_CALL).install()->quick();
 
 		// Modify console style
-		Utils::Hook::Set<BYTE>(0x428A8E, 0);    // Adjust logo Y pos
-		Utils::Hook::Set<BYTE>(0x428A90, 0);    // Adjust logo X pos
-		Utils::Hook::Set<BYTE>(0x428AF2, 67);   // Adjust output Y pos
-		Utils::Hook::Set<DWORD>(0x428AC5, 397); // Adjust input Y pos
-		Utils::Hook::Set<DWORD>(0x428951, 609); // Reduce window width
-		Utils::Hook::Set<DWORD>(0x42895D, 423); // Reduce window height
-		Utils::Hook::Set<DWORD>(0x428AC0, 597); // Reduce input width
-		Utils::Hook::Set<DWORD>(0x428AED, 596); // Reduce output width
+		ApplyConsoleStyle();
 
 		// Don't resize the console
 		Utils::Hook(0x64DC6B, 0x64DCC2, HOOK_JUMP).install()->quick();
