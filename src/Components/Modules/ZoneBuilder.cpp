@@ -991,6 +991,29 @@ namespace Components
 		return "";
 	}
 
+	void ZoneBuilder::ReallocateLoadedSounds(void*& data, [[maybe_unused]] void* a2)
+	{
+		assert(data);
+		Game::MssSound* sound = Utils::Hook::Get<Game::MssSound*>(0x112AE04);
+		auto length = sound->info.data_len;
+		auto allocatedSpace = Utils::Memory::AllocateArray<char>(length);
+		memcpy_s(allocatedSpace, length, data, length);
+
+		data = allocatedSpace;
+		sound->data = allocatedSpace;
+		sound->info.data_ptr = allocatedSpace;
+	}
+
+	void Load_LoadedSoundAsset(Game::LoadedSound** sound)
+	{
+		auto loadSnd = Utils::Hook::Get<Game::LoadedSound**>(0x112B02C);
+
+
+		// Load_LoadedSoundAsset
+		Utils::Hook::Call<void(Game::LoadedSound**)>(0x49A5C0)(sound);
+	}
+
+
 	ZoneBuilder::ZoneBuilder()
 	{
 		// ReSharper disable CppStaticAssertFailure
@@ -1002,6 +1025,8 @@ namespace Components
 
 		if (ZoneBuilder::IsEnabled())
 		{
+			//Utils::Hook(0x5B9CBE, Load_LoadedSoundAsset, HOOK_CALL).install()->quick();
+
 			// Prevent loading textures (preserves loaddef)
 			//Utils::Hook::Set<BYTE>(Game::Load_Texture, 0xC3);
 
@@ -1033,7 +1058,7 @@ namespace Components
 			//Utils::Hook::Nop(0x5BB632, 5);
 
 			// Don't load sounds
-			//Utils::Hook::Set<BYTE>(0x413430, 0xC3);
+			Utils::Hook(0x492EFC, ReallocateLoadedSounds, HOOK_CALL).install()->quick();
 
 			// Don't display errors when assets are missing (we might manually build those)
 			Utils::Hook::Nop(0x5BB3F2, 5);
@@ -1211,6 +1236,40 @@ namespace Components
 					}
 				}
 			});
+
+
+			AssetHandler::OnLoad([](Game::XAssetType type, Game::XAssetHeader asset, [[maybe_unused]] const std::string& name, [[maybe_unused]] bool* restrict)
+				{
+					if (type == Game::ASSET_TYPE_SOUND)
+					{
+						auto sound = asset.sound;
+
+						for (size_t i = 0; i < sound->count; i++)
+						{
+							auto thisSound = sound->head[i];
+
+							if (thisSound.soundFile->type == Game::SAT_LOADED)
+							{
+								if (thisSound.soundFile->u.loadSnd->sound.data == nullptr)
+								{
+									// ouch
+									// This should never happen and will cause a memory leak
+									// Let's change it to a streamed sound instead
+									thisSound.soundFile->type = Game::SAT_STREAMED;
+
+									auto virtualPath = std::filesystem::path(thisSound.soundFile->u.loadSnd->name);
+
+									thisSound.soundFile->u.streamSnd.filename.info.raw.name = Utils::Memory::DuplicateString(virtualPath.filename().string());
+
+									auto dir = virtualPath.remove_filename().string();
+									dir = dir.substr(0, dir.size() - 1); // remove /
+									thisSound.soundFile->u.streamSnd.filename.info.raw.dir = Utils::Memory::DuplicateString(dir);
+								}
+							}
+						}
+					}
+				});
+
 
 			Command::Add("buildtechsets", [](Command::Params*)
 			{

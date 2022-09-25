@@ -136,6 +136,7 @@ namespace Components
 		static void ReleaseTexture(Game::XAssetHeader header);
 
 		static std::string FindMaterialByTechnique(const std::string& name);
+		static void ReallocateLoadedSounds(void*& data, void* a2);
 
 		static int __stdcall EntryPoint(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, LPSTR /*lpCmdLine*/, int /*nShowCmd*/);
 		static void HandleError(Game::errorParm_t code, const char* fmt, ...);
