@@ -14,6 +14,7 @@ namespace Components
 	Dvar::Var Renderer::r_drawModelNames;
 	Dvar::Var Renderer::r_drawAABBTrees;
 	Dvar::Var Renderer::r_playerDrawDebugDistance;
+	Dvar::Var Renderer::r_forceTechnique;
 
 	float cyan[4] = { 0.0f, 0.5f, 0.5f, 1.0f };
 	float red[4] = { 1.0f, 0.0f, 0.0f, 1.0f };
@@ -472,6 +473,14 @@ namespace Components
 		}
 	}
 
+	void Renderer::ForceTechnique() {
+		auto forceTechnique = r_forceTechnique.get<int>();
+
+		if (forceTechnique > 0) {
+			Utils::Hook::Set(0x6FABDF4, forceTechnique);
+		}
+	}
+
 	Renderer::Renderer()
 	{
 		if (Dedicated::IsEnabled()) return;
@@ -485,6 +494,7 @@ namespace Components
 				DebugDrawModelBoundingBoxes();
 				DebugDrawSceneModelCollisions();
 				DebugDrawTriggers();
+				ForceTechnique();
 			}
 		}, Scheduler::Pipeline::RENDERER);
 
@@ -529,12 +539,15 @@ namespace Components
 				nullptr
 			};
 
+
 			Renderer::r_drawModelBoundingBoxes = Game::Dvar_RegisterEnum("r_drawModelBoundingBoxes", values, 0, Game::DVAR_CHEAT, "Draw scene model bounding boxes");
 			Renderer::r_drawSceneModelCollisions = Game::Dvar_RegisterBool("r_drawSceneModelCollisions", false, Game::DVAR_CHEAT, "Draw scene model collisions");
 			Renderer::r_drawTriggers = Game::Dvar_RegisterBool("r_drawTriggers", false, Game::DVAR_CHEAT, "Draw triggers");
 			Renderer::r_drawModelNames = Game::Dvar_RegisterEnum("r_drawModelNames", values, 0, Game::DVAR_CHEAT, "Draw all model names");
 			Renderer::r_drawAABBTrees = Game::Dvar_RegisterBool("r_drawAabbTrees", false, Game::DVAR_CHEAT, "Draw aabb trees");
 			Renderer::r_playerDrawDebugDistance = Game::Dvar_RegisterInt("r_drawDebugDistance", 1000, 0, 50000, Game::DVAR_ARCHIVE, "r_draw debug functions draw distance, relative to the player");
+			Renderer::r_forceTechnique = Game::Dvar_RegisterInt("r_force_technique", 0, 0, 14, Game::DVAR_NONE, "Forces a base technique on the renderer");
+
 		}, Scheduler::Pipeline::MAIN);
 	}
 

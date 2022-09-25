@@ -39,6 +39,7 @@ namespace Components
 		static void DebugDrawModelBoundingBoxes();
 		static void DebugDrawModelNames();
 		static void DebugDrawAABBTrees();
+		static void ForceTechnique();
 
 		static Utils::Signal<Renderer::Callback> EndRecoverDeviceSignal;
 		static Utils::Signal<Renderer::Callback> BeginRecoverDeviceSignal;
@@ -52,5 +53,6 @@ namespace Components
 		static Dvar::Var r_drawModelNames;
 		static Dvar::Var r_drawAABBTrees;
 		static Dvar::Var r_playerDrawDebugDistance;
+		static Dvar::Var r_forceTechnique;
 	};
 }
