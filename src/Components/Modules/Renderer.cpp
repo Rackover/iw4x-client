@@ -481,7 +481,7 @@ namespace Components
 		}
 	}
 
-	void* SkipBrokenXModelSurfacesNonOptimized(Game::GfxStaticModelDrawStream* stream, Game::GfxCmdBufSourceState* source, Game::GfxCmdBufState* buffer) {
+	void* Renderer::SkipBrokenXModelSurfacesNonOptimized(Game::GfxStaticModelDrawStream* stream, Game::GfxCmdBufSourceState* source, Game::GfxCmdBufState* buffer) {
 		
 		// Something wrong in iw3xport or iw4x or maybe even cod4, makes it that we end up with invalid surfaces in xmodels sometimes
 		// Very annoying, crashes the game instantly. For now we skip them
@@ -497,7 +497,7 @@ namespace Components
 		return Utils::Hook::Call<void* (Game::GfxStaticModelDrawStream*, Game::GfxCmdBufSourceState*, Game::GfxCmdBufState*)>(0x557C70)(stream, source, buffer);
 	}
 
-	void* SkipBrokenXModelSurfaces(Game::GfxStaticModelDrawStream* stream, Game::GfxCmdBufSourceState* source, Game::GfxCmdBufState* buffer) 
+	void* Renderer::SkipBrokenXModelSurfaces(Game::GfxStaticModelDrawStream* stream, Game::GfxCmdBufSourceState* source, Game::GfxCmdBufState* buffer)
 	{
 		if (Maps::IsCustomMap())
 		{
@@ -509,6 +509,26 @@ namespace Components
 		}
 
 		return Utils::Hook::Call<void* (Game::GfxStaticModelDrawStream*, Game::GfxCmdBufSourceState*, Game::GfxCmdBufState*)>(0x557B50)(stream, source, buffer);
+	}
+
+	int Renderer::FixSunShadowPartitionSize(
+		Game::GfxCamera* camera,
+		Game::GfxSunShadowMapMetrics* mapMetrics,
+		Game::GfxSunShadow* sunShadow,
+		Game::GfxSunShadowClip* clip,
+		float* partitionFraction)
+	{
+
+		auto result = Utils::Hook::Call<int(Game::GfxCamera*, Game::GfxSunShadowMapMetrics*, Game::GfxSunShadow*, Game::GfxSunShadowClip*, float*)>(0x5463B0)(camera, mapMetrics, sunShadow, clip, partitionFraction);
+
+		if (Maps::IsCustomMap()) 
+		{
+			// Fixes shadowmap viewport which fixes pixel adjustment shadowmap bug - partly, because the real problem lies within the way CoD4 shaders are programmed
+			sunShadow->partition[Game::SunShadowPartition::R_SUNSHADOW_FAR].viewportParms.viewport = sunShadow->partition[Game::SunShadowPartition::R_SUNSHADOW_NEAR].viewportParms.viewport;
+		}
+
+		return result;
+
 	}
 
 	Renderer::Renderer()
@@ -528,6 +548,9 @@ namespace Components
 			}
 		}, Scheduler::Pipeline::RENDERER);
 
+		// COD4 Map Fixes
+		// The day map porting is perfect we should be able to remove these
+		Utils::Hook(0x546A09, FixSunShadowPartitionSize, HOOK_CALL).install()->quick();
 		Utils::Hook(0x5587BF, SkipBrokenXModelSurfacesNonOptimized, HOOK_CALL).install()->quick();
 		Utils::Hook(0x55875F, SkipBrokenXModelSurfaces, HOOK_CALL).install()->quick();
 
