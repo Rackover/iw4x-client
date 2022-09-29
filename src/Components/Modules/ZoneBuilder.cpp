@@ -1006,16 +1006,6 @@ namespace Components
 		sound->info.data_ptr = allocatedSpace;
 	}
 
-	void Load_LoadedSoundAsset(Game::LoadedSound** sound)
-	{
-		auto loadSnd = Utils::Hook::Get<Game::LoadedSound**>(0x112B02C);
-
-
-		// Load_LoadedSoundAsset
-		Utils::Hook::Call<void(Game::LoadedSound**)>(0x49A5C0)(sound);
-	}
-
-
 	ZoneBuilder::ZoneBuilder()
 	{
 		// ReSharper disable CppStaticAssertFailure
@@ -1027,8 +1017,6 @@ namespace Components
 
 		if (ZoneBuilder::IsEnabled())
 		{
-			//Utils::Hook(0x5B9CBE, Load_LoadedSoundAsset, HOOK_CALL).install()->quick();
-
 			// Prevent loading textures (preserves loaddef)
 			//Utils::Hook::Set<BYTE>(Game::Load_Texture, 0xC3);
 
