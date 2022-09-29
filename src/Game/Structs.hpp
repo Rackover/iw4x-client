@@ -2497,6 +2497,13 @@ namespace Game
 		SpeakerMap *speakerMap;
 	};
 
+	enum SunShadowPartition
+	{
+		R_SUNSHADOW_NEAR = 0x0,
+		R_SUNSHADOW_FAR = 0x1,
+		R_SUNSHADOW_PARTITION_COUNT = 0x2,
+	};
+
 	struct snd_alias_list_t
 	{
 		const char *aliasName;

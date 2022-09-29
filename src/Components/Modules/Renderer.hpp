@@ -41,6 +41,10 @@ namespace Components
 		static void DebugDrawAABBTrees();
 		static void ForceTechnique();
 
+		static void* SkipBrokenXModelSurfacesNonOptimized(Game::GfxStaticModelDrawStream* stream, Game::GfxCmdBufSourceState* source, Game::GfxCmdBufState* buffer);
+		static void* SkipBrokenXModelSurfaces(Game::GfxStaticModelDrawStream* stream, Game::GfxCmdBufSourceState* source, Game::GfxCmdBufState* buffer);
+		static int FixSunShadowPartitionSize(Game::GfxCamera* camera, Game::GfxSunShadowMapMetrics* mapMetrics, Game::GfxSunShadow* sunShadow, Game::GfxSunShadowClip* clip, float* partitionFraction);
+
 		static Utils::Signal<Renderer::Callback> EndRecoverDeviceSignal;
 		static Utils::Signal<Renderer::Callback> BeginRecoverDeviceSignal;
 
