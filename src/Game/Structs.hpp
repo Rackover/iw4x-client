@@ -7397,7 +7397,7 @@ namespace Game
 		GfxCamera camera;
 	};
 
-	class GfxBackEndData;
+	struct GfxBackEndData;
 	struct GfxCmdBufInput
 	{
 		float consts[76][4];
@@ -10057,7 +10057,7 @@ namespace Game
 		unsigned __int64 packed;
 	};
 
-	struct __declspec(align(16)) GfxSpotShadow
+	struct GfxSpotShadow
 	{
 		GfxSpotShadowSceneLight sceneLight;
 		GfxViewportParms viewportParms;
@@ -10154,12 +10154,12 @@ namespace Game
 		unsigned int dynLightCount;
 		GfxDrawList* emissiveSpotShadowDrawList[1];
 		unsigned int emissiveSpotLightCount;
-		__declspec(align(16)) GfxSunShadow sunShadow;
+		GfxSunShadow sunShadow;
 		unsigned int spotShadowCount;
-		__declspec(align(16)) GfxSpotShadow spotShadows[4];
+		GfxSpotShadow spotShadows[4];
 		GfxSurfsIterGroup prepassIterGroup[5];
 		GfxSpliceSurfs litTransSpliceSurfs;
-		__declspec(align(128)) char surfsBuffer[131072];
+		char surfsBuffer[131072];
 		float codeSurfArgs[288][4];
 		GfxCodeSurf codeEmissiveSurfs[2048];
 		GfxCodeSurf codeTransSurfs[640];

@@ -74,7 +74,7 @@ namespace Assets
 
 			for (size_t i = 0; i < textureTable.size(); i++)
 			{
-				auto textureJson = textureTable[i];
+				auto& textureJson = textureTable[i];
 				if (textureJson.is_object())
 				{
 					Game::MaterialTextureDef* textureDef = &asset->textureTable[i];
@@ -90,7 +90,7 @@ namespace Assets
 
 						if (textureJson["water"].is_object())
 						{
-							auto waterJson = textureJson["water"];
+							auto& waterJson = textureJson["water"];
 
 							if (waterJson["image"].is_string())
 							{
@@ -189,12 +189,12 @@ namespace Assets
 		if (materialJson["stateBitsTable"].is_array())
 		{
 			nlohmann::json::array_t arr = materialJson["stateBitsTable"];
-			asset->stateBitsCount = arr.size();
+			asset->stateBitsCount = static_cast<unsigned char>(arr.size());
 
 			asset->stateBitsTable = builder->getAllocator()->allocateArray<Game::GfxStateBits>(arr.size());
 
 			size_t statebitTableIndex = 0;
-			for (auto jsonStateBitEntry : arr)
+			for (auto& jsonStateBitEntry : arr)
 			{
 				auto stateBit = &asset->stateBitsTable[statebitTableIndex++];
 
@@ -347,7 +347,7 @@ namespace Assets
 
 				for (size_t constantIndex = 0; constantIndex < asset->constantCount; constantIndex++)
 				{
-					auto constant = constants[constantIndex];
+					auto& constant = constants[constantIndex];
 					auto entry = &table[constantIndex];
 
 					auto litVec = constant["literal"].get<std::vector<float>>();
@@ -614,7 +614,7 @@ namespace Assets
 			std::string techName = asset->techniqueSet->name;
 			if (this->techSetCorrespondance.contains(techName))
 			{
-				auto iw4TechSetName = this->techSetCorrespondance.at(techName);
+				auto& iw4TechSetName = this->techSetCorrespondance.at(techName);
 				Game::XAssetEntry* iw4TechSet = Game::DB_FindXAssetEntry(Game::XAssetType::ASSET_TYPE_TECHNIQUE_SET, iw4TechSetName.data());
 
 				if (iw4TechSet)
@@ -628,7 +628,7 @@ namespace Assets
 									asset->info.name, asset->techniqueSet->name, header.material->techniqueSet->name, header.material->info.name);
 
 								if (header.material->techniqueSet == iw4TechSet->asset.header.techniqueSet
-									&& !std::string(header.material->info.name).contains("icon")) // Yeah this has a tendency to fuck up a LOT of transparent materials
+									&& std::string(header.material->info.name).find("icon") != std::string::npos) // Yeah this has a tendency to fuck up a LOT of transparent materials
 								{
 									Components::Logger::Print("Material {} with techset {} has been mapped to {} (last chance!), taking the sort key of material {}\n",
 										asset->info.name, asset->techniqueSet->name, header.material->techniqueSet->name, header.material->info.name);
