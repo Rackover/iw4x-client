@@ -10103,6 +10103,33 @@ namespace Game
 		GfxSurfsIterator iteratorPool[55];
 	};
 
+	struct GfxSModelSurfHeaderFields
+	{
+		char reflectionProbeIndex;
+		char sceneLightIndex;
+		unsigned __int16 materialSortedIndex : 12;
+		unsigned __int16 visDataRefCountLessOne : 4;
+	};
+
+	union GfxSModelSurfHeader
+	{
+		GfxSModelSurfHeaderFields fields;
+		unsigned int packed;
+		unsigned __int16 array[2];
+	};
+
+	struct GfxStaticModelDrawStream
+	{
+		GfxSModelSurfIter* smodelSurfIter;
+		GfxSModelSurfHeader smodelSurfHeader;
+		const char* smodelSurfVisData;
+		GfxTexture* reflectionProbeTexture;
+		unsigned int customSamplerFlags;
+		XSurface* localSurf;
+		unsigned int smodelCount;
+		const unsigned __int16* smodelList;
+	};
+
 	struct FxSparkMeshData
 	{
 		unsigned int triCount;
