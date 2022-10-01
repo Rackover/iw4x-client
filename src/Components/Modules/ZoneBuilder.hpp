@@ -59,7 +59,7 @@ namespace Components
 			int addScriptString(const std::string& str);
 			int findScriptString(const std::string& str);
 
-			void mapScriptString(unsigned short* gameIndex);
+			void mapScriptString(unsigned short& gameIndex);
 
 			void renameAsset(Game::XAssetType type, const std::string& asset, const std::string& newName);
 			std::string getAssetName(Game::XAssetType type, const std::string& asset);

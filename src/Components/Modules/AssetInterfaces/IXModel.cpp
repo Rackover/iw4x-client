@@ -386,7 +386,7 @@ namespace Assets
 
 			for (char i = 0; i < asset->numBones; ++i)
 			{
-				builder->mapScriptString(&destBoneNames[i]);
+				builder->mapScriptString(destBoneNames[i]);
 			}
 
 			Utils::Stream::ClearPointer(&dest->boneNames);
