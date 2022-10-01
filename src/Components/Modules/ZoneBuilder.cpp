@@ -434,18 +434,22 @@ namespace Components
 		Utils::Stream::ClearPointer(&zoneHeader.assetList.assets);
 
 		// Increment ScriptStrings count (for empty script string) if available
-		if (!this->scriptStrings.empty())
-		{
-			zoneHeader.assetList.stringList.count = this->scriptStrings.size() + 1;
-			Utils::Stream::ClearPointer(&zoneHeader.assetList.stringList.strings);
-		}
+		zoneHeader.assetList.stringList.count = this->scriptStrings.size() + 1;
+		Utils::Stream::ClearPointer(&zoneHeader.assetList.stringList.strings);
 
 		// Write header
 		this->buffer.save(&zoneHeader, sizeof(Game::ZoneHeader));
 		this->buffer.pushBlock(Game::XFILE_BLOCK_VIRTUAL); // Push main stream onto the stream stack
 
 		// Write ScriptStrings, if available
-		if (!this->scriptStrings.empty())
+		this->buffer.saveNull(4);
+		// Empty script string?
+		// This actually represents a NULL string, but as scriptString.
+		// So scriptString loading for NULL scriptStrings from fastfile results in a NULL scriptString.
+		// That's the reason why the count is incremented by 1, if scriptStrings are available.
+
+		// Write ScriptString pointer table
+		for (std::size_t i = 0; i < this->scriptStrings.size(); ++i)
 		{
 			this->buffer.saveNull(4);
 			// Empty script string?
@@ -458,14 +462,14 @@ namespace Components
 			{
 				this->buffer.saveMax(4);
 			}
+		}
 
-			this->buffer.align(Utils::Stream::ALIGN_4);
+		this->buffer.align(Utils::Stream::ALIGN_4);
 
-			// Write ScriptStrings
-			for (auto ScriptString : this->scriptStrings)
-			{
-				this->buffer.saveString(ScriptString.data());
-			}
+		// Write ScriptStrings
+		for (auto ScriptString : this->scriptStrings)
+		{
+			this->buffer.saveString(ScriptString.data());
 		}
 
 		// Align buffer (4 bytes) to get correct offsets for pointers
@@ -628,9 +632,9 @@ namespace Components
 	}
 
 	// Remap a scriptString to it's corresponding value in the local scriptString table.
-	void ZoneBuilder::Zone::mapScriptString(unsigned short* gameIndex)
+	void ZoneBuilder::Zone::mapScriptString(unsigned short& gameIndex)
 	{
-		*gameIndex = 0xFFFF & this->scriptStringMap[*gameIndex];
+		gameIndex = 0xFFFF & this->scriptStringMap[gameIndex];
 	}
 
 	// Store a new name for a given asset
