@@ -1,4 +1,4 @@
-#include "STDInclude.hpp"
+#include <STDInclude.hpp>
 
 namespace Utils
 {
@@ -9,7 +9,7 @@ namespace Utils
 	{
 		if (this->signatures.empty()) return;
 
-		char* _start = reinterpret_cast<char*>(this->start);
+		char* _start = static_cast<char*>(this->start);
 
 		unsigned int sigCount = this->signatures.size();
 		Hook::Signature::Container* containers = this->signatures.data();
@@ -39,7 +39,7 @@ namespace Utils
 		}
 	}
 
-	void Hook::Signature::add(Hook::Signature::Container& container)
+	void Hook::Signature::add(const Hook::Signature::Container& container)
 	{
 		Hook::Signature::signatures.push_back(container);
 	}

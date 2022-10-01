@@ -4,6 +4,228 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog v0.3.0](http://keepachangelog.com/en/0.3.0/) and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [0.7.5] - 2022-09-03
+
+### Added
+
+- Add `bg_rocketJumpScale` Dvar (#413)
+- Add `CastFloat` GSC function (#414)
+- Add `Strtol` GSC function (#414)
+- Add `bg_lean` Dvar (#421
+- Add voice chat (#425)
+- Add `vote` & `callvote` client commands (#447)
+- Add `kill` client command (#451)
+- Add `voteKick`, `voteTempBan`, `voteTypeMap`, `voteMap` and `voteGame` UI script tokens (#456)
+- Add `Int64IsInt`, `Int64ToInt` and `Int64OP` GSC functions (#419)
+
+### Changed
+
+- Steam status is no longer set to busy (#417)
+- `HttpGet`& `HttpCancel` are disabled for security reasons (#449)
+- 'g_allowVote' is a replicated Dvar (#457)
+
+### Fixed
+
+- Fixed `startSingleplayer` command (#404)
+- General stability update
+
+### Known issues
+
+- HTTPS is not supported for fast downloads at the moment.
+- Sound issue fix is experimental as the bug is not fully understood.
+- `reloadmenus` command does not free resources used by custom menus.
+
+## [0.7.4] - 2022-07-28
+
+### Added
+
+- Add `DisableWeaponPickup` GSC method (#329)
+- Add `EnableWeaponPickup` GSC method (#329)
+- Add `protect-saved-dvars` command line argument (#335)
+- Add `clanName` dvar. Can be edited in the `barracks` menu (#361)
+- Add DLC9 containing classic maps from CoD4: Backlot, Chinatown, Winter Crash, Pipeline and Downpour
+
+### Changed
+
+- `sv_mapRotationCurrent` functionality has been restored for backwards compatibility (#328)
+- GSC IO Functions are restricted to the `scriptdata` folder (#322)
+- `scriptablehttp` command line argument is no longer needed (#322)
+- Removed `noclip` built-in GSC method. Replaced with script-based solution (#387)
+- Removed `ufo` built-in GSC method. Replaced with script-based solution (#387)
+- Removed `god` built-in GSC method. Replaced with script-based  solution (#388)
+- Removed `demiGod` built-in GSC method. Replaced with script-based  solution (#388)
+- Removed `noTarget` built-in GSC method. Replaced with script-based  solution (#388)
+- Added to the iw4x-rawfiles `common_scripts\iw4x_utility` GSC script, it contains the scripts-based solution for the removed GSC built-in methods
+
+### Fixed
+
+- Node system works again for clients (#331)
+- Fixed output of `g_log_list` & `log_list` (#336)
+- Fixed toast notifications (#337)
+- Fixed `banClient` command (#311)
+- Fixed singleplayer maps crashing in renderer module (#340)
+- Fixed muzzle flash on COD:OL maps (#352)
+- Server commands are no longer being registered twice (#339)
+- Fixed issue where grenades and projectiles had no bounce sounds (#368)
+- Fixed issue that could cause the game to crash when loading CoD4 maps (#372)
+
+### Known issues
+
+- HTTPS is not supported for fast downloads at the moment.
+- Sound issue fix is experimental as the bug is not fully understood.
+- `reloadmenus` command does not free resources used by custom menus.
+
+## [0.7.3] - 2022-06-23
+
+### Added
+
+- Add SetName GSC method (#288)
+- Add ResetName GSC method (#288)
+- Add OnPlayerSay GSC function (#265)
+- Add Give client command (works with weapons only) (#292)
+- Add `sv_disableChat` Dvar (#290)
+- Add `addMap` command (#302)
+- Add `addGametype` command (#302)
+
+### Changed
+
+- `openLink` command was removed for security reasons  (#286)
+- `sv_mapRotationCurrent` is not being used anymore (#302)
+
+### Fixed
+
+- Fix font generation (#277)
+- Fix crash on clearing key binds (#278)
+- Fix maps dropping out of the map rotation when using `sv_randomMapRotation` (#283)
+
+### Known issues
+
+- HTTPS is not supported for fast downloads at the moment.
+- Sound issue fix is experimental as the bug is not fully understood.
+- `reloadmenus` command does not free resources used by custom menus.
+- Toast notifications have been disabled because they cause a crash that needs to be investigated
+
+## [0.7.2] - 2022-05-10
+
+### Added
+
+- Add IsArray GSC function (#248)
+- Keybind fields in menus work with controller keys (#255)
+
+### Changed
+
+- GSC function `GetSystemTime` now returns the Unix time (#258)
+
+### Fixed
+
+- Knife charge is fixed for controller players (#259)
+- Fixed internet, local and favorites filters (#260)
+- `sv_lanOnly` Dvar now prevents the server from sending heartbeats to master if set to true (#246)
+
+### Known issues
+
+- HTTPS is not supported for fast downloads at the moment.
+- Sound issue fix is experimental as the bug is not fully understood.
+- `reloadmenus` command does not free resources used by custom menus.
+
+## [0.7.1] - 2022-05-03
+
+### Added
+
+- Add ToUpper GSC Function (#216)
+- Add StrICmp GSC Function (#216)
+- Add IsEndStr GSC Function (#216)
+- Add DropAllBots GSC Function (#174)
+- Add GSC entity field `entityflags` (#228)
+- Add GSC client field `clientflags` (#228)
+- Add bg_surfacePenetration Dvar (#241)
+- Add bg_bulletRange Dvar (#241)
+
+### Changed
+
+- Test clients' native functionality has been restored by default (#162)
+- Renamed GSC method `isBot` to `IsTestClient` (#162)
+- Custom GSC functions can be called correctly from a game script (#216)
+- GSC functions `HttpCancel` and `HttpCancel` require the game to be launched with the command line argument `scriptablehttp` (#162)
+- Master server list will be used instead of the node system (load server list faster) (#234)
+
+### Fixed
+
+- Fixed issue with mouse acceleration when polling rate is greater than 125Hz (#230)
+- Fixed issue with player speed caused by sprinting from the prone position (#232)
+- Fixed client crash when cg_chatHeight was set to 0 (#237)
+- Fixed GSC function Scr_TableLookupIStringByRow (#162)
+
+### Known issues
+
+- HTTPS is not supported for fast downloads at the moment.
+- Sound issue fix is experimental as the bug is not fully understood.
+- `reloadmenus` command does not free resources used by custom menus.
+
+## [0.7.0] - 2022-05-01
+
+### Added
+
+- Added controller support (#75)
+- Added aim assist for controllers (#75)
+- Unlock camera_thirdPersonCrosshairOffset Dvar (#68)
+- Added support for building custom Fonts with Zonebuilder (#88)
+- Added colorblind friendly team colors (#101)
+- Added emojis based on titlecards and emblems to use in the chat and server names Example: `:nuke:` (#130)
+- Upon leaving a server 'archive' dvars (saved in the config file) will be reset to the value they had prior to joining the server (#134)
+- Implement muteClient command for the game chat (#159)
+- Implement unmute command for the game chat (#159)
+- Add sv_allowAimAssist Dvar (#75)
+- Add sv_allowColoredNames (#130)
+- Add sv_randomMapRotation Dvar (#146)
+- Add rcon_log_requests Dvar (#195)
+- Add player_duckedSpeedScale Dvar (#141)
+- Add player_proneSpeedScale Dvar (#141)
+- Add cg_ufo_scaler Dvar (#158)
+- Add cg_noclip_scaler Dvar (#158)
+- Add bg_bouncesAllAngles Dvar (#158)
+- Add bg_rocketJump Dvar (#158)
+- Add bg_elevators Dvar (#156)
+- Implement noclip client command (#152)
+- Implement ufo client command (#152)
+- Implement God client command (#152)
+- Implement demigod client command (#152)
+- Implement notarget client command (#152)
+- Add noclip GSC Function (#152)
+- Add ufo GSC Function (#152)
+- Add God GSC Function (#152)
+- Add demigod GSC Function (#152)
+- Add notarget GSC Function (#152)
+- Add replaceFunc GSC Function (#144)
+
+### Changed
+
+- Renamed sv_enableBounces to bg_bounces (#158)
+- Renamed g_playerCollision to bg_playerEjection (#158)
+- Renamed g_playerEjection to bg_playerCollision (#158)
+- Setviewpos client command works outside private matches (#163)
+- Ufo client command works outside of private matches (#152)
+- Noclip client command works outside of private matches (#152)
+- If a player name is less than 3 characters server will change it to `Unknown Soldier` (#130)
+- scr_player_forceautoassign Dvar is false by default
+
+### Fixed
+
+- Fixed issue where CoD:O DLC Maps caused DirectX crash following `vid_restart` (#37)
+- Fixes and improvements to Zonebuilder
+- Fixed issue where the game froze following base game script throwing an error (#74)
+- Fixed RCon on party servers (#91 - #95)
+- Fixed slow motion during final killcams (#111 - #107)
+- Fixed sound issue that causes the game to freeze (#106)
+- Fixed issue where materials strings found in hostnames, player names, chat etc. caused the game to crash (#113)
+- Fixed issue with servers displaying an invalid player count (#113)
+
+### Known issues
+
+- HTTPS is not supported for fast downloads at the moment.
+- Sound issue fix is experimental as the bug is not fully understood.
+- `reloadmenus` command does not free resources used by custom menus.
+
 ## [0.6.1] - 2020-12-23
 
 ### Added

@@ -1,4 +1,5 @@
-#include "STDInclude.hpp"
+#include <STDInclude.hpp>
+#include "IXModel.hpp"
 
 #define IW4X_MODEL_VERSION 5
 
@@ -48,20 +49,20 @@ namespace Assets
 		}
 
 		// Access index block
-        if (surf->triIndices)
-        {
-            void* oldPtr = surf->triIndices;
-            surf->triIndices = reader->readArray<unsigned short>(surf->triCount * 3);
+		if (surf->triIndices)
+		{
+			void* oldPtr = surf->triIndices;
+			surf->triIndices = reader->readArray<unsigned short>(surf->triCount * 3);
 
-            if (builder->getAllocator()->isPointerMapped(oldPtr))
-            {
-                surf->triIndices = builder->getAllocator()->getPointer<unsigned short>(oldPtr);
-            }
-            else
-            {
-                builder->getAllocator()->mapPointer(oldPtr, surf->triIndices);
-            }
-        }
+			if (builder->getAllocator()->isPointerMapped(oldPtr))
+			{
+				surf->triIndices = builder->getAllocator()->getPointer<unsigned short>(oldPtr);
+			}
+			else
+			{
+				builder->getAllocator()->mapPointer(oldPtr, surf->triIndices);
+			}
+		}
 	}
 
 	void IXModel::loadXModelSurfs(Game::XModelSurfs* asset, Utils::Stream::Reader* reader, Components::ZoneBuilder::Zone* builder)
@@ -84,13 +85,14 @@ namespace Assets
 
 	void IXModel::load(Game::XAssetHeader* header, const std::string& name, Components::ZoneBuilder::Zone* builder)
 	{
-		if (!builder->isPrimaryAsset())
+		Components::FileSystem::File modelFile(Utils::String::VA("xmodel/%s.iw4xModel", name.data()));
+
+		if (!builder->isPrimaryAsset() && (!Components::ZoneBuilder::PreferDiskAssetsDvar.get<bool>() || !modelFile.exists()))
 		{
 			header->model = Components::AssetHandler::FindOriginalAsset(this->getType(), name.data()).model;
 			if (header->model) return;
 		}
 
-		Components::FileSystem::File modelFile(Utils::String::VA("xmodel/%s.iw4xModel", name.data()));
 
 		if (modelFile.exists())
 		{
@@ -99,18 +101,18 @@ namespace Assets
 			__int64 magic = reader.read<__int64>();
 			if (std::memcmp(&magic, "IW4xModl", 8))
 			{
-				Components::Logger::Error(0, "Reading model '%s' failed, header is invalid!", name.data());
+				Components::Logger::Error(Game::ERR_FATAL, "Reading model '{}' failed, header is invalid!", name);
 			}
 
 			int version = reader.read<int>();
 			if (version != IW4X_MODEL_VERSION)
 			{
-				Components::Logger::Error(0, "Reading model '%s' failed, expected version is %d, but it was %d!", name.data(), IW4X_MODEL_VERSION, version);
+				Components::Logger::Error(Game::ERR_FATAL, "Reading model '{}' failed, expected version is {}, but it was {}!", name, IW4X_MODEL_VERSION, version);
 			}
 
 			if (version == 4)
 			{
-				Components::Logger::Print("WARNING: Model '%s' is in legacy format, please update it!\n", name.data());
+				Components::Logger::Warning(Game::CON_CHANNEL_DONT_FILTER, "Model '{}' is in legacy format, please update it!\n", name);
 			}
 
 			Game::XModel* asset = reader.readObject<Game::XModel>();
@@ -309,7 +311,7 @@ namespace Assets
 
 			if (!reader.end())
 			{
-				Components::Logger::Error(0, "Reading model '%s' failed, remaining raw data found!", name.data());
+				Components::Logger::Error(Game::ERR_FATAL, "Reading model '{}' failed, remaining raw data found!", name);
 			}
 
 			header->model = asset;
@@ -384,7 +386,7 @@ namespace Assets
 
 			for (char i = 0; i < asset->numBones; ++i)
 			{
-				builder->mapScriptString(&destBoneNames[i]);
+				builder->mapScriptString(destBoneNames[i]);
 			}
 
 			Utils::Stream::ClearPointer(&dest->boneNames);

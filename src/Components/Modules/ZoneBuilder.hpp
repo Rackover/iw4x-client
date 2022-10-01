@@ -32,7 +32,6 @@ namespace Components
 			};
 
 			Zone(const std::string& zoneName);
-			Zone();
 			~Zone();
 
 			void build();
@@ -60,7 +59,7 @@ namespace Components
 			int addScriptString(const std::string& str);
 			int findScriptString(const std::string& str);
 
-			void mapScriptString(unsigned short* gameIndex);
+			void mapScriptString(unsigned short& gameIndex);
 
 			void renameAsset(Game::XAssetType type, const std::string& asset, const std::string& newName);
 			std::string getAssetName(Game::XAssetType type, const std::string& asset);
@@ -130,15 +129,17 @@ namespace Components
 		static std::vector<std::pair<Game::XAssetType, std::string>> EndAssetTrace();
 
 		static Game::XAssetHeader GetEmptyAssetIfCommon(Game::XAssetType type, const std::string& name, Zone* builder);
+		static Dvar::Var PreferDiskAssetsDvar;
 
 	private:
 		static int StoreTexture(Game::GfxImageLoadDef **loadDef, Game::GfxImage *image);
 		static void ReleaseTexture(Game::XAssetHeader header);
 
 		static std::string FindMaterialByTechnique(const std::string& name);
+		static void ReallocateLoadedSounds(void*& data, void* a2);
 
 		static int __stdcall EntryPoint(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, LPSTR /*lpCmdLine*/, int /*nShowCmd*/);
-		static void HandleError(int level, const char* format, ...);
+		static void HandleError(Game::errorParm_t code, const char* fmt, ...);
 		static void SoftErrorAssetOverflow();
 
 		static void AssumeMainThreadRole();
@@ -146,10 +147,12 @@ namespace Components
 
 		static bool IsThreadMainThreadHook();
 
+		static void Com_Quitf_t();
+
 		static bool MainThreadInterrupted;
 		static DWORD InterruptingThreadId;
 
-		static bool Terminate;
+		static volatile bool Terminate;
 		static std::thread CommandThread;
 	};
 }

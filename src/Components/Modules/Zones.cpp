@@ -1,4 +1,4 @@
-﻿#include "STDInclude.hpp"
+﻿#include <STDInclude.hpp>
 
 #pragma optimize( "", off )
 namespace Components
@@ -9,7 +9,8 @@ namespace Components
 	int Zones::FxEffectIndex;
 	char* Zones::FxEffectStrings[64];
 
-	static std::unordered_map<std::string, std::string> shellshock_replace_list = {
+	static std::unordered_map<std::string, std::string> shellshock_replace_list =
+	{
 		{ "66","bg_shock_screenType" },
 		{ "67","bg_shock_screenBlurBlendTime"},
 		{ "68","bg_shock_screenBlurBlendFadeTime"},
@@ -184,18 +185,15 @@ namespace Components
 		__asm
 		{
 			pushad
+
 			push edi
 			call Zones::LoadXModelLodInfo
 			add esp, 4h
+
 			popad
 
-			mov eax, [esp + 8h]
-			push eax
-			add eax, 8
-			push eax
-			call Game::Load_XModelSurfsFixup
-			add esp, 8h
-
+			push 0x4EA703 // Return address
+			push 0x40D7A0 // Load_XModelSurfsFixup
 			retn
 		}
 	}
@@ -246,7 +244,7 @@ namespace Components
 					// Check if that special flag is set
 					if (!(surface332.flag & 0x20))
 					{
-						Logger::Error("We're not able to handle XSurface buffer allocation yet!");
+						Logger::Error(Game::ERR_FATAL, "We're not able to handle XSurface buffer allocation yet!");
 					}
 
 					// Copy the correct data back to our surface
@@ -1479,7 +1477,7 @@ namespace Components
 		{
 			Game::MaterialShaderArgument* arg = &argument[i];
 
-			if (arg->type != D3DSHADER_PARAM_REGISTER_TYPE::D3DSPR_TEXTURE && arg->type != D3DSHADER_PARAM_REGISTER_TYPE::D3DSPR_ATTROUT)
+			if (arg->type != Game::MaterialShaderArgumentType::MTL_ARG_CODE_VERTEX_CONST && arg->type != Game::MaterialShaderArgumentType::MTL_ARG_CODE_PIXEL_CONST)
 			{
 				continue;
 			}
@@ -1678,6 +1676,7 @@ namespace Components
 								if (FastFiles::Current() != "mp_conflict" && FastFiles::Current() != "mp_derail_sh" && FastFiles::Current() != "mp_overwatch_sh" && 
 									FastFiles::Current() != "mp_con_spring" && FastFiles::Current() != "mp_resistance_sh" && FastFiles::Current() != "mp_lookout_sh" && FastFiles::Current() != "mp_hardhat_sh")
 								{
+									const auto varMaterialTechniqueSet = *reinterpret_cast<Game::MaterialTechniqueSet * *>(0x112AE8C);
 									if (varMaterialTechniqueSet->name && !strncmp(varMaterialTechniqueSet->name, "mc_", 3))
 									{
 										// fixes trees
@@ -1767,7 +1766,7 @@ namespace Components
 				{
 					Game::GfxImageLoadDef* texture;
 					char mapType;
-					char semantic;
+					Game::TextureSemantic semantic;
 					char category;
 					char flags;
 					int cardMemory;
@@ -2576,7 +2575,7 @@ namespace Components
 	
 	int Zones::LoadMapEnts(bool atStreamStart, Game::MapEnts* buffer, int size)
 	{
-                Logger::Print("Loading map entities for zone version %d\n", Zones::Version());
+        Logger::Print("Loading map entities for zone version %d\n", Zones::Version());
 		EntitiesVersion = Zones::Version();
 
 		if (Zones::Version() >= 446)
@@ -3525,9 +3524,9 @@ namespace Components
 		{
 			return shellshock_replace_list[token].data();
 		}
+
 		return token;
 	}
-
 
 	Zones::Zones()
 	{
@@ -3535,14 +3534,14 @@ namespace Components
 
 		Command::Add("decryptImages", [](Command::Params*)
 		{
-			auto images = Game::Sys_ListFilesWrapper("iw4x/images", "iwi");
-			Logger::Print("decrypting %u images...\n", images.size());
+			auto images = FileSystem::GetSysFileList("iw4x/images", "iwi");
+			Logger::Print("decrypting {} images...\n", images.size());
 			
 			for (auto& image : images)
 			{
 				char* buffer = nullptr;
 				auto fileLength = Game::FS_ReadFile(Utils::String::VA("images/%s", image.data()), &buffer);
-				
+
 				if (fileLength && buffer)
 				{
 					if (!std::filesystem::exists("raw/images"))
@@ -3564,12 +3563,13 @@ namespace Components
 				}
 			}
 
-			Logger::Print("decrypted %u images!\n", images.size());
+			Logger::Print("decrypted {} images!\n", images.size());
 		});
+
 		Command::Add("decryptSounds", [](Command::Params*)
 		{
-			auto sounds = Game::Sys_ListFilesWrapper("iw4x/sound", "iwi");
-			Logger::Print("decrypting %u sounds...\n", sounds.size());
+			auto sounds = FileSystem::GetSysFileList("iw4x/sound", "iwi");
+			Logger::Print("decrypting {} sounds...\n", sounds.size());
 
 			for (auto& sound : sounds)
 			{
@@ -3595,7 +3595,7 @@ namespace Components
 				}
 			}
 
-			Logger::Print("decrypted %u sounds!\n", sounds.size());
+			Logger::Print("decrypted {} sounds!\n", sounds.size());
 		});
 
 		// patch max filecount Sys_ListFiles can return
@@ -3648,7 +3648,7 @@ namespace Components
 		Utils::Hook(0x45AE3D, Zones::LoadRandomFxGarbage, HOOK_CALL).install()->quick();
 		Utils::Hook(0x495938, Zones::LoadFxElemDefArrayStub, HOOK_CALL).install()->quick();
 		Utils::Hook(0x45ADA0, Zones::LoadFxElemDefStub, HOOK_CALL).install()->quick();
-		Utils::Hook(0x4EA6FE, Zones::LoadXModelLodInfoStub, HOOK_CALL).install()->quick();
+		Utils::Hook(0x4EA6FE, Zones::LoadXModelLodInfoStub, HOOK_JUMP).install()->quick();
 		Utils::Hook(0x410D90, Zones::LoadXModel, HOOK_CALL).install()->quick();
 		Utils::Hook(0x4925C8, Zones::LoadXSurfaceArray, HOOK_CALL).install()->quick();
 		Utils::Hook(0x4F4D0D, Zones::LoadGameWorldSp, HOOK_CALL).install()->quick();
@@ -3715,11 +3715,6 @@ namespace Components
 		// disable _invoke_watson to allow debugging
 		Utils::Hook::Set<WORD>(0x6B9602,0xCCCC);
 #endif
-	}
-
-	Zones::~Zones()
-	{
-
 	}
 }
 #pragma optimize( "", on ) 

@@ -1,4 +1,4 @@
-#include "STDInclude.hpp"
+#include <STDInclude.hpp>
 
 namespace Components
 {
@@ -10,6 +10,10 @@ namespace Components
 	unsigned int Friends::CurrentFriend;
 	std::recursive_mutex Friends::Mutex;
 	std::vector<Friends::Friend> Friends::FriendsList;
+
+	Dvar::Var Friends::UIStreamFriendly;
+	Dvar::Var Friends::CLAnonymous;
+	Dvar::Var Friends::CLNotifyFriendState;
 
 	void Friends::SortIndividualList(std::vector<Friends::Friend>* list)
 	{
@@ -71,7 +75,7 @@ namespace Components
 
 		entry->name = Steam::Proxy::SteamFriends->GetFriendPersonaName(user);
 		entry->online = Steam::Proxy::SteamFriends->GetFriendPersonaState(user) != 0;
-		entry->cleanName = Utils::String::ToLower(Colors::Strip(entry->name));
+		entry->cleanName = Utils::String::ToLower(TextRenderer::StripColors(entry->name));
 
 		std::string guid = Friends::GetPresence(user, "iw4x_guid");
 		std::string name = Friends::GetPresence(user, "iw4x_name");
@@ -111,8 +115,8 @@ namespace Components
 
 		Friends::SortList();
 
-		int notify = Dvar::Var("cl_notifyFriendState").get<int>();
-		if (gotOnline && (notify == -1 || (notify == 1 && !Game::CL_IsCgameInitialized())) && !Dvar::Var("ui_streamFriendly").get<bool>())
+		const auto notify = Friends::CLNotifyFriendState.get<bool>();
+		if (gotOnline && (!notify || (notify && !Game::CL_IsCgameInitialized())) && !Friends::UIStreamFriendly.get<bool>())
 		{
 			Game::Material* material = Friends::CreateAvatar(user);
 			Toast::Show(material, entry->name, "is playing IW4x", 3000, [material]()
@@ -122,22 +126,14 @@ namespace Components
 		}
 	}
 
-	void Friends::UpdateState(bool force)
+	void Friends::UpdateState()
 	{
-		if (Dvar::Var("cl_anonymous").get<bool>() || Friends::IsInvisible() || !Steam::Enabled()) return;
+		if (Friends::CLAnonymous.get<bool>() || Friends::IsInvisible() || !Steam::Enabled())
+		{
+			return;
+		}
 
-		if (force)
-		{
-			if (Steam::Proxy::ClientFriends && Steam::Proxy::SteamFriends)
-			{
-				int state = Steam::Proxy::SteamFriends->GetPersonaState();
-				Steam::Proxy::ClientFriends.invoke<void>("SetPersonaState", (state == 1 ? 2 : 1));
-			}
-		}
-		else
-		{
-			Friends::TriggerUpdate = true;
-		}
+		Friends::TriggerUpdate = true;
 	}
 
 	void Friends::UpdateServer(Network::Address server, const std::string& hostname, const std::string& mapname)
@@ -186,10 +182,10 @@ namespace Components
 		{
 			std::lock_guard<std::recursive_mutex> _(Friends::Mutex);
 
-			const unsigned int modId = *reinterpret_cast<unsigned int*>(const_cast<char*>("IW4x")) | 0x80000000;
+			const auto modId = *reinterpret_cast<const unsigned int*>("IW4x") | 0x80000000;
 
 			// Split up the list
-			for (auto entry : Friends::FriendsList)
+			for (const auto& entry : Friends::FriendsList)
 			{
 				Steam::FriendGameInfo info;
 				if (Steam::Proxy::SteamFriends->GetFriendGamePlayed(entry.userId, &info) && info.m_gameID.modID == modId)
@@ -228,7 +224,7 @@ namespace Components
 
 	void Friends::SetPresence(const std::string& key, const std::string& value)
 	{
-		if (Steam::Proxy::ClientFriends && Steam::Proxy::SteamUtils && !Dvar::Var("cl_anonymous").get<bool>() && !Friends::IsInvisible() && Steam::Enabled())
+		if (Steam::Proxy::ClientFriends && Steam::Proxy::SteamUtils && !Friends::CLAnonymous.get<bool>() && !Friends::IsInvisible() && Steam::Enabled())
 		{
 			Friends::SetRawPresence(key.data(), value.data());
 		}
@@ -420,14 +416,13 @@ namespace Components
 			{
 				return Utils::String::VA("%s", user.name.data());
 			}
-			else if (user.name == user.playerName)
+
+			if (user.name == user.playerName)
 			{
 				return Utils::String::VA("%s", user.name.data());
 			}
-			else
-			{
-				return Utils::String::VA("%s ^7(%s^7)", user.name.data(), user.playerName.data());
-			}
+
+			return Utils::String::VA("%s ^7(%s^7)", user.name.data(), user.playerName.data());
 		}
 		case 2:
 		{
@@ -451,19 +446,6 @@ namespace Components
 		if (index >= Friends::FriendsList.size()) return;
 
 		Friends::CurrentFriend = index;
-	}
-
-	__declspec(naked) void Friends::DisconnectStub()
-	{
-		__asm
-		{
-			pushad
-			call Friends::ClearServer
-			popad
-
-			push 467CC0h
-			retn
-		}
 	}
 
 	void Friends::AddFriend(SteamID user)
@@ -573,16 +555,23 @@ namespace Components
 	{
 		Friends::LoggedOn = false;
 
-		if (Dedicated::IsEnabled() || ZoneBuilder::IsEnabled() || Monitor::IsEnabled()) return;
+		if (Dedicated::IsEnabled() || ZoneBuilder::IsEnabled() || Monitor::IsEnabled())
+			return;
 
-		Dvar::Register<bool>("cl_anonymous", false, Game::DVAR_FLAG_SAVED, "");
-		Dvar::Register<int>("cl_notifyFriendState", 1, -1, 1, Game::DVAR_FLAG_SAVED, "");
+		Friends::UIStreamFriendly = Dvar::Register<bool>("ui_streamFriendly", false, Game::DVAR_ARCHIVE, "Stream friendly UI");
+		Friends::CLAnonymous = Dvar::Register<bool>("cl_anonymous", false, Game::DVAR_ARCHIVE, "Enable invisible mode for Steam");
+		Friends::CLNotifyFriendState = Dvar::Register<bool>("cl_notifyFriendState", true, Game::DVAR_ARCHIVE, "Update friends about current game status");
 
 		Command::Add("addFriend", [](Command::Params* params)
 		{
-			if (params->length() <= 1) return;
+			if (params->size() < 2)
+			{
+				Logger::Print("Usage: {} <Steam ID in hexadecimal format>\n", params->get(0));
+				return;
+			}
+
 			SteamID id;
-			id.bits = atoll(params->get(1));
+			id.bits = std::strtoull(params->get(1), nullptr, 16);
 
 			Friends::AddFriend(id);
 		});
@@ -608,18 +597,19 @@ namespace Components
 		});
 
 		// Update state when connecting/disconnecting
-		Utils::Hook(0x403582, Friends::DisconnectStub, HOOK_CALL).install()->quick();
+		Events::OnSteamDisconnect(Friends::ClearServer);
+
 		Utils::Hook(0x4CD023, Friends::SetServer, HOOK_JUMP).install()->quick();
 
 		// Show blue icons on the minimap
 		Utils::Hook(0x493130, Friends::IsClientInParty, HOOK_JUMP).install()->quick();
 
-		UIScript::Add("LoadFriends", [](UIScript::Token)
+		UIScript::Add("LoadFriends", []([[maybe_unused]] const UIScript::Token& token, [[maybe_unused]] const Game::uiInfo_s* info)
 		{
 			Friends::UpdateFriends();
 		});
 
-		UIScript::Add("JoinFriend", [](UIScript::Token)
+		UIScript::Add("JoinFriend", []([[maybe_unused]] const UIScript::Token& token, [[maybe_unused]] const Game::uiInfo_s* info)
 		{
 			std::lock_guard<std::recursive_mutex> _(Friends::Mutex);
 			if (Friends::CurrentFriend >= Friends::FriendsList.size()) return;
@@ -636,7 +626,7 @@ namespace Components
 			}
 		});
 
-		Scheduler::OnFrame([]()
+		Scheduler::Loop([]
 		{
 			static Utils::Time::Interval timeInterval;
 			static Utils::Time::Interval sortInterval;
@@ -661,7 +651,7 @@ namespace Components
 				if (Friends::TriggerUpdate)
 				{
 					Friends::TriggerUpdate = false;
-					Friends::UpdateState(true);
+					Friends::UpdateState();
 				}
 			}
 
@@ -675,11 +665,11 @@ namespace Components
 					Friends::SortList(true);
 				}
 			}
-		});
+		}, Scheduler::Pipeline::CLIENT);
 
 		UIFeeder::Add(61.0f, Friends::GetFriendCount, Friends::GetFriendText, Friends::SelectFriend);
 
-		Scheduler::OnShutdown([]()
+		Scheduler::OnGameShutdown([]
 		{
 			Friends::ClearPresence("iw4x_server");
 			Friends::ClearPresence("iw4x_playing");
@@ -697,18 +687,18 @@ namespace Components
 			}
 		});
 
-		Scheduler::Once([]()
+		Scheduler::OnGameInitialized([]
 		{
 			if (Steam::Proxy::SteamFriends)
 			{
 				Friends::InitialState = Steam::Proxy::SteamFriends->GetFriendPersonaState(Steam::Proxy::SteamUser_->GetSteamID());
 			}
 
-			if (Dvar::Var("cl_anonymous").get<bool>() || Friends::IsInvisible() || !Steam::Enabled())
+			if (Friends::CLAnonymous.get<bool>() || Friends::IsInvisible() || !Steam::Enabled())
 			{
 				if (Steam::Proxy::ClientFriends)
 				{
-					for (auto id : Friends::GetAppIdList())
+					for (const auto id : Friends::GetAppIdList())
 					{
 						Steam::Proxy::ClientFriends.invoke<void>("ClearRichPresence", id);
 					}
@@ -725,7 +715,7 @@ namespace Components
 			Friends::UpdateState();
 
 			Friends::UpdateFriends();
-		});
+		}, Scheduler::Pipeline::CLIENT);
 	}
 
 	Friends::~Friends()

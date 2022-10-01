@@ -1,4 +1,4 @@
-#include "STDInclude.hpp"
+#include <STDInclude.hpp>
 
 namespace Components
 {
@@ -40,15 +40,15 @@ namespace Components
 		ModList::CurrentMod = index;
 	}
 
-	void ModList::UIScript_LoadMods(UIScript::Token)
+	void ModList::UIScript_LoadMods([[maybe_unused]] const UIScript::Token& token, [[maybe_unused]] const Game::uiInfo_s* info)
 	{
 		auto folder = Dvar::Var("fs_basepath").get<std::string>() + "\\mods";
-		Game::Com_Printf(0, "Searching for mods in %s...\n", folder.data());
+		Logger::Debug("Searching for mods in {}...", folder);
 		ModList::Mods = FileSystem::GetSysFileList(folder, "", true);
-		Game::Com_Printf(0, "Found %i mods!\n", ModList::Mods.size());
+		Logger::Debug("Found {} mods!", ModList::Mods.size());
 	}
 
-	void ModList::UIScript_RunMod(UIScript::Token)
+	void ModList::UIScript_RunMod([[maybe_unused]] const UIScript::Token& token, [[maybe_unused]] const Game::uiInfo_s* info)
 	{
 		if (ModList::CurrentMod < ModList::Mods.size())
 		{
@@ -56,7 +56,7 @@ namespace Components
 		}
 	}
 
-	void ModList::UIScript_ClearMods(UIScript::Token)
+	void ModList::UIScript_ClearMods([[maybe_unused]] const UIScript::Token& token, [[maybe_unused]] const Game::uiInfo_s* info)
 	{
 		auto fsGame = Dvar::Var("fs_game");
 		fsGame.set("");
@@ -93,17 +93,12 @@ namespace Components
 		if (Dedicated::IsEnabled()) return;
 
 		ModList::CurrentMod = 0;
-		Dvar::Register("cl_modVidRestart", true, Game::dvar_flag::DVAR_FLAG_SAVED, "Perform a vid_restart when loading a mod.");
+		Dvar::Register("cl_modVidRestart", true, Game::DVAR_ARCHIVE, "Perform a vid_restart when loading a mod.");
 
 		UIScript::Add("LoadMods", ModList::UIScript_LoadMods);
 		UIScript::Add("RunMod", ModList::UIScript_RunMod);
 		UIScript::Add("ClearMods", ModList::UIScript_ClearMods);
 
 		UIFeeder::Add(9.0f, ModList::GetItemCount, ModList::GetItemText, ModList::Select);
-	}
-
-	ModList::~ModList()
-	{
-		ModList::Mods.clear();
 	}
 }

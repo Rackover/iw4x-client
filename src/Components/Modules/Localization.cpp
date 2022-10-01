@@ -1,4 +1,4 @@
-#include "STDInclude.hpp"
+#include <STDInclude.hpp>
 
 namespace Components
 {
@@ -9,10 +9,10 @@ namespace Components
 
 	void Localization::Set(const std::string& key, const std::string& value)
 	{
-		std::lock_guard<std::recursive_mutex> _(Localization::LocalizeMutex);
+		std::lock_guard _(Localization::LocalizeMutex);
 		Utils::Memory::Allocator* allocator = Utils::Memory::GetAllocator();
 
-		if (Localization::LocalizeMap.find(key) != Localization::LocalizeMap.end())
+		if (Localization::LocalizeMap.contains(key))
 		{
 			Game::LocalizeEntry* entry = Localization::LocalizeMap[key];
 
@@ -50,13 +50,13 @@ namespace Components
 
 		Game::LocalizeEntry* entry = nullptr;
 		{
-			std::lock_guard<std::recursive_mutex> _(Localization::LocalizeMutex);
+			std::lock_guard _(Localization::LocalizeMutex);
 
-			if (Localization::TempLocalizeMap.find(key) != Localization::TempLocalizeMap.end())
+			if (Localization::TempLocalizeMap.contains(key))
 			{
 				entry = Localization::TempLocalizeMap[key];
 			}
-			else if (Localization::LocalizeMap.find(key) != Localization::LocalizeMap.end())
+			else if (Localization::LocalizeMap.contains(key))
 			{
 				entry = Localization::LocalizeMap[key];
 			}
@@ -77,10 +77,10 @@ namespace Components
 
 	void Localization::SetTemp(const std::string& key, const std::string& value)
 	{
-		std::lock_guard<std::recursive_mutex> _(Localization::LocalizeMutex);
+		std::lock_guard _(Localization::LocalizeMutex);
 		Utils::Memory::Allocator* allocator = Utils::Memory::GetAllocator();
 
-		if (Localization::TempLocalizeMap.find(key) != Localization::TempLocalizeMap.end())
+		if (Localization::TempLocalizeMap.contains(key))
 		{
 			Game::LocalizeEntry* entry = Localization::TempLocalizeMap[key];
 			if (entry->value) allocator->free(entry->value);
@@ -112,7 +112,7 @@ namespace Components
 
 	void Localization::ClearTemp()
 	{
-		std::lock_guard<std::recursive_mutex> _(Localization::LocalizeMutex);
+		std::lock_guard _(Localization::LocalizeMutex);
 		Utils::Memory::Allocator* allocator = Utils::Memory::GetAllocator();
 
 		for (auto i = Localization::TempLocalizeMap.begin(); i != Localization::TempLocalizeMap.end(); ++i)
@@ -165,6 +165,7 @@ namespace Components
 	{
 		static const char* staff[] =
 		{
+			"Snake",
 			"/dev/../",
 			"/dev/console",
 			"/dev/full",
@@ -172,8 +173,14 @@ namespace Components
 			"/dev/sr0",
 			"/dev/tty0",
 			"/dev/urandom",
-			"Snake",
-			"lsb_release -a"
+			"Dss0",
+			"FutureRave",
+			"H3X1C",
+			"Homura",
+			"Laupetin",
+			"Louvenarde",
+			"lsb_release -a",
+			"quaK",			
 		};
 
 		static const char* contributors[] =
@@ -181,21 +188,17 @@ namespace Components
 			"a231",
 			"AmateurHailbut",
 			"Aoki",
+			"Chase",
 			"civil",
 			"Dasfonia",
 			"Deity",
 			"Dizzy",
-			"Dss0",
-			"H3X1C",
 			"HardNougat",
-			"Homura",
 			"INeedGames",
+			"JTAG",
 			"Killera",
 			"Lithium",
-			"Louvenarde",
-			"FutureRave",
 			"OneFourOne",
-			"quaK",
 			"RaidMax",
 			"Revo",
 			"RezTech",
@@ -203,7 +206,7 @@ namespace Components
 			"Slykuiper",
 			"st0rm",
 			"VVLNT",
-			"X3RX35"
+			"X3RX35",
 		};
 
 		static const char* specials[] =
@@ -218,7 +221,7 @@ namespace Components
 
 		std::string credits = "^2The IW4x Team:^7\n";
 
-		for (int i = 0; i < ARRAYSIZE(staff); ++i)
+		for (std::size_t i = 0; i < ARRAYSIZE(staff); ++i)
 		{
 			credits.append(staff[i]);
 			credits.append("\n");
@@ -226,7 +229,7 @@ namespace Components
 
 		credits.append("\n^3Contributors:^7\n");
 
-		for (int i = 0; i < ARRAYSIZE(contributors); ++i)
+		for (std::size_t i = 0; i < ARRAYSIZE(contributors); ++i)
 		{
 			credits.append(contributors[i]);
 			credits.append("\n");
@@ -234,7 +237,7 @@ namespace Components
 
 		credits.append("\n^5Special thanks to:^7\n");
 
-		for (int i = 0; i < ARRAYSIZE(specials); ++i)
+		for (std::size_t i = 0; i < ARRAYSIZE(specials); ++i)
 		{
 			credits.append(specials[i]);
 			credits.append("\n");
@@ -246,6 +249,144 @@ namespace Components
 		Localization::Set("IW4X_CREDITS", credits);
 	}
 
+	const char* Localization::SEH_LocalizeTextMessageStub(const char* pszInputBuffer, const char* pszMessageType, Game::msgLocErrType_t errType)
+	{
+		constexpr auto szStringCount = 10;
+		constexpr auto szStringSize = 1024;
+
+		char szInsertBuf[szStringSize];
+		char szTokenBuf[szStringSize];
+
+		static thread_local int iCurrString;
+		static thread_local char szStrings[szStringCount][szStringSize];
+
+		iCurrString = (iCurrString + 1) % szStringCount;
+		std::memset(szStrings[iCurrString], 0, sizeof(szStrings[0]));
+		auto* pszString = szStrings[iCurrString];
+		auto iLen = 0;
+		auto bLocOn = 1;
+		auto bInsertEnabled = 1;
+		auto iInsertLevel = 0;
+		auto insertIndex = 1;
+		auto bLocSkipped = 0;
+		const auto* pszTokenStart = pszInputBuffer;
+		const auto* pszIn = pszInputBuffer;
+
+		auto i = 0;
+		while (*pszTokenStart)
+		{
+			if (*pszIn && *pszIn != '\x14' && *pszIn != '\x15' && *pszIn != '\x16')
+			{
+				++pszIn;
+				continue;
+			}
+
+			if (pszIn > pszTokenStart)
+			{
+				auto iTokenLen = pszIn - pszTokenStart;
+				Game::I_strncpyz_s(szTokenBuf, sizeof(szTokenBuf), pszTokenStart, pszIn - pszTokenStart);
+				if (bLocOn)
+				{
+					if (!Game::SEH_GetLocalizedTokenReference(szTokenBuf, szTokenBuf, pszMessageType, errType))
+					{
+						return nullptr;
+					}
+
+					iTokenLen = std::strlen(szTokenBuf);
+				}
+
+				if (iTokenLen + iLen >= szStringSize)
+				{
+					Game::Com_Printf(Game::CON_CHANNEL_SYSTEM, "%s too long when translated\n", pszMessageType);
+					return nullptr;
+				}
+
+				for (i = 0; i < iTokenLen - 2; ++i)
+				{
+					if (!std::strncmp(&szTokenBuf[i], "&&", 2) && std::isdigit(szTokenBuf[i + 2]))
+					{
+						if (bInsertEnabled)
+						{
+							++iInsertLevel;
+						}
+						else
+						{
+							szTokenBuf[i] = '\x16';
+							bLocSkipped = 1;
+						}
+					}
+				}
+
+				if (iInsertLevel <= 0 || iLen <= 0)
+				{
+					Game::I_strcpy(&pszString[iLen], szStringSize - iLen, szTokenBuf);
+				}
+				else
+				{
+					for (i = 0; i < iLen - 2; ++i)
+					{
+						if (!std::strncmp(&pszString[i], "&&", 2) && std::isdigit(pszString[i + 2]))
+						{
+							const auto digit = pszString[i + 2] - 48;
+							if (!digit)
+							{
+								Game::Com_Printf(Game::CON_CHANNEL_SYSTEM, "%s cannot have &&0 as conversion format: \"%s\"\n", pszMessageType, pszInputBuffer);
+							}
+							if (digit == insertIndex)
+							{
+								Game::I_strcpy(szInsertBuf, sizeof(szInsertBuf), &pszString[i + 3]);
+								pszString[i] = 0;
+								++insertIndex;
+								break;
+							}
+						}
+					}
+
+					Game::I_strcpy(&pszString[i], szStringSize - i, szTokenBuf);
+					Game::I_strcpy(&pszString[iTokenLen + i], szStringSize - (iTokenLen + i), szInsertBuf);
+
+					iLen -= 3;
+					--iInsertLevel;
+				}
+
+				iLen += iTokenLen;
+			}
+
+			bInsertEnabled = 1;
+			if (*pszIn == '\x14')
+			{
+				bLocOn = 1;
+				++pszIn;
+			}
+			else if (*pszIn == '\x15')
+			{
+				bLocOn = 0;
+				++pszIn;
+			}
+
+			if (*pszIn == '\x16')
+			{
+				bInsertEnabled = 0;
+				++pszIn;
+			}
+
+			pszTokenStart = pszIn;
+		}
+
+		if (bLocSkipped)
+		{
+			for (i = 0; i < iLen; ++i)
+			{
+				if (pszString[i] == '\x16')
+				{
+					pszString[i] = '%';
+				}
+			}
+		}
+
+		return pszString;
+	}
+
 	Localization::Localization()
 	{
 		Localization::SetCredits();
@@ -253,13 +394,13 @@ namespace Components
 		AssetHandler::OnFind(Game::XAssetType::ASSET_TYPE_LOCALIZE_ENTRY, [](Game::XAssetType, const std::string& filename)
 		{
 			Game::XAssetHeader header = { nullptr };
-			std::lock_guard<std::recursive_mutex> _(Localization::LocalizeMutex);
+			std::lock_guard _(Localization::LocalizeMutex);
 
-			if (Localization::TempLocalizeMap.find(filename) != Localization::TempLocalizeMap.end())
+			if (Localization::TempLocalizeMap.contains(filename))
 			{
 				header.localize = Localization::TempLocalizeMap[filename];
 			}
-			else if (Localization::LocalizeMap.find(filename) != Localization::LocalizeMap.end())
+			else if (Localization::LocalizeMap.contains(filename))
 			{
 				header.localize = Localization::LocalizeMap[filename];
 			}
@@ -276,7 +417,10 @@ namespace Components
 		// Overwrite SetString
 		Utils::Hook(0x4CE5EE, Localization::SetStringStub, HOOK_CALL).install()->quick();
 
-		Localization::UseLocalization = Dvar::Register<bool>("ui_localize", true, Game::dvar_flag::DVAR_FLAG_NONE, "Use localization strings");
+		Utils::Hook(0x49D4A0, Localization::SEH_LocalizeTextMessageStub, HOOK_JUMP).install()->quick();
+		Utils::Hook::Nop(0x49D4A5, 1);
+
+		Localization::UseLocalization = Dvar::Register<bool>("ui_localize", true, Game::DVAR_NONE, "Use localization strings");
 
 		// Generate localized entries for custom classes above 10
 		AssetHandler::OnLoad([](Game::XAssetType type, Game::XAssetHeader asset, const std::string& name, bool* /*restrict*/)
@@ -296,13 +440,6 @@ namespace Components
 				}
 			}
 		});
-
-// #ifndef DISABLE_ANTICHEAT
-// 		if (!Dedicated::IsEnabled() && !ZoneBuilder::IsEnabled() && !Utils::IsWineEnvironment() && !Loader::IsPerformingUnitTests())
-// 		{
-// 			AntiCheat::PatchVirtualProtect(VirtualProtect, VirtualProtectEx);
-// 		}
-// #endif
 	}
 
 	Localization::~Localization()

@@ -1,25 +1,25 @@
-#include "STDInclude.hpp"
+#include <STDInclude.hpp>
 
 namespace Components
 {
-	std::unordered_map<std::int32_t, Utils::Slot<bool(Command::Params*)>> ServerCommands::Commands;
+	std::unordered_map<std::int32_t, ServerCommands::serverCommandHandler> ServerCommands::Commands;
 
-	void ServerCommands::OnCommand(std::int32_t cmd, Utils::Slot<bool(Command::Params*)> cb)
+	void ServerCommands::OnCommand(std::int32_t cmd, const serverCommandHandler& callback)
 	{
-		ServerCommands::Commands[cmd] = cb;
+		Commands.insert_or_assign(cmd, callback);
 	}
 
 	bool ServerCommands::OnServerCommand()
 	{
-		Command::ClientParams params(*Game::cmd_id);
+		Command::ClientParams params;
 		
-		for (auto &serverCommandCB : ServerCommands::Commands)
+		for (const auto& [id, callback] : Commands)
 		{
-			if (params.length() >= 1)
+			if (params.size() >= 1)
 			{
-				if (params.get(0)[0] == serverCommandCB.first)
+				if (params.get(0)[0] == id) // Compare ID of server command
 				{
-					return serverCommandCB.second(&params);
+					return callback(&params);
 				}
 			}
 		}
@@ -27,13 +27,16 @@ namespace Components
 		return false;
 	}
 
-	__declspec(naked) void ServerCommands::OnServerCommandStub()
+	__declspec(naked) void ServerCommands::CG_DeployServerCommand_Stub()
 	{
 		__asm
 		{
 			push eax
 			pushad
+
+			// Missing localClientNum!
 			call ServerCommands::OnServerCommand
+
 			mov [esp + 20h], eax
 			popad
 			pop eax
@@ -44,7 +47,7 @@ namespace Components
 			test eax, eax
 			jle error
 
-			mov eax, DWORD PTR[edx * 4 + 1AAC634h]
+			mov eax, dword ptr [edx * 4 + 1AAC634h]
 			mov eax, [eax]
 
 			push 5944B3h
@@ -63,11 +66,7 @@ namespace Components
 	ServerCommands::ServerCommands()
 	{
 		// Server command receive hook
-		Utils::Hook(0x59449F, ServerCommands::OnServerCommandStub).install()->quick();
-	}
-
-	ServerCommands::~ServerCommands()
-	{
-		ServerCommands::Commands.clear();
+		Utils::Hook(0x59449F, CG_DeployServerCommand_Stub).install()->quick();
+		Utils::Hook::Nop(0x5944A4, 6);
 	}
 }

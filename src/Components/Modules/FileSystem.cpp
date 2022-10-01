@@ -1,4 +1,4 @@
-#include "STDInclude.hpp"
+#include <STDInclude.hpp>
 
 namespace Components
 {
@@ -6,18 +6,32 @@ namespace Components
 	std::recursive_mutex FileSystem::FSMutex;
 	Utils::Memory::Allocator FileSystem::MemAllocator;
 
-	void FileSystem::File::read()
+	void FileSystem::File::read(Game::FsThread thread)
 	{
-		char* _buffer = nullptr;
-		int size = Game::FS_ReadFile(this->filePath.data(), &_buffer);
+		std::lock_guard _(FileSystem::FSMutex);
 
-		this->buffer.clear();
+		assert(!filePath.empty());
 
-		if (size >= 0)
+		int handle;
+		const auto len = Game::FS_FOpenFileReadForThread(filePath.data(), &handle, thread);
+
+		if (!handle)
 		{
-			this->buffer.append(_buffer, size);
-			Game::FS_FreeFile(_buffer);
+			return;
 		}
+
+		auto* buf = AllocateFile(len + 1);
+
+		[[maybe_unused]] auto bytesRead = Game::FS_Read(buf, len, handle);
+
+		assert(bytesRead == len);
+
+		buf[len] = '\0';
+
+		Game::FS_FCloseFile(handle);
+
+		this->buffer.append(buf, len);
+		FreeFile(buf);
 	}
 
 	void FileSystem::RawFile::read()
@@ -28,7 +42,7 @@ namespace Components
 		if (!rawfile || Game::DB_IsXAssetDefault(Game::XAssetType::ASSET_TYPE_RAWFILE, this->filePath.data())) return;
 
 		this->buffer.resize(Game::DB_GetRawFileLen(rawfile));
-		Game::DB_GetRawBuffer(rawfile, const_cast<char*>(this->buffer.data()), this->buffer.size());
+		Game::DB_GetRawBuffer(rawfile, this->buffer.data(), static_cast<int>(this->buffer.size()));
 	}
 
 	FileSystem::FileReader::FileReader(const std::string& file) : handle(0), name(file)
@@ -126,12 +140,28 @@ namespace Components
 		}
 	}
 
+	std::filesystem::path FileSystem::GetAppdataPath()
+	{
+		PWSTR path;
+		if (!SUCCEEDED(SHGetKnownFolderPath(FOLDERID_LocalAppData, 0, nullptr, &path)))
+		{
+			throw std::runtime_error("Failed to read APPDATA path!");
+		}
+
+		auto _0 = gsl::finally([&path]
+		{
+			CoTaskMemFree(path);
+		});
+
+		return std::filesystem::path(path) / "xlabs";
+	}
+
 	std::vector<std::string> FileSystem::GetFileList(const std::string& path, const std::string& extension)
 	{
 		std::vector<std::string> fileList;
 
-		int numFiles = 0;
-		char** files = Game::FS_GetFileList(path.data(), extension.data(), Game::FS_LIST_PURE_ONLY, &numFiles, 0);
+		auto numFiles = 0;
+		const auto** files = Game::FS_ListFiles(path.data(), extension.data(), Game::FS_LIST_PURE_ONLY, &numFiles, 10);
 
 		if (files)
 		{
@@ -139,11 +169,11 @@ namespace Components
 			{
 				if (files[i])
 				{
-					fileList.push_back(files[i]);
+					fileList.emplace_back(files[i]);
 				}
 			}
 
-			Game::FS_FreeFileList(files);
+			Game::FS_FreeFileList(files, 10);
 		}
 
 		return fileList;
@@ -153,8 +183,8 @@ namespace Components
 	{
 		std::vector<std::string> fileList;
 
-		int numFiles = 0;
-		char** files = Game::Sys_ListFiles(path.data(), extension.data(), nullptr, &numFiles, folders);
+		auto numFiles = 0;
+		const auto** files = Game::Sys_ListFiles(path.data(), extension.data(), nullptr, &numFiles, folders);
 
 		if (files)
 		{
@@ -162,7 +192,7 @@ namespace Components
 			{
 				if (files[i])
 				{
-					fileList.push_back(files[i]);
+					fileList.emplace_back(files[i]);
 				}
 			}
 
@@ -172,9 +202,9 @@ namespace Components
 		return fileList;
 	}
 
-	bool FileSystem::DeleteFile(const std::string& folder, const std::string& file)
+	bool FileSystem::_DeleteFile(const std::string& folder, const std::string& file)
 	{
-		char path[MAX_PATH] = { 0 };
+		char path[MAX_PATH] = {0};
 		Game::FS_BuildPathToFile(Dvar::Var("fs_basepath").get<const char*>(), reinterpret_cast<char*>(0x63D0BB8), Utils::String::VA("%s/%s", folder.data(), file.data()), reinterpret_cast<char**>(&path));
 		return Game::FS_Remove(path);
 	}
@@ -185,7 +215,7 @@ namespace Components
 		else *buffer = nullptr;
 		if (!path) return -1;
 
-		std::lock_guard<std::mutex> _(FileSystem::Mutex);
+		std::lock_guard _(FileSystem::Mutex);
 		FileSystem::FileReader reader(path);
 
 		int size = reader.getSize();
@@ -213,9 +243,9 @@ namespace Components
 
 	void FileSystem::RegisterFolder(const char* folder)
 	{
-		std::string fs_cdpath = Dvar::Var("fs_cdpath").get<std::string>();
-		std::string fs_basepath = Dvar::Var("fs_basepath").get<std::string>();
-		std::string fs_homepath = Dvar::Var("fs_homepath").get<std::string>();
+		const auto fs_cdpath = Dvar::Var("fs_cdpath").get<std::string>();
+		const auto fs_basepath = Dvar::Var("fs_basepath").get<std::string>();
+		const auto fs_homepath = Dvar::Var("fs_homepath").get<std::string>();
 
 		if (!fs_cdpath.empty())   Game::FS_AddLocalizedGameDirectory(fs_cdpath.data(),   folder);
 		if (!fs_basepath.empty()) Game::FS_AddLocalizedGameDirectory(fs_basepath.data(), folder);
@@ -256,13 +286,13 @@ namespace Components
 
 	void FileSystem::FsStartupSync(const char* a1)
 	{
-		std::lock_guard<std::recursive_mutex> _(FileSystem::FSMutex);
+		std::lock_guard _(FileSystem::FSMutex);
 		return Utils::Hook::Call<void(const char*)>(0x4823A0)(a1); // FS_Startup
 	}
 
 	void FileSystem::FsRestartSync(int a1, int a2)
 	{
-		std::lock_guard<std::recursive_mutex> _(FileSystem::FSMutex);
+		std::lock_guard _(FileSystem::FSMutex);
 		Maps::GetUserMap()->freeIwd();
 		Utils::Hook::Call<void(int, int)>(0x461A50)(a1, a2); // FS_Restart
 		Maps::GetUserMap()->reloadIwd();
@@ -270,7 +300,7 @@ namespace Components
 
 	void FileSystem::FsShutdownSync(int a1)
 	{
-		std::lock_guard<std::recursive_mutex> _(FileSystem::FSMutex);
+		std::lock_guard _(FileSystem::FSMutex);
 		Maps::GetUserMap()->freeIwd();
 		Utils::Hook::Call<void(int)>(0x4A46C0)(a1); // FS_Shutdown
 	}
@@ -283,7 +313,7 @@ namespace Components
 
 	int FileSystem::LoadTextureSync(Game::GfxImageLoadDef **loadDef, Game::GfxImage *image)
 	{
-		std::lock_guard<std::recursive_mutex> _(FileSystem::FSMutex);
+		std::lock_guard _(FileSystem::FSMutex);
 		return Game::Load_Texture(loadDef, image);
 	}
 
@@ -291,6 +321,12 @@ namespace Components
 	{
 		Maps::GetUserMap()->handlePackfile(iwd);
 		Utils::Hook::Call<void(void*)>(0x4291A0)(iwd);
+	}
+
+	const char* FileSystem::Sys_DefaultInstallPath_Hk()
+	{
+		static auto current_path = std::filesystem::current_path().string();
+		return current_path.data();
 	}
 
 	FileSystem::FileSystem()
@@ -340,6 +376,9 @@ namespace Components
 
 		// Handle IWD freeing
 		Utils::Hook(0x642F60, FileSystem::IwdFreeStub, HOOK_CALL).install()->quick();
+
+		// Set the working dir based on info from the Xlabs launcher
+		Utils::Hook(0x4326E0, FileSystem::Sys_DefaultInstallPath_Hk, HOOK_JUMP).install()->quick();
 	}
 
 	FileSystem::~FileSystem()

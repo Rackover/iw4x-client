@@ -6,6 +6,7 @@ namespace Components
 	{
 	public:
 		typedef void(BackendCallback)(IDirect3DDevice9*);
+		typedef void(Callback)();
 
 		Renderer();
 		~Renderer();
@@ -15,13 +16,11 @@ namespace Components
 
 		static void OnBackendFrame(Utils::Slot<BackendCallback> callback);
 		static void OnNextBackendFrame(Utils::Slot<BackendCallback> callback);
-		static void OnDeviceRecoveryEnd(Utils::Slot<Scheduler::Callback> callback);
-		static void OnDeviceRecoveryBegin(Utils::Slot<Scheduler::Callback> callback);
 
+		static void OnDeviceRecoveryEnd(Utils::Slot<Renderer::Callback> callback);
+		static void OnDeviceRecoveryBegin(Utils::Slot<Renderer::Callback> callback);
 
 	private:
-		static void FrameStub();
-
 		static void BackendFrameStub();
 		static void BackendFrameHandler();
 
@@ -35,10 +34,29 @@ namespace Components
 
 		static int DrawTechsetForMaterial(int a1, float a2, float a3, const char* material, Game::vec4_t* color, int a6);
 
-		static Utils::Signal<Scheduler::Callback> EndRecoverDeviceSignal;
-		static Utils::Signal<Scheduler::Callback> BeginRecoverDeviceSignal;
+		static void DebugDrawTriggers();
+		static void DebugDrawSceneModelCollisions();
+		static void DebugDrawModelBoundingBoxes();
+		static void DebugDrawModelNames();
+		static void DebugDrawAABBTrees();
+		static void ForceTechnique();
+
+		static void* SkipBrokenXModelSurfacesNonOptimized(Game::GfxStaticModelDrawStream* stream, Game::GfxCmdBufSourceState* source, Game::GfxCmdBufState* buffer);
+		static void* SkipBrokenXModelSurfaces(Game::GfxStaticModelDrawStream* stream, Game::GfxCmdBufSourceState* source, Game::GfxCmdBufState* buffer);
+		static int FixSunShadowPartitionSize(Game::GfxCamera* camera, Game::GfxSunShadowMapMetrics* mapMetrics, Game::GfxSunShadow* sunShadow, Game::GfxSunShadowClip* clip, float* partitionFraction);
+
+		static Utils::Signal<Renderer::Callback> EndRecoverDeviceSignal;
+		static Utils::Signal<Renderer::Callback> BeginRecoverDeviceSignal;
 
 		static Utils::Signal<BackendCallback> BackendFrameSignal;
 		static Utils::Signal<BackendCallback> SingleBackendFrameSignal;
+
+		static Dvar::Var r_drawTriggers;
+		static Dvar::Var r_drawSceneModelCollisions;
+		static Dvar::Var r_drawModelBoundingBoxes;
+		static Dvar::Var r_drawModelNames;
+		static Dvar::Var r_drawAABBTrees;
+		static Dvar::Var r_playerDrawDebugDistance;
+		static Dvar::Var r_forceTechnique;
 	};
 }

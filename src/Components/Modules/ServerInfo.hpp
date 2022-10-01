@@ -28,15 +28,18 @@ namespace Components
 			Network::Address target;
 		};
 
+		static Game::dvar_t** CGScoreboardHeight;
+		static Game::dvar_t** CGScoreboardWidth;
+
 		static Container PlayerContainer;
 
-		static void ServerStatus(UIScript::Token);
+		static void ServerStatus([[maybe_unused]] const UIScript::Token& token, [[maybe_unused]] const Game::uiInfo_s* info);
 
 		static unsigned int GetPlayerCount();
 		static const char* GetPlayerText(unsigned int index, int column);
 		static void SelectPlayer(unsigned int index);
 
-		static void DrawScoreboardInfo(void* a1);
+		static void DrawScoreboardInfo(int localClientNum);
 		static void DrawScoreboardStub();
 	};
 }

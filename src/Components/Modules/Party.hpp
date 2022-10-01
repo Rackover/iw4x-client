@@ -6,7 +6,6 @@ namespace Components
 	{
 	public:
 		Party();
-		~Party();
 
 		static Network::Address Target();
 		static void Connect(Network::Address target);
@@ -21,6 +20,8 @@ namespace Components
 
 		static bool IsInUserMapLobby();
 		static bool IsInLobby();
+
+		static bool IsEnabled();
 
 		static std::string GetMotd();
 		static bool IsUsingIw4xProtocol();
@@ -46,9 +47,11 @@ namespace Components
 		static JoinContainer Container;
 		static std::map<uint64_t, Network::Address> LobbyMap;
 
+		static Dvar::Var PartyEnable;
+
 		static SteamID GenerateLobbyId();
 
-		static Game::dvar_t* RegisterMinPlayers(const char* name, int value, int min, int max, Game::dvar_flag flag, const char* description);
+		static Game::dvar_t* RegisterMinPlayers(const char* name, int value, int min, int max, Game::DvarFlags flag, const char* description);
 
 		static DWORD UIDvarIntStub(char* dvar);
 	};

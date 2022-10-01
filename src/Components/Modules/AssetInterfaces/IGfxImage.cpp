@@ -1,4 +1,5 @@
-#include "STDInclude.hpp"
+#include <STDInclude.hpp>
+#include "IGfxImage.hpp"
 
 #define IW4X_IMG_VERSION "0"
 
@@ -12,12 +13,12 @@ namespace Assets
 		image = builder->getAllocator()->allocate<Game::GfxImage>();
 		if (!image)
 		{
-			Components::Logger::Error("Failed to allocate GfxImage structure!");
+			Components::Logger::Error(Game::ERR_FATAL, "Failed to allocate GfxImage structure!");
 			return;
 		}
 
 		image->name = builder->getAllocator()->duplicateString(name);
-		image->semantic = 2;
+		image->semantic = Game::TextureSemantic::TS_COLOR_MAP;
 
 		const char* tempName = image->name;
 		if (tempName[0] == '*') tempName++;
@@ -30,11 +31,11 @@ namespace Assets
 			__int64 magic = reader.read<__int64>();
 			if (std::memcmp(&magic, "IW4xImg" IW4X_IMG_VERSION, 8))
 			{
-				Components::Logger::Error(0, "Reading image '%s' failed, header is invalid!", name.data());
+				Components::Logger::Error(Game::ERR_FATAL, "Reading image '{}' failed, header is invalid!", name);
 			}
 
 			image->mapType = reader.read<char>();
-			image->semantic = reader.read<char>();
+			image->semantic = reader.read<Game::TextureSemantic>();
 			image->category = reader.read<char>();
 
 			int dataLength = reader.read<int>();
@@ -53,7 +54,7 @@ namespace Assets
 
 			if (image->texture.loadDef->resourceSize != dataLength)
 			{
-				Components::Logger::Error("Resource size doesn't match the data length (%s)!\n", name.data());
+				Components::Logger::Error(Game::ERR_FATAL, "Resource size doesn't match the data length ({})!\n", name);
 			}
 
 			image->width = loadDef.dimensions[0];
@@ -72,7 +73,7 @@ namespace Assets
 
 			if (!iwi.exists())
 			{
-				Components::Logger::Error("Loading image '%s' failed!", iwi.getName().data());
+				Components::Logger::Error(Game::ERR_FATAL, "Loading image '{}' failed!", iwi.getName());
 				return;
 			}
 
@@ -82,7 +83,7 @@ namespace Assets
 
 			if (std::memcmp(iwiHeader->tag, "IWi", 3) && iwiHeader->version == 8)
 			{
-				Components::Logger::Error("Image is not a valid IWi!");
+				Components::Logger::Error(Game::ERR_FATAL, "Image is not a valid IWi!");
 				return;
 			}
 
@@ -93,7 +94,7 @@ namespace Assets
 			image->texture.loadDef = builder->getAllocator()->allocate<Game::GfxImageLoadDef>();
 			if (!image->texture.loadDef)
 			{
-				Components::Logger::Error("Failed to allocate GfxImageLoadDef structure!");
+				Components::Logger::Error(Game::ERR_FATAL, "Failed to allocate GfxImageLoadDef structure!");
 				return;
 			}
 

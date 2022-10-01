@@ -1,4 +1,5 @@
-#include "STDInclude.hpp"
+#include <STDInclude.hpp>
+#include "IFxEffectDef.hpp"
 
 #define IW4X_FX_VERSION 1
 
@@ -72,13 +73,13 @@ namespace Assets
 			__int64 magic = buffer.read<__int64>();
 			if (std::memcmp(&magic, "IW4xFx  ", 8))
 			{
-				Components::Logger::Error("Reading fx '%s' failed, header is invalid!", name.data());
+				Components::Logger::Error(Game::ERR_FATAL, "Reading fx '{}' failed, header is invalid!", name);
 			}
 
 			int version = buffer.read<int>();
 			if (version != IW4X_FX_VERSION)
 			{
-				Components::Logger::Error("Reading fx '%s' failed, expected version is %d, but it was %d!", name.data(), IW4X_FX_VERSION, version);
+				Components::Logger::Error(Game::ERR_FATAL, "Reading fx '{}' failed, expected version is {}, but it was {}!", name, IW4X_FX_VERSION, version);
 			}
 
 			Game::FxEffectDef* asset = buffer.readObject<Game::FxEffectDef>();
@@ -188,7 +189,7 @@ namespace Assets
 						}
 						else if (elemDef->extended.trailDef)
 						{
-							Components::Logger::Error("Fx element of type %d has traildef, that's impossible?\n", elemDef->elemType);
+							Components::Logger::Error(Game::ERR_FATAL, "Fx element of type {} has traildef, that's impossible?\n", elemDef->elemType);
 						}
 					}
 				}
@@ -211,14 +212,14 @@ namespace Assets
 			if (format != "iwfx"s)
 			{
 				Game::Com_EndParseSession();
-				Components::Logger::Error("Effect needs to be updated from the legacy format.\n");
+				Components::Logger::Error(Game::ERR_FATAL, "Effect needs to be updated from the legacy format.\n");
 			}
 
 			int version = atoi(Game::Com_Parse(&session));
 			if (version > 2)
 			{
 				Game::Com_EndParseSession();
-				Components::Logger::Error("Version %i is too high. I can only handle up to %i.\n", version, 2);
+				Components::Logger::Error(Game::ERR_FATAL, "Version {} is too high. I can only handle up to 2.\n", version);
 			}
 
 			Utils::Memory::Allocator allocator;
@@ -231,12 +232,12 @@ namespace Assets
 				if (!value) break;
 				if (*value != '{')
 				{
-					Components::Logger::Error("Expected '{' to start a new segment, found '%s' instead.\n", value);
+					Components::Logger::Error(Game::ERR_FATAL, "Expected '{' to start a new segment, found '{}' instead.\n", value);
 				}
 
 				if (efx->elemCount >= ARRAYSIZE(efx->elems))
 				{
-					Components::Logger::Error("Cannot have more than %i segments.\n", ARRAYSIZE(efx->elems));
+					Components::Logger::Error(Game::ERR_FATAL, "Cannot have more than {} segments.\n", ARRAYSIZE(efx->elems));
 				}
 
 				Game::FxEditorElemDef* element = &efx->elems[efx->elemCount];
@@ -253,13 +254,13 @@ namespace Assets
 						{
 							// TODO: Allow loading assets from raw!
 							if (Game::s_elemFields[i].handler(&session, element)) break;
-							Components::Logger::Error("Failed to parse element %s!\n", newValue.data());
+							Components::Logger::Error(Game::ERR_FATAL, "Failed to parse element {}!\n", newValue);
 						}
 					}
 
 					if (!Game::Com_MatchToken(&session, ";", 1))
 					{
-						Components::Logger::Error("Expected token ';'\n");
+						Components::Logger::Error(Game::ERR_FATAL, "Expected token ';'\n");
 					}
 				}
 			}
@@ -390,7 +391,7 @@ namespace Assets
 
 		switch (elemType)
 		{
-		case 7:
+		case Game::FX_ELEM_TYPE_MODEL:
 		{
 			if (visuals->model)
 			{
@@ -400,11 +401,11 @@ namespace Assets
 			break;
 		}
 
-		case 8:
-		case 9:
+		case Game::FX_ELEM_TYPE_OMNI_LIGHT:
+		case Game::FX_ELEM_TYPE_SPOT_LIGHT:
 			break;
 
-		case 0xA:
+		case Game::FX_ELEM_TYPE_SOUND:
 		{
 			if (visuals->soundName)
 			{
@@ -415,7 +416,7 @@ namespace Assets
 			break;
 		}
 
-		case 0xC:
+		case Game::FX_ELEM_TYPE_RUNNER:
 		{
 			if (visuals->effectDef.handle)
 			{
@@ -490,7 +491,7 @@ namespace Assets
 
 				// Save_FxElemDefVisuals
 				{
-					if (elemDef->elemType == 11)
+					if (elemDef->elemType == Game::FX_ELEM_TYPE_DECAL)
 					{
 						if (elemDef->visuals.markArray)
 						{
@@ -500,7 +501,7 @@ namespace Assets
 							Game::FxElemMarkVisuals* destMarkArray = buffer->dest<Game::FxElemMarkVisuals>();
 							buffer->saveArray(elemDef->visuals.markArray, elemDef->visualCount);
 
-							for (char j = 0; j < elemDef->visualCount; ++j)
+							for (auto j = 0; j < elemDef->visualCount; ++j)
 							{
 								if (elemDef->visuals.markArray[j].materials[0])
 								{
@@ -562,7 +563,7 @@ namespace Assets
 				{
 					AssertSize(Game::FxElemExtendedDefPtr, 4);
 
-					if (elemDef->elemType == 3)
+					if (elemDef->elemType == Game::FX_ELEM_TYPE_TRAIL)
 					{
 						// Save_FxTrailDef
 						{
@@ -596,7 +597,7 @@ namespace Assets
 							}
 						}
 					}
-					else if (elemDef->elemType == 6)
+					else if (elemDef->elemType == Game::FX_ELEM_TYPE_SPARK_FOUNTAIN)
 					{
 						if (elemDef->extended.sparkFountainDef)
 						{

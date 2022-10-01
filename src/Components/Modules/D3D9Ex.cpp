@@ -1,4 +1,4 @@
-#include "STDInclude.hpp"
+#include <STDInclude.hpp>
 
 namespace Components
 {
@@ -573,7 +573,7 @@ namespace Components
 		// TODO: Fix the actual error!
 		if (IsBadReadPtr(pConstantData, Vector4fCount * 16))
 		{
-			//Logger::Print("Invalid shader constant array!\n");
+			Logger::Debug("Invalid shader constant array!");
 			return D3DERR_INVALIDCALL;
 		}
 
@@ -748,7 +748,7 @@ namespace Components
 	{
 		if (Dedicated::IsEnabled()) return;
 
-		Dvar::Register<bool>("r_useD3D9Ex", false, Game::dvar_flag::DVAR_FLAG_SAVED, "Use extended d3d9 interface!");
+		Dvar::Register<bool>("r_useD3D9Ex", false, Game::DVAR_ARCHIVE, "Use extended d3d9 interface!");
 
 		// Hook Interface creation
 		Utils::Hook::Set(0x6D74D0, D3D9Ex::Direct3DCreate9Stub);

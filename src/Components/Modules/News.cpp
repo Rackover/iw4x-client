@@ -1,4 +1,4 @@
-#include "STDInclude.hpp"
+#include <STDInclude.hpp>
 
 #define NEWS_MOTD_DEFAULT "Welcome to IW4x Multiplayer!"
 
@@ -13,7 +13,7 @@ namespace Components
 
 		if (News::Thread.joinable())
 		{
-			Logger::Print("Awaiting thread termination...\n");
+			Logger::Debug("Awaiting thread termination...");
 			News::Thread.join();
 
 			if (!strcmp(Localization::Get("MPUI_MOTD_TEXT"), NEWS_MOTD_DEFAULT))
@@ -23,7 +23,7 @@ namespace Components
 			}
 			else
 			{
-				Logger::Print("Successfully fetched motd.\n");
+				Logger::Debug("Successfully fetched motd");
 			}
 		}
 
@@ -39,11 +39,11 @@ namespace Components
 	{
 		if (ZoneBuilder::IsEnabled() || Dedicated::IsEnabled()) return; // Maybe also dedi?
 
-		Dvar::Register<bool>("g_firstLaunch", true, Game::DVAR_FLAG_SAVED, "");
+		Dvar::Register<bool>("g_firstLaunch", true, Game::DVAR_ARCHIVE, "");
 
-		Dvar::Register<int>("cl_updateoldversion", REVISION, REVISION, REVISION, Game::DVAR_FLAG_WRITEPROTECTED, "Current version number.");
+		Dvar::Register<int>("cl_updateoldversion", REVISION, REVISION, REVISION, Game::DVAR_INIT, "Current version number.");
 
-		UIScript::Add("checkFirstLaunch", [](UIScript::Token)
+		UIScript::Add("checkFirstLaunch", []([[maybe_unused]] const UIScript::Token& token, [[maybe_unused]] const Game::uiInfo_s* info)
 		{
 			if (Dvar::Var("g_firstLaunch").get<bool>())
 			{
@@ -52,20 +52,9 @@ namespace Components
 			}
 		});
 
-		UIScript::Add("visitWebsite", [](UIScript::Token)
+		UIScript::Add("visitWebsite", []([[maybe_unused]] const UIScript::Token& token, [[maybe_unused]] const Game::uiInfo_s* info)
 		{
 			Utils::OpenUrl(Utils::Cache::GetStaticUrl(""));
-		});
-
-		UIScript::Add("visitWiki", [](UIScript::Token)
-		{
-			//Utils::OpenUrl(Utils::Cache::GetStaticUrl("/wiki/"));
-			Utils::OpenUrl("https://github.com/Emosewaj/IW4x/wiki");
-		});
-
-		UIScript::Add("visitDiscord", [](UIScript::Token)
-		{
-			Utils::OpenUrl("https://discord.gg/sKeVmR3");
 		});
 
 		Localization::Set("MPUI_CHANGELOG_TEXT", "Loading...");

@@ -7,6 +7,9 @@ namespace Components
 	public:
 		RawFiles();
 
-		static void* LoadModdableRawfileFunc(const char* filename);
+		static char* ReadRawFile(const char* filename, char* buf, int size);
+
+	private:
+		static char* GetMenuBuffer(const char* filename);
 	};
 }

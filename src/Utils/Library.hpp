@@ -9,57 +9,68 @@ namespace Utils
 		static Library Load(const std::filesystem::path& path);
 		static Library GetByAddress(void* address);
 
-		Library() : _module(nullptr), freeOnDestroy(false) {};
-		Library(const std::string& buffer, bool freeOnDestroy);
-		explicit Library(const std::string& name);
+		Library() : module_(nullptr), freeOnDestroy_(false) {}
+		Library(const std::string& name, bool freeOnDestroy);
+		explicit Library(const std::string& name) : module_(GetModuleHandleA(name.data())), freeOnDestroy_(true) {}
 		explicit Library(HMODULE handle);
 		~Library();
 
-		bool IsValid() const;
-		HMODULE GetModule();
+		bool operator!=(const Library& obj) const { return !(*this == obj); }
+		bool operator==(const Library& obj) const;
+
+		operator bool() const;
+		operator HMODULE() const;
+
+		bool isValid() const;
+		HMODULE getModule() const;
+		std::string getName() const;
+		std::string getPath() const;
+		std::string getFolder() const;
+		std::uint8_t* getPtr() const;
+		void free();
 
 		template <typename T>
-		T GetProc(const std::string& process) const
+		T getProc(const std::string& process) const
 		{
-			if (!this->IsValid()) T{};
-			return reinterpret_cast<T>(GetProcAddress(this->_module, process.data()));
+			if (!this->isValid()) T{};
+			return reinterpret_cast<T>(GetProcAddress(this->module_, process.data()));
 		}
 
 		template <typename T>
-		std::function<T> Get(const std::string& process) const
+		std::function<T> get(const std::string& process) const
 		{
-			if (!this->IsValid()) return std::function<T>();
-			return static_cast<T*>(this->GetProc<void*>(process));
+			if (!this->isValid()) return std::function<T>();
+			return static_cast<T*>(this->getProc<void*>(process));
 		}
 
 		template <typename T, typename... Args>
-		T Invoke(const std::string& process, Args ... args) const
+		T invoke(const std::string& process, Args ... args) const
 		{
-			auto method = this->Get<T(__cdecl)(Args ...)>(process);
+			auto method = this->get<T(__cdecl)(Args ...)>(process);
 			if (method) return method(args...);
 			return T();
 		}
 
 		template <typename T, typename... Args>
-		T InvokePascal(const std::string& process, Args ... args) const
+		T invokePascal(const std::string& process, Args ... args) const
 		{
-			auto method = this->Get<T(__stdcall)(Args ...)>(process);
+			auto method = this->get<T(__stdcall)(Args ...)>(process);
 			if (method) return method(args...);
 			return T();
 		}
 
 		template <typename T, typename... Args>
-		T InvokeThis(const std::string& process, void* this_ptr, Args ... args) const
+		T invokeThis(const std::string& process, void* this_ptr, Args ... args) const
 		{
-			auto method = this->Get<T(__thiscall)(void*, Args ...)>(this_ptr, process);
+			auto method = this->get<T(__thiscall)(void*, Args ...)>(this_ptr, process);
 			if (method) return method(args...);
 			return T();
 		}
 
-		void Free();
+		static void LaunchProcess(const std::string& process, const std::string& commandLine, const std::string& currentDir);
 
 	private:
-		HMODULE _module;
-		bool freeOnDestroy;
+		HMODULE module_;
+		bool freeOnDestroy_;
 	};
 }

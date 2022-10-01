@@ -1,13 +1,14 @@
-#include "STDInclude.hpp"
+#include <STDInclude.hpp>
+#include "Isnd_alias_list_t.hpp"
 
 namespace Assets
 {
 	void Isnd_alias_list_t::load(Game::XAssetHeader* header, const std::string& name, Components::ZoneBuilder::Zone* builder)
 	{
-		Components::FileSystem::File aliasFile(Utils::String::VA("sounds/%s", name.c_str()));
+		Components::FileSystem::File aliasFile(Utils::String::VA("sounds/%s.json", name.c_str()));
 		if (!aliasFile.exists())
 		{
-			header->sound = Components::AssetHandler::FindOriginalAsset(this->getType(), name.c_str()).sound;
+			header->sound = Components::AssetHandler::FindOriginalAsset(this->getType(), name.data()).sound;
 			return;
 		}
 
@@ -18,11 +19,10 @@ namespace Assets
 			return;
 		}
 
-		std::string errors;
-		json11::Json infoData = json11::Json::parse(aliasFile.getBuffer(), errors);
-		json11::Json aliasesContainer = infoData["head"];
+		nlohmann::json infoData = nlohmann::json::parse(aliasFile.getBuffer());
+		nlohmann::json aliasesContainer = infoData["head"];
 
-		auto aliases = aliasesContainer.array_items();
+		nlohmann::json::array_t aliases = aliasesContainer;
 
 		aliasList->count = aliases.size();
 
@@ -38,11 +38,11 @@ namespace Assets
 
 		for (size_t i = 0; i < aliasList->count; i++)
 		{
-			json11::Json head = aliasesContainer[i];
+			nlohmann::json head = aliasesContainer[i];
 
 			if (!infoData.is_object())
 			{
-				Components::Logger::Error("Failed to load sound %s!", name.c_str());
+				Components::Logger::Error(Game::ERR_FATAL, "Failed to load sound {}!", name);
 				return;
 			}
 
@@ -86,14 +86,14 @@ namespace Assets
 			{
 				soundFile = head["soundfile"];
 
-				Components::Logger::Print("Fixed casing on %s\n", name.c_str());
+				Components::Logger::Print("Fixed casing on {}\n", name);
 			}
 
 			if (type.is_null() || soundFile.is_null())
 			{
-				Components::Logger::Print("Type is %s\n", type.dump().c_str());
-				Components::Logger::Print("SoundFile is %s\n", soundFile.dump().c_str());
-				Components::Logger::Error("Failed to parse sound %s! Each alias must have at least a type and a soundFile\n", name.c_str());
+				Components::Logger::Print("Type is {}\n", type.dump());
+				Components::Logger::Print("SoundFile is {}\n", soundFile.dump());
+				Components::Logger::Error(Game::ERR_FATAL, "Failed to parse sound {}! Each alias must have at least a type and a soundFile\n", name);
 				return;
 			}
 
@@ -102,102 +102,102 @@ namespace Assets
 			// TODO: actually support all of those properties
 			if (!CHECK(type, number))
 			{
-				Components::Logger::Print("%s is not number but %d (%s)\n", "type", type.type(), type.dump().c_str());
+				Components::Logger::Print("{} is not number but {} ({})\n", "type", Utils::Json::TypeToString(type.type()), type.dump());
 			}
 
 			if (!CHECK(subtitle, string))
 			{
-				Components::Logger::Print("%s is not string but %d (%s)\n", "subtitle", subtitle.type(), subtitle.dump().c_str());
+				Components::Logger::Print("{} is not string but {} ({})\n", "subtitle", Utils::Json::TypeToString(subtitle.type()), subtitle.dump());
 			}
 
 			if (!CHECK(aliasName, string))
 			{
-				Components::Logger::Print("%s is not string but %d (%s)\n", "aliasName", aliasName.type(), aliasName.dump().c_str());
+				Components::Logger::Print("{} is not string but {} ({})\n", "aliasName", Utils::Json::TypeToString(aliasName.type()), aliasName.dump());
 			}
 
 			if (!CHECK(secondaryAliasName, string))
 			{
-				Components::Logger::Print("%s is not string but %d (%s)\n", "secondaryAliasName", secondaryAliasName.type(), secondaryAliasName.dump().c_str());
+				Components::Logger::Print("{} is not string but {} ({})\n", "secondaryAliasName", Utils::Json::TypeToString(secondaryAliasName.type()), secondaryAliasName.dump());
 			}
 
 			if (!CHECK(chainAliasName, string))
 			{
-				Components::Logger::Print("%s is not string but %d (%s)\n", "chainAliasName", chainAliasName.type(), chainAliasName.dump().c_str());
+				Components::Logger::Print("{} is not string but {} ({})\n", "chainAliasName", Utils::Json::TypeToString(chainAliasName.type()), chainAliasName.dump());
 			}
 
 			if (!CHECK(soundFile, string))
 			{
-				Components::Logger::Print("%s is not string but %d (%s)\n", "soundFile", soundFile.type(), soundFile.dump().c_str());
+				Components::Logger::Print("{} is not string but {} ({})\n", "soundFile", Utils::Json::TypeToString(soundFile.type()), soundFile.dump());
 			}
 
 			if (!CHECK(sequence, number))
 			{
-				Components::Logger::Print("%s is not number but %d (%s)\n", "sequence", sequence.type(), sequence.dump().c_str());
+				Components::Logger::Print("{} is not number but {} ({})\n", "sequence", Utils::Json::TypeToString(sequence.type()), sequence.dump());
 			}
 
 			if (!CHECK(volMin, number))
 			{
-				Components::Logger::Print("%s is not number but %d (%s)\n", "volMin", volMin.type(), volMin.dump().c_str());
+				Components::Logger::Print("{} is not number but {} ({})\n", "volMin", Utils::Json::TypeToString(volMin.type()), volMin.dump());
 			}
 
 			if (!CHECK(volMax, number))
 			{
-				Components::Logger::Print("%s is not number but %d (%s)\n", "volMax", volMax.type(), volMax.dump().c_str());
+				Components::Logger::Print("{} is not number but {} ({})\n", "volMax", Utils::Json::TypeToString(volMax.type()), volMax.dump());
 			}
 
 			if (!CHECK(pitchMin, number))
 			{
-				Components::Logger::Print("%s is not number but %d (%s)\n", "pitchMin", pitchMin.type(), pitchMin.dump().c_str());
+				Components::Logger::Print("{} is not number but {} ({})\n", "pitchMin", Utils::Json::TypeToString(pitchMin.type()), pitchMin.dump());
 			}
 
 			if (!CHECK(pitchMax, number))
 			{
-				Components::Logger::Print("%s is not number but %d (%s)\n", "pitchMax", pitchMax.type(), pitchMax.dump().c_str());
+				Components::Logger::Print("{} is not number but {} ()\n", "pitchMax", Utils::Json::TypeToString(pitchMax.type()), pitchMax.dump());
 			}
 
 			if (!CHECK(probability, number))
 			{
-				Components::Logger::Print("%s is not number but %d (%s)\n", "probability", probability.type(), probability.dump().c_str());
+				Components::Logger::Print("{} is not number but {} ({}))\n", "probability", Utils::Json::TypeToString(probability.type()), probability.dump());
 			}
 
 			if (!CHECK(lfePercentage, number))
 			{
-				Components::Logger::Print("%s is not number but %d (%s)\n", "lfePercentage", lfePercentage.type(), lfePercentage.dump().c_str());
+				Components::Logger::Print("{} is not number but {} ({})\n", "lfePercentage", Utils::Json::TypeToString(lfePercentage.type()), lfePercentage.dump());
 			}
 
 			if (!CHECK(centerPercentage, number))
 			{
-				Components::Logger::Print("%s is not number but %d (%s)\n", "centerPercentage", centerPercentage.type(), centerPercentage.dump().c_str());
+				Components::Logger::Print("{} is not number but {} ({})\n", "centerPercentage", Utils::Json::TypeToString(centerPercentage.type()), centerPercentage.dump());
 			}
 
 			if (!CHECK(startDelay, number))
 			{
-				Components::Logger::Print("%s is not number but %d (%s)\n", "startDelay", startDelay.type(), startDelay.dump().c_str());
+				Components::Logger::Print("{} is not number but {} ({})\n", "startDelay", Utils::Json::TypeToString(startDelay.type()), startDelay.dump());
 			}
 
 			if (!CHECK(volumeFalloffCurve, string))
 			{
-				Components::Logger::Print("%s is not string but %d (%s)\n", "volumeFalloffCurve", volumeFalloffCurve.type(), volumeFalloffCurve.dump().c_str());
+				Components::Logger::Print("{}s is not string but {} ({})\n", "volumeFalloffCurve", Utils::Json::TypeToString(volumeFalloffCurve.type()), volumeFalloffCurve.dump());
 			}
 
 			if (!CHECK(envelopMin, number))
 			{
-				Components::Logger::Print("%s is not number but %d (%s)\n", "envelopMin", envelopMin.type(), envelopMin.dump().c_str());
+				Components::Logger::Print("{} is not number but {} ({})\n", "envelopMin", Utils::Json::TypeToString(envelopMin.type()), envelopMin.dump());
 			}
 
 			if (!CHECK(envelopMax, number))
 			{
-				Components::Logger::Print("%s is not number but %d (%s)\n", "envelopMax", envelopMax.type(), envelopMax.dump().c_str());
+				Components::Logger::Print("{} is not number but {} ({})\n", "envelopMax", Utils::Json::TypeToString(envelopMax.type()), envelopMax.dump());
 			}
 
 			if (!CHECK(envelopPercentage, number))
 			{
-				Components::Logger::Print("%s is not number but %d (%s)\n", "envelopPercentage", envelopPercentage.type(), envelopPercentage.dump().c_str());
+				Components::Logger::Print("{} is not number but {} ({})\n", "envelopPercentage", Utils::Json::TypeToString(envelopPercentage.type()), envelopPercentage.dump());
 			}
 
 			if (!CHECK(speakerMap, object))
 			{
-				Components::Logger::Print("%s is not object but %d (%s)\n", "speakerMap", speakerMap.type(), speakerMap.dump().c_str());
+				Components::Logger::Print("{} is not object but {} ({})\n", "speakerMap", Utils::Json::TypeToString(speakerMap.type()), speakerMap.dump());
 			}
 
 
@@ -210,37 +210,37 @@ namespace Assets
 			{
 
 				alias->soundFile->exists = true;
-				alias->aliasName = builder->getAllocator()->duplicateString(aliasName.string_value().c_str());
+				alias->aliasName = builder->getAllocator()->duplicateString(aliasName.get<std::string>());
 
 				if (subtitle.is_string())
 				{
-					alias->subtitle = builder->getAllocator()->duplicateString(subtitle.string_value().c_str());
+					alias->subtitle = builder->getAllocator()->duplicateString(subtitle.get<std::string>());
 				}
 				if (secondaryAliasName.is_string())
 				{
-					alias->secondaryAliasName = builder->getAllocator()->duplicateString(secondaryAliasName.string_value().c_str());
+					alias->secondaryAliasName = builder->getAllocator()->duplicateString(secondaryAliasName.get<std::string>());
 				}
 				if (chainAliasName.is_string())
 				{
-					alias->chainAliasName = builder->getAllocator()->duplicateString(chainAliasName.string_value().c_str());
+					alias->chainAliasName = builder->getAllocator()->duplicateString(chainAliasName.get<std::string>());
 				}
 
-				alias->sequence = sequence.int_value();
-				alias->volMin = float(volMin.number_value());
-				alias->volMax = float(volMax.number_value());
-				alias->pitchMin = float(pitchMin.number_value());
-				alias->pitchMax = float(pitchMax.number_value());
-				alias->distMin = float(distMin.number_value());
-				alias->distMax = float(distMax.number_value());
-				alias->flags = flags.int_value();
-				alias->___u15.slavePercentage = float(slavePercentage.number_value());
-				alias->probability = float(probability.number_value());
-				alias->lfePercentage = float(lfePercentage.number_value());
-				alias->centerPercentage = float(centerPercentage.number_value());
-				alias->startDelay = startDelay.int_value();
-				alias->envelopMin = float(envelopMin.number_value());
-				alias->envelopMax = float(envelopMax.number_value());
-				alias->envelopPercentage = float(envelopPercentage.number_value());
+				alias->sequence = sequence.get<int>();
+				alias->volMin = volMin.get<float>();
+				alias->volMax = volMax.get<float>();
+				alias->pitchMin = pitchMin.get<float>();
+				alias->pitchMax = pitchMax.get<float>();
+				alias->distMin = distMin.get<float>();
+				alias->distMax = distMax.get<float>();
+				alias->flags = flags.get<int>();
+				alias->___u15.slavePercentage = slavePercentage.get<float>();
+				alias->probability = probability.get<float>();
+				alias->lfePercentage = lfePercentage.get<float>();
+				alias->centerPercentage = centerPercentage.get<float>();
+				alias->startDelay = startDelay.get<int>();
+				alias->envelopMin = envelopMin.get<float>();
+				alias->envelopMax = envelopMax.get<float>();
+				alias->envelopPercentage = envelopPercentage.get<float>();
 
 				// Speaker map object
 				if (!speakerMap.is_null())
@@ -248,16 +248,16 @@ namespace Assets
 					alias->speakerMap = builder->getAllocator()->allocate<Game::SpeakerMap>();
 					if (!alias->speakerMap)
 					{
-						Components::Logger::Print("Error allocating memory for speakermap in sound alias%s!\n", alias->aliasName);
+						Components::Logger::Print("Error allocating memory for speakermap in sound alias{}!\n", alias->aliasName);
 						return;
 					}
 
-					alias->speakerMap->name = builder->getAllocator()->duplicateString(speakerMap["name"].string_value().c_str());
-					alias->speakerMap->isDefault = speakerMap["isDefault"].bool_value();
+					alias->speakerMap->name = builder->getAllocator()->duplicateString(speakerMap["name"].get<std::string>());
+					alias->speakerMap->isDefault = speakerMap["isDefault"].get<bool>();
 
 					if (speakerMap["channelMaps"].is_array())
 					{
-						json11::Json::array channelMaps = speakerMap["channelMaps"].array_items();
+						nlohmann::json::array_t channelMaps = speakerMap["channelMaps"];
 
 						assert(channelMaps.size() <= 4);
 
@@ -267,19 +267,19 @@ namespace Assets
 							// subChannelIndex should never exceed 1
 							for (size_t subChannelIndex = 0; subChannelIndex < 2; subChannelIndex++)
 							{
-								json11::Json channelMap = channelMaps[channelMapIndex * 2 + subChannelIndex]; // 0-3
+								nlohmann::json channelMap = channelMaps[channelMapIndex * 2 + subChannelIndex]; // 0-3
 
-								auto speakers = channelMap["speakers"].array_items();
+								nlohmann::json::array_t  speakers = channelMap["speakers"];
 
 								alias->speakerMap->channelMaps[channelMapIndex][subChannelIndex].speakerCount = speakers.size();
 
 								for (size_t speakerIndex = 0; speakerIndex < alias->speakerMap->channelMaps[channelMapIndex][subChannelIndex].speakerCount; speakerIndex++)
 								{
 									auto speaker = speakers[speakerIndex];
-									alias->speakerMap->channelMaps[channelMapIndex][subChannelIndex].speakers[speakerIndex].levels[0] = static_cast<float>(speaker["levels0"].number_value());
-									alias->speakerMap->channelMaps[channelMapIndex][subChannelIndex].speakers[speakerIndex].levels[1] = static_cast<float>(speaker["levels1"].number_value());
-									alias->speakerMap->channelMaps[channelMapIndex][subChannelIndex].speakers[speakerIndex].numLevels = static_cast<int>(speaker["numLevels"].number_value());
-									alias->speakerMap->channelMaps[channelMapIndex][subChannelIndex].speakers[speakerIndex].speaker = static_cast<int>(speaker["speaker"].number_value());
+									alias->speakerMap->channelMaps[channelMapIndex][subChannelIndex].speakers[speakerIndex].levels[0] = speaker["levels0"].get<float>();
+									alias->speakerMap->channelMaps[channelMapIndex][subChannelIndex].speakers[speakerIndex].levels[1] = speaker["levels1"].get<float>();
+									alias->speakerMap->channelMaps[channelMapIndex][subChannelIndex].speakers[speakerIndex].numLevels = speaker["numLevels"].get<int>();
+									alias->speakerMap->channelMaps[channelMapIndex][subChannelIndex].speakers[speakerIndex].speaker = speaker["speaker"].get<int>();
 								}
 							}
 						}
@@ -288,7 +288,7 @@ namespace Assets
 
 				if (volumeFalloffCurve.is_string())
 				{
-					std::string fallOffCurve = volumeFalloffCurve.string_value();
+					std::string fallOffCurve = volumeFalloffCurve.get<std::string>();
 
 					if (fallOffCurve.size() == 0)
 					{
@@ -304,16 +304,16 @@ namespace Assets
 					alias->volumeFalloffCurve = curve;
 				}
 
-				if (static_cast<Game::snd_alias_type_t>(type.number_value()) == Game::snd_alias_type_t::SAT_LOADED) // Loaded
+				if (static_cast<Game::snd_alias_type_t>(type.get<int>()) == Game::snd_alias_type_t::SAT_LOADED) // Loaded
 				{
 					alias->soundFile->type = Game::SAT_LOADED;
-					alias->soundFile->u.loadSnd = Components::AssetHandler::FindAssetForZone(Game::XAssetType::ASSET_TYPE_LOADED_SOUND, soundFile.string_value().c_str(), builder).loadSnd;
+					alias->soundFile->u.loadSnd = Components::AssetHandler::FindAssetForZone(Game::XAssetType::ASSET_TYPE_LOADED_SOUND, soundFile.get<std::string>(), builder).loadSnd;
 				}
-				else if (static_cast<Game::snd_alias_type_t>(type.number_value()) == Game::snd_alias_type_t::SAT_STREAMED) // Streamed 
+				else if (static_cast<Game::snd_alias_type_t>(type.get<int>()) == Game::snd_alias_type_t::SAT_STREAMED) // Streamed 
 				{
 					alias->soundFile->type = Game::SAT_STREAMED;
 
-					std::string streamedFile = soundFile.string_value();
+					std::string streamedFile = soundFile.get<std::string>();
 					std::string directory = ""s;
 					int split = streamedFile.find_last_of('/');
 
@@ -328,7 +328,7 @@ namespace Assets
 				}
 				else
 				{
-					Components::Logger::Error("Failed to parse sound %s! Invalid sound type %s\n", name.c_str(), type.string_value().c_str());
+					Components::Logger::Error(Game::ERR_FATAL, "Failed to parse sound {}! Invalid sound type {}\n", name, type.get<std::string>());
 					return;
 				}
 
@@ -336,7 +336,7 @@ namespace Assets
 			}
 			else
 			{
-				Components::Logger::Error("Failed to parse sound %s!\n", name.c_str());
+				Components::Logger::Error(Game::ERR_FATAL, "Failed to parse sound {}!\n", name);
 				return;
 			}
 		}

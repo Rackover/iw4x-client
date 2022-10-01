@@ -6,14 +6,14 @@ namespace Components
 	{
 	public:
 		ServerCommands();
-		~ServerCommands();
 
-		static void OnCommand(std::int32_t cmd, Utils::Slot<bool(Command::Params*)> cb);
+		using serverCommandHandler = std::function<bool(Command::Params*)>;
+		static void OnCommand(std::int32_t cmd, const serverCommandHandler& callback);
 
 	private:
-		static std::unordered_map<std::int32_t, Utils::Slot<bool(Command::Params*)>> Commands;
+		static std::unordered_map<std::int32_t, serverCommandHandler> Commands;
 
 		static bool OnServerCommand();
-		static void OnServerCommandStub();
+		static void CG_DeployServerCommand_Stub();
 	};
 }

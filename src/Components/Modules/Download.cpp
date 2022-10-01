@@ -1,14 +1,14 @@
-#include "STDInclude.hpp"
+#include <STDInclude.hpp>
+#include "GSC/Script.hpp"
 
 namespace Components
 {
 	mg_mgr Download::Mgr;
 	Download::ClientDownload Download::CLDownload;
-	std::vector<std::shared_ptr<Download::ScriptDownload>> Download::ScriptDownloads;
 
 	std::thread Download::ServerThread;
 	bool Download::Terminate;
-    bool Download::ServerRunning;
+	bool Download::ServerRunning;
 
 #pragma region Client
 
@@ -21,12 +21,12 @@ namespace Components
 	{
 		if (Download::CLDownload.running) return;
 
-		Scheduler::Once([]()
+		Scheduler::Once([]
 		{
 			Dvar::Var("ui_dl_timeLeft").set(Utils::String::FormatTimeSpan(0));
 			Dvar::Var("ui_dl_progress").set("(0/0) %");
 			Dvar::Var("ui_dl_transRate").set("0.0 MB/s");
-		});
+		}, Scheduler::Pipeline::MAIN);
 
 		Command::Execute("openmenu mod_download_popmenu", false);
 
@@ -62,17 +62,18 @@ namespace Components
 		download->files.clear();
 
 		std::string error;
-		json11::Json listData = json11::Json::parse(list, error);
+		nlohmann::json listData = nlohmann::json::parse(list);
 
 		if (!error.empty() || !listData.is_array())
 		{
-			Logger::Print("Error: %s\n", error.data());
+			Logger::Print("Error: {}\n", error);
 			return false;
 		}
 
 		download->totalBytes = 0;
+		nlohmann::json::array_t listDataArray = listData;
 
-		for (auto& file : listData.array_items())
+		for (auto& file : listDataArray)
 		{
 			if (!file.is_object()) return false;
 
@@ -83,9 +84,9 @@ namespace Components
 			if (!hash.is_string() || !name.is_string() || !size.is_number()) return false;
 
 			Download::ClientDownload::File fileEntry;
-			fileEntry.name = name.string_value();
-			fileEntry.hash = hash.string_value();
-			fileEntry.size = static_cast<size_t>(size.number_value());
+			fileEntry.name = name.get<std::string>();
+			fileEntry.hash = hash.get<std::string>();
+			fileEntry.size = size.get<size_t>();
 
 			if (!fileEntry.name.empty())
 			{
@@ -155,22 +156,23 @@ namespace Components
 			}
 		}
 
-		std::string host = "http://" + download->target.getString();
-		std::string fastHost = Dvar::Var("sv_wwwBaseUrl").get<std::string>();
+		auto host = "http://" + download->target.getString();
+		auto fastHost = Dvar::Var("sv_wwwBaseUrl").get<std::string>();
 		if (Utils::String::StartsWith(fastHost, "https://"))
 		{
 			download->thread.detach();
 			download->clear();
 
-			Scheduler::Once([]()
+			Scheduler::Once([]
 			{
 				Command::Execute("closemenu mod_download_popmenu");
 				Party::ConnectError("HTTPS not supported for downloading!");
-			});
+			}, Scheduler::Pipeline::CLIENT);
 
-			return 0;
+			return false;
 		}
-		else if (!Utils::String::StartsWith(fastHost, "http://"))
+
+		if (!Utils::String::StartsWith(fastHost, "http://"))
 		{
 			fastHost = "http://" + fastHost;
 		}
@@ -201,7 +203,7 @@ namespace Components
 				+ (download->isPrivate ? ("?password=" + download->hashedPassword) : "");
 		}
 
-		Logger::Print("Downloading from url %s\n", url.data());
+		Logger::Print("Downloading from url {}\n", url);
 
 		Download::FileDownload fDownload;
 		fDownload.file = file;
@@ -277,11 +279,11 @@ namespace Components
 			download->thread.detach();
 			download->clear();
 
-			Scheduler::Once([]()
+			Scheduler::Once([]
 			{
 				Command::Execute("closemenu mod_download_popmenu");
 				Party::ConnectError("Failed to download the modlist!");
-			});
+			}, Scheduler::Pipeline::CLIENT);
 
 			return;
 		}
@@ -295,11 +297,11 @@ namespace Components
 			download->thread.detach();
 			download->clear();
 
-			Scheduler::Once([]()
+			Scheduler::Once([]
 			{
 				Command::Execute("closemenu mod_download_popmenu");
 				Party::ConnectError("Failed to parse the modlist!");
-			});
+			}, Scheduler::Pipeline::CLIENT);
 
 			return;
 		}
@@ -321,14 +323,14 @@ namespace Components
 				download->thread.detach();
 				download->clear();
 
-				Scheduler::Once([]()
+				Scheduler::Once([]
 				{
 					Dvar::Var("partyend_reason").set(mod);
 					mod.clear();
 
 					Command::Execute("closemenu mod_download_popmenu");
 					Command::Execute("openmenu menu_xboxlive_partyended");
-				});
+				}, Scheduler::Pipeline::CLIENT);
 
 				return;
 			}
@@ -341,19 +343,19 @@ namespace Components
 
 		if (download->isMap)
 		{
-			Scheduler::Once([]()
+			Scheduler::Once([]
 			{
 				Command::Execute("reconnect", false);
-			});
+			}, Scheduler::Pipeline::CLIENT);
 		}
 		else
 		{
 			// Run this on the main thread
-			Scheduler::Once([]()
+			Scheduler::Once([]
 			{
-				auto fsGame = Dvar::Var("fs_game");
-				fsGame.set(mod);
-				fsGame.get<Game::dvar_t*>()->modified = true;
+				Game::Dvar_SetString(*Game::fs_gameDirVar, mod.data());
+				const_cast<Game::dvar_t*>(*Game::fs_gameDirVar)->modified = true;
+
 				mod.clear();
 
 				Command::Execute("closemenu mod_download_popmenu", false);
@@ -364,7 +366,7 @@ namespace Components
 				}
 
 				Command::Execute("reconnect", false);
-			});
+			}, Scheduler::Pipeline::MAIN);
 		}
 	}
 
@@ -381,13 +383,13 @@ namespace Components
 	{
 		Network::Address address(nc->sa.sa);
 
-		for (int i = 0; i < *Game::svs_numclients; ++i)
+		for (int i = 0; i < *Game::svs_clientCount; ++i)
 		{
 			Game::client_t* client = &Game::svs_clients[i];
 
-			if (client->state >= 3)
+			if (client->header.state >= Game::CS_CONNECTED)
 			{
-				if (address.getIP().full == Network::Address(client->addr).getIP().full)
+				if (address.getIP().full == Network::Address(client->header.netchan.remoteAddress).getIP().full)
 				{
 					return client;
 				}
@@ -419,11 +421,11 @@ namespace Components
 			dlProgress = static_cast<unsigned int>(progress);
 
 			framePushed = true;
-			Scheduler::Once([]()
+			Scheduler::Once([]
 			{
 				framePushed = false;
 				Dvar::Var("ui_dl_progress").set(Utils::String::VA("(%d/%d) %d%%", dlIndex, dlSize, dlProgress));
-			});
+			}, Scheduler::Pipeline::CLIENT);
 		}
 
 		int delta = Game::Sys_Milliseconds() - fDownload->download->lastTimeStamp;
@@ -449,11 +451,11 @@ namespace Components
 				dlDelta = delta;
 				dlTsBytes = fDownload->download->timeStampBytes;
 
-				Scheduler::Once([]()
+				Scheduler::Once([]
 				{
 					Dvar::Var("ui_dl_timeLeft").set(Utils::String::FormatTimeSpan(dlTimeLeft));
 					Dvar::Var("ui_dl_transRate").set(Utils::String::FormatBandwidth(dlTsBytes, dlDelta));
-				});
+				}, Scheduler::Pipeline::MAIN);
 			}
 
 			fDownload->download->timeStampBytes = 0;
@@ -500,14 +502,14 @@ namespace Components
 		// Only handle http requests
 		if (ev != MG_EV_HTTP_REQUEST) return;
 
-		std::vector<json11::Json> servers;
+		std::vector<nlohmann::json> servers;
 
 		// Build server list
 		for (auto& node : Node::GetNodes())
 		{
 			if (node.isValid())
 			{
-				servers.push_back(json11::Json{ node });
+				servers.push_back(nlohmann::json{ node.to_json()});
 			}
 		}
 
@@ -517,7 +519,7 @@ namespace Components
 			"Connection: close\r\n"
 			"Access-Control-Allow-Origin: *\r\n"
 			"\r\n"
-			"%s", json11::Json(servers).dump().data());
+			"%s", nlohmann::json(servers).dump().data());
 
 		nc->flags |= MG_F_SEND_AND_CLOSE;
 	}
@@ -530,17 +532,17 @@ namespace Components
 		if (!Download::VerifyPassword(nc, reinterpret_cast<http_message*>(ev_data))) return;
 
 		static std::string mapnamePre;
-		static json11::Json jsonList;
+		static nlohmann::json jsonList;
 
 		std::string mapname = (Party::IsInUserMapLobby() ? Dvar::Var("ui_mapname").get<std::string>() : Maps::GetUserMap()->getName());
 		if (!Maps::GetUserMap()->isValid() && !Party::IsInUserMapLobby())
 		{
 			mapnamePre.clear();
-			jsonList = std::vector<json11::Json>();
+			jsonList = std::vector<nlohmann::json>();
 		}
 		else if (!mapname.empty() && mapname != mapnamePre)
 		{
-			std::vector<json11::Json> fileList;
+			std::vector<nlohmann::json> fileList;
 
 			mapnamePre = mapname;
 
@@ -551,7 +553,7 @@ namespace Components
 				std::string filename = path + "\\" + mapname + Maps::UserMapFiles[i];
 				if (Utils::IO::FileExists(filename))
 				{
-					std::map<std::string, json11::Json> file;
+					std::map<std::string, nlohmann::json> file;
 					std::string fileBuffer = Utils::IO::ReadFile(filename);
 
 					file["name"] = mapname + Maps::UserMapFiles[i];
@@ -589,13 +591,13 @@ namespace Components
 // 		else
 		{
 			static std::string fsGamePre;
-			static json11::Json jsonList;
+			static nlohmann::json jsonList;
 
-			std::string fsGame = Dvar::Var("fs_game").get<std::string>();
+			const std::string fsGame = (*Game::fs_gameDirVar)->current.string;
 
 			if (!fsGame.empty() && fsGame != fsGamePre)
 			{
-				std::vector<json11::Json> fileList;
+				std::vector<nlohmann::json> fileList;
 
 				fsGamePre = fsGame;
 
@@ -609,7 +611,7 @@ namespace Components
 					std::string filename = path + "\\" + *i;
 					if (strstr(i->data(), "_svr_") == nullptr && Utils::IO::FileExists(filename))
 					{
-						std::map<std::string, json11::Json> file;
+						std::map<std::string, nlohmann::json> file;
 						std::string fileBuffer = Utils::IO::ReadFile(filename);
 
 						file["name"] = *i;
@@ -695,7 +697,7 @@ namespace Components
 			}
 
 			std::string file;
-			std::string fsGame = Dvar::Var("fs_game").get<std::string>();
+			const std::string fsGame = (*Game::fs_gameDirVar)->current.string;
 			std::string path = Dvar::Var("fs_basepath").get<std::string>() + "\\" + (isMap ? "" : fsGame + "\\") + url;
 
 			if ((!isMap && fsGame.empty()) || !Utils::IO::ReadFile(path, &file))
@@ -733,23 +735,23 @@ namespace Components
 		Utils::InfoString status = ServerInfo::GetInfo();
 		Utils::InfoString host = ServerInfo::GetHostInfo();
 
-		std::map<std::string, json11::Json> info;
+		std::map<std::string, nlohmann::json> info;
 		info["status"] = status.to_json();
 		info["host"] = host.to_json();
 
-		std::vector<json11::Json> players;
+		std::vector<nlohmann::json> players;
 
 		// Build player list
 		for (int i = 0; i < atoi(status.get("sv_maxclients").data()); ++i) // Maybe choose 18 here?
 		{
-			std::map<std::string, json11::Json> playerInfo;
+			std::map<std::string, nlohmann::json> playerInfo;
 			playerInfo["score"] = 0;
 			playerInfo["ping"] = 0;
 			playerInfo["name"] = "";
 
-			if (Dvar::Var("sv_running").get<bool>())
+			if ((*Game::com_sv_running)->current.enabled)
 			{
-				if (Game::svs_clients[i].state < 3) continue;
+				if (Game::svs_clients[i].header.state < Game::CS_CONNECTED) continue;
 
 				playerInfo["score"] = Game::SV_GameClientNum_Score(i);
 				playerInfo["ping"] = Game::svs_clients[i].ping;
@@ -758,13 +760,13 @@ namespace Components
 			else
 			{
 				// Score and ping are irrelevant
-				const char* namePtr = Game::PartyHost_GetMemberName(reinterpret_cast<Game::PartyData_t*>(0x1081C00), i);
+				const char* namePtr = Game::PartyHost_GetMemberName(Game::g_lobbyData, i);
 				if (!namePtr || !namePtr[0]) continue;
 
 				playerInfo["name"] = namePtr;
 			}
 
-			players.push_back(playerInfo);
+			players.emplace_back(playerInfo);
 		}
 
 		info["players"] = players;
@@ -775,7 +777,7 @@ namespace Components
 			"Connection: close\r\n"
 			"Access-Control-Allow-Origin: *\r\n"
 			"\r\n"
-			"%s", json11::Json(info).dump().data());
+			"%s", nlohmann::json(info).dump().data());
 
 		nc->flags |= MG_F_SEND_AND_CLOSE;
 	}
@@ -888,7 +890,7 @@ namespace Components
 				}
 			});
 
-            Download::ServerRunning = true;
+			Download::ServerRunning = true;
 			Download::Terminate = false;
 			Download::ServerThread = std::thread([]
 			{
@@ -900,99 +902,32 @@ namespace Components
 		}
 		else
 		{
-			Dvar::OnInit([]()
+			Scheduler::Once([]
 			{
-				Dvar::Register<const char*>("ui_dl_timeLeft", "", Game::dvar_flag::DVAR_FLAG_NONE, "");
-				Dvar::Register<const char*>("ui_dl_progress", "", Game::dvar_flag::DVAR_FLAG_NONE, "");
-				Dvar::Register<const char*>("ui_dl_transRate", "", Game::dvar_flag::DVAR_FLAG_NONE, "");
-			});
+				Dvar::Register<const char*>("ui_dl_timeLeft", "", Game::DVAR_NONE, "");
+				Dvar::Register<const char*>("ui_dl_progress", "", Game::DVAR_NONE, "");
+				Dvar::Register<const char*>("ui_dl_transRate", "", Game::DVAR_NONE, "");
+			}, Scheduler::Pipeline::MAIN);
 
-			UIScript::Add("mod_download_cancel", [](UIScript::Token)
+			UIScript::Add("mod_download_cancel", []([[maybe_unused]] const UIScript::Token& token, [[maybe_unused]] const Game::uiInfo_s* info)
 			{
 				Download::CLDownload.clear();
 			});
 		}
 
-		Dvar::OnInit([]()
+		Scheduler::Once([]
 		{
-			Dvar::Register<bool>("sv_wwwDownload", false, Game::dvar_flag::DVAR_FLAG_DEDISAVED, "Set to true to enable downloading maps/mods from an external server.");
-			Dvar::Register<const char*>("sv_wwwBaseUrl", "", Game::dvar_flag::DVAR_FLAG_DEDISAVED, "Set to the base url for the external map download.");
+			Dvar::Register<bool>("sv_wwwDownload", false, Game::DVAR_ARCHIVE, "Set to true to enable downloading maps/mods from an external server.");
+			Dvar::Register<const char*>("sv_wwwBaseUrl", "", Game::DVAR_ARCHIVE, "Set to the base url for the external map download.");
 
-            // Force users to enable this because we don't want to accidentally turn everyone's pc into a http server into all their files again
-            // not saying we are but ya know... accidents happen
-            // by having it saved we force the user to enable it in config_mp because it only checks the dvar on startup to see if we should init download or not
-            Dvar::Register<bool>("mod_force_download_server", false, Game::dvar_flag::DVAR_FLAG_SAVED, "Set to true to force the client to run the download server for mods (for mods in private matches).");
-		});
+			// Force users to enable this because we don't want to accidentally turn everyone's pc into a http server into all their files again
+			// not saying we are but ya know... accidents happen
+			// by having it saved we force the user to enable it in config_mp because it only checks the dvar on startup to see if we should init download or not
+			Dvar::Register<bool>("mod_force_download_server", false, Game::DVAR_ARCHIVE, "Set to true to force the client to run the download server for mods (for mods in private matches).");
+		}, Scheduler::Pipeline::MAIN);
 
-		Scheduler::OnFrame([]()
-		{
-			int workingCount = 0;
-
-			for (auto i = Download::ScriptDownloads.begin(); i != Download::ScriptDownloads.end();)
-			{
-				auto download = *i;
-
-				if (download->isDone())
-				{
-					download->notifyDone();
-					i = Download::ScriptDownloads.erase(i);
-					continue;
-				}
-
-				if (download->isWorking())
-				{
-					download->notifyProgress();
-					++workingCount;
-				}
-
-				++i;
-			}
-
-			for (auto& download : Download::ScriptDownloads)
-			{
-				if (workingCount > 5) break;
-				if (!download->isWorking())
-				{
-					download->startWorking();
-					++workingCount;
-				}
-			}
-		});
-
-		Script::OnVMShutdown([]()
-		{
-			Download::ScriptDownloads.clear();
-		});
-
-		Script::AddFunction("httpGet", [](Game::scr_entref_t)
-		{
-			if (!Dedicated::IsEnabled() && !Flags::HasFlag("scriptablehttp")) return;
-			if (Game::Scr_GetNumParam() < 1) return;
-
-			std::string url = Game::Scr_GetString(0);
-			unsigned int object = Game::AllocObject();
-
-			Game::Scr_AddObject(object);
-
-			Download::ScriptDownloads.push_back(std::make_shared<ScriptDownload>(url, object));
-			Game::RemoveRefToObject(object);
-		});
-
-		Script::AddFunction("httpCancel", [](Game::scr_entref_t)
-		{
-			if (!Dedicated::IsEnabled() && !Flags::HasFlag("scriptablehttp")) return;
-			if (Game::Scr_GetNumParam() < 1) return;
-
-			unsigned int object = Game::Scr_GetObject(0);
-			for (auto& download : Download::ScriptDownloads)
-			{
-				if (object == download->getObject())
-				{
-					download->cancel();
-					break;
-				}
-			}
-		});
+		Script::AddFunction("HttpGet", Script::ShowDeprecationWarning);
+		Script::AddFunction("HttpCancel", Script::ShowDeprecationWarning);
 	}
 
 	Download::~Download()
@@ -1015,7 +950,5 @@ namespace Components
 		{
 			Download::CLDownload.clear();
 		}
-
-		Download::ScriptDownloads.clear();
 	}
 }

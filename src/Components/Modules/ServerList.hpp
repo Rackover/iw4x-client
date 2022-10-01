@@ -28,16 +28,19 @@ namespace Components
 			int securityLevel;
 			bool hardcore;
 			bool svRunning;
+			bool aimassist;
+			bool voice;
 		};
 
 		ServerList();
 		~ServerList();
 
-		static void Refresh(UIScript::Token);
-		static void RefreshVisibleList(UIScript::Token);
-		static void UpdateVisibleList(UIScript::Token);
+		static void Refresh([[maybe_unused]] const UIScript::Token& token, [[maybe_unused]] const Game::uiInfo_s* info);
+		static void RefreshVisibleList([[maybe_unused]] const UIScript::Token& token, [[maybe_unused]] const Game::uiInfo_s* info);
+		static void RefreshVisibleListInternal([[maybe_unused]] const UIScript::Token& token, [[maybe_unused]] const Game::uiInfo_s* info, bool refresh = false);
+		static void UpdateVisibleList([[maybe_unused]] const UIScript::Token& token, [[maybe_unused]] const Game::uiInfo_s* info);
 		static void InsertRequest(Network::Address address);
-		static void Insert(Network::Address address, Utils::InfoString info);
+		static void Insert(const Network::Address& address, const Utils::InfoString& info);
 
 		static ServerInfo* GetCurrentServer();
 
@@ -50,11 +53,16 @@ namespace Components
 
 		static void UpdateVisibleInfo();
 
+		static bool GetMasterServer(const char* ip, int port, Game::netadr_t& address);
+		static bool useMasterServer;
+
 	private:
 		enum Column
 		{
 			Password,
 			Matchtype,
+			AimAssist,
+			VoiceChat,
 			Hostname,
 			Mapname,
 			Players,
@@ -62,6 +70,8 @@ namespace Components
 			Mod,
 			Ping,
 		};
+
+		static constexpr auto* FavouriteFile = "players/favourites.json";
 
 #pragma pack(push, 1)
 		union MasterEntry
@@ -138,5 +148,12 @@ namespace Components
 		static std::vector<ServerInfo> FavouriteList;
 
 		static std::vector<unsigned int> VisibleList;
+
+		static Dvar::Var UIServerSelected;
+		static Dvar::Var UIServerSelectedMap;
+		static Dvar::Var NETServerQueryLimit;
+		static Dvar::Var NETServerFrames;
+
+		static bool IsServerListOpen();
 	};
 }

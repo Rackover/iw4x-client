@@ -1,6 +1,28 @@
-#include "STDInclude.hpp"
+#include <STDInclude.hpp>
+#include "IGfxWorld.hpp"
 
 #define IW4X_GFXMAP_VERSION 1
+
+// The xmodel vehicle_small_hatch_green_destructible_mp causes EXTREME lag
+//	when placed in the world, for reasons unknown.
+// 
+// Something happens with the SModelSurfIterator which makes it load garbage
+//	as an XSurface in the middle of otherwise valid surfaces. This bug is very
+//	easy to reproduce with an empty map and just this car in the middle
+// 
+// As of know we do not know why the iterator corruption occurs or what causes
+//	it. It doesn't seem linked to the SModel, nor to the materials or techsets,
+//	nor to the sortkeys, nor to the tilemode, boneinfo, and so on. So for now
+//	and to make it work for majority of users, we just swap the car. (no, using
+//  the identical car from iw4's favela_escape doesn't work either!)
+// 
+// Two other models have this problem: ch_apartment_9story_noentry_02 and 
+//	ch_apartment_5story_noentry_01
+// But these exist in mp_vacant in slightly different versions, and can be
+//	swapped safely by deleting the two .iw4XModel files and requiring mp_vacant
+//	or a minimal zone containing just these two models.
+//
+#define SWAP_GREEN_VEHICLE_XMODEL 1
 
 namespace Assets
 {
@@ -46,7 +68,18 @@ namespace Assets
 
 				if (model->model)
 				{
-					model->model = Components::AssetHandler::FindAssetForZone(Game::XAssetType::ASSET_TYPE_XMODEL, reader->readString().data(), builder).model;
+					auto name = reader->readString();
+					
+#ifdef SWAP_GREEN_VEHICLE_XMODEL
+					if (name == "vehicle_small_hatch_green_destructible_mp"s)
+					{
+						name = "vehicle_luxurysedan_static"s;
+					}
+#endif
+
+					model->model = Components::AssetHandler::FindAssetForZone(Game::XAssetType::ASSET_TYPE_XMODEL, name.data(), builder).model;
+
+					assert(model->model);
 				}
 			}
 		}
@@ -137,13 +170,13 @@ namespace Assets
 			__int64 magic = reader.read<__int64>();
 			if (std::memcmp(&magic, "IW4xGfxW", 8))
 			{
-				Components::Logger::Error("Reading gfxworld '%s' failed, header is invalid!", name.data());
+				Components::Logger::Error(Game::ERR_FATAL, "Reading gfxworld '{}' failed, header is invalid!", name);
 			}
 
 			int version = reader.read<int>();
 			if (version != IW4X_GFXMAP_VERSION)
 			{
-				Components::Logger::Error("Reading gfxworld '%s' failed, expected version is %d, but it was %d!", name.data(), IW4X_GFXMAP_VERSION, version);
+				Components::Logger::Error(Game::ERR_FATAL, "Reading gfxworld '{}' failed, expected version is {}, but it was {}!", name, IW4X_GFXMAP_VERSION, version);
 			}
 
 			Game::GfxWorld* asset = reader.readObject<Game::GfxWorld>();
@@ -950,7 +983,7 @@ namespace Assets
 		}
 
 		buffer->popBlock();
-        SaveLogExit();
+		SaveLogExit();
 	}
 
 	void IGfxWorld::save(Game::XAssetHeader header, Components::ZoneBuilder::Zone* builder)

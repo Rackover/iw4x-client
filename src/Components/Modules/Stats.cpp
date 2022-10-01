@@ -1,10 +1,11 @@
-#include "STDInclude.hpp"
+#include <STDInclude.hpp>
+#include "GSC/Script.hpp"
 
 namespace Components
 {
-	int64_t* Stats::GetStatsID()
+	std::int64_t* Stats::GetStatsID()
 	{
-		static int64_t id = 0x110000100001337;
+		static std::int64_t id = 0x110000100001337;
 		return &id;
 	}
 
@@ -24,10 +25,8 @@ namespace Components
 				Game::Com_Printf(0, "Sending stat packet %i to server.\n", i);
 
 				// alloc
-				Game::msg_t msg;
-				char buffer[2048];
-				ZeroMemory(&msg, sizeof(msg));
-				ZeroMemory(&buffer, sizeof(buffer));
+				Game::msg_t msg{};
+				unsigned char buffer[2048]{};
 
 				// init
 				Game::MSG_Init(&msg, buffer, sizeof(buffer));
@@ -53,26 +52,72 @@ namespace Components
 				}
 
 				// send statpacket
-				Network::SendRaw(Game::NS_CLIENT1, *reinterpret_cast<Game::netadr_t*>(0xA1E888), std::string(msg.data, msg.cursize));
+				Network::SendRaw(Game::NS_CLIENT1, *reinterpret_cast<Game::netadr_t*>(0xA1E888), std::string(reinterpret_cast<char*>(msg.data), msg.cursize));
 			}
 		}
 	}
 
-	void Stats::UpdateClasses(UIScript::Token)
+	void Stats::UpdateClasses([[maybe_unused]] const UIScript::Token& token, [[maybe_unused]] const Game::uiInfo_s* info)
 	{
-		Stats::SendStats();
+		SendStats();
 	}
 
 	int Stats::SaveStats(char* dest, const char* folder, const char* buffer, size_t length)
 	{
-		const auto fs_game = Game::Dvar_FindVar("fs_game");
+		assert(*Game::fs_gameDirVar);
 
-		if (fs_game && fs_game->current.string && strlen(fs_game->current.string) && !strncmp(fs_game->current.string, "mods/", 5))
+		if (!std::strcmp((*Game::fs_gameDirVar)->current.string, "mods/"))
 		{
-			folder = fs_game->current.string;
+			folder = (*Game::fs_gameDirVar)->current.string;
 		}
 
 		return Utils::Hook::Call<int(char*, const char*, const char*, size_t)>(0x426450)(dest, folder, buffer, length);
+	}
+
+	void Stats::AddScriptFunctions()
+	{
+		Script::AddMethod("GetStat", [](const Game::scr_entref_t entref)
+		{
+			const auto* ent = Game::GetPlayerEntity(entref);
+			const auto index = Game::Scr_GetInt(0);
+
+			if (index < 0 || index > 3499)
+			{
+				Game::Scr_ParamError(0, Utils::String::VA("GetStat: invalid index %i", index));
+			}
+
+			if (ent->client->sess.connected <= Game::CON_DISCONNECTED)
+			{
+				Game::Scr_Error("GetStat: called on a disconnected player");
+			}
+
+			Game::Scr_AddInt(Game::SV_GetClientStat(ent->s.number, index));
+		});
+
+		Script::AddMethod("SetStat", [](const Game::scr_entref_t entref)
+		{
+			const auto* ent = Game::GetPlayerEntity(entref);
+
+			const auto iNumParms = Game::Scr_GetNumParam();
+			if (iNumParms != 2)
+			{
+				Game::Scr_Error(Utils::String::VA("GetStat: takes 2 arguments, got %u.\n", iNumParms));
+			}
+
+			const auto index = Game::Scr_GetInt(0);
+			if (index < 0 || index > 3499)
+			{
+				Game::Scr_ParamError(0, Utils::String::VA("setstat: invalid index %i", index));
+			}
+
+			const auto value = Game::Scr_GetInt(1);
+			if (index < 2000 && (value < 0 || value > 255))
+			{
+				Game::Scr_ParamError(1, Utils::String::VA("setstat: index %i is a byte value, and you're trying to set it to %i", index, value));
+			}
+
+			Game::SV_SetClientStat(ent->s.number, index, value);
+		});
 	}
 
 	Stats::Stats()
@@ -81,12 +126,12 @@ namespace Components
 		// so everytime the create-a-class window is closed, and a client is connected
 		// to a server, the stats data of the client will be reuploaded to the server.
 		// allowing the player to change their classes while connected to a server.
-		UIScript::Add("UpdateClasses", Stats::UpdateClasses);
+		UIScript::Add("UpdateClasses", UpdateClasses);
 
 		// Allow playerdata to be changed while connected to a server
 		Utils::Hook::Set<BYTE>(0x4376FD, 0xEB);
 
-		// ToDo: Allow playerdata changes in setPlayerData UI script.
+		// TODO: Allow playerdata changes in setPlayerData UI script.
 
 		// Rename stat file
 		Utils::Hook::SetString(0x71C048, "iw4x.stat");
@@ -94,8 +139,9 @@ namespace Components
 		// Patch stats steamid
 		Utils::Hook::Nop(0x682EBF, 20);
 		Utils::Hook::Nop(0x6830B1, 20);
-		Utils::Hook(0x682EBF, Stats::GetStatsID, HOOK_CALL).install()->quick();
-		Utils::Hook(0x6830B1, Stats::GetStatsID, HOOK_CALL).install()->quick();
+
+		Utils::Hook(0x682EBF, GetStatsID, HOOK_CALL).install()->quick();
+		Utils::Hook(0x6830B1, GetStatsID, HOOK_CALL).install()->quick();
 		//Utils::Hook::Set<BYTE>(0x68323A, 0xEB);
 
 		// Never use remote stat saving
@@ -105,11 +151,34 @@ namespace Components
 		Utils::Hook::Nop(0x402CE6, 2);
 
 		// Write stats to mod folder if a mod is loaded
-		Utils::Hook(0x682F7B, Stats::SaveStats, HOOK_CALL).install()->quick();
-	}
+		Utils::Hook(0x682F7B, SaveStats, HOOK_CALL).install()->quick();
 
-	Stats::~Stats()
-	{
+		AddScriptFunctions();
 
+		// Skip silly Com_Error (LiveStorage_SetStat)
+		Utils::Hook::Set<BYTE>(0x4CC5F9, 0xEB);
+
+		// 'M' Seems to be used on Xbox only for parsing platform specific ranks
+		ServerCommands::OnCommand('M', [](Command::Params* params)
+		{
+			const auto* arg1 = params->get(1);
+			const auto* arg2 = params->get(2);
+
+			Game::LiveStorage_SetStat(Game::CL_ControllerIndexFromClientNum(0), std::atoi(arg1), std::atoi(arg2));
+			return true;
+		});
+
+		Command::Add("statGet", []([[maybe_unused]] Command::Params* params)
+		{
+			if (params->size() < 2)
+			{
+				Logger::PrintError(Game::CON_CHANNEL_SERVER, "statget usage: statget <index>\n");
+				return;
+			}
+
+			const auto index = std::atoi(params->get(1));
+			const auto stat = Game::LiveStorage_GetStat(0, index);
+			Logger::Print(Game::CON_CHANNEL_SYSTEM, "Stat {}: {}\n", index, stat);
+		});
 	}
 }

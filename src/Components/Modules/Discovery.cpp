@@ -1,4 +1,4 @@
-#include "STDInclude.hpp"
+#include <STDInclude.hpp>
 
 namespace Components
 {
@@ -14,8 +14,8 @@ namespace Components
 
 	Discovery::Discovery()
 	{
-		Dvar::Register<int>("net_discoveryPortRangeMin", 25000, 0, 65535, Game::dvar_flag::DVAR_FLAG_SAVED, "Minimum scan range port for local server discovery");
-		Dvar::Register<int>("net_discoveryPortRangeMax", 35000, 1, 65536, Game::dvar_flag::DVAR_FLAG_SAVED, "Maximum scan range port for local server discovery");
+		Dvar::Register<int>("net_discoveryPortRangeMin", 25000, 0, 65535, Game::DVAR_ARCHIVE, "Minimum scan range port for local server discovery");
+		Dvar::Register<int>("net_discoveryPortRangeMax", 35000, 1, 65536, Game::DVAR_ARCHIVE, "Maximum scan range port for local server discovery");
 
 		// An additional thread prevents lags
 		// Not sure if that's the best way though
@@ -37,7 +37,7 @@ namespace Components
 					unsigned int maxPort = Dvar::Var("net_discoveryPortRangeMax").get<unsigned int>();
 					Network::BroadcastRange(minPort, maxPort, Utils::String::VA("discovery %s", Discovery::Challenge.data()));
 
-					Logger::Print("Discovery sent within %dms, awaiting responses...\n", Game::Sys_Milliseconds() - start);
+					Logger::Print("Discovery sent within {}ms, awaiting responses...\n", Game::Sys_Milliseconds() - start);
 
 					Discovery::IsPerforming = false;
 				}
@@ -46,58 +46,43 @@ namespace Components
 			}
 		});
 
-		Network::Handle("discovery", [](Network::Address address, std::string data)
+		Network::OnClientPacket("discovery", [](Network::Address& address, [[maybe_unused]] const std::string& data)
 		{
 			if (address.isSelf()) return;
 
 			if (!address.isLocal())
 			{
-				Logger::Print("Received discovery request from non-local address: %s\n", address.getCString());
+				Logger::Print("Received discovery request from non-local address: {}\n", address.getString());
 				return;
 			}
 
-			Logger::Print("Received discovery request from %s\n", address.getCString());
+			Logger::Print("Received discovery request from {}\n", address.getString());
 			Network::SendCommand(address, "discoveryResponse", data);
 		});
 
-		Network::Handle("discoveryResponse", [](Network::Address address, std::string data)
+		Network::OnClientPacket("discoveryResponse", [](Network::Address& address, [[maybe_unused]] const std::string& data)
 		{
 			if (address.isSelf()) return;
 
 			if (!address.isLocal())
 			{
-				Logger::Print("Received discovery response from non-local address: %s\n", address.getCString());
+				Logger::Print("Received discovery response from non-local address: {}\n", address.getString());
 				return;
 			}
 
 			if (Utils::ParseChallenge(data) != Discovery::Challenge)
 			{
-				Logger::Print("Received discovery with invalid challenge from: %s\n", address.getCString());
+				Logger::Print("Received discovery with invalid challenge from: {}\n", address.getString());
 				return;
 			}
 
-			Logger::Print("Received discovery response from: %s\n", address.getCString());
+			Logger::Print("Received discovery response from: {}\n", address.getString());
 
 			if (ServerList::IsOfflineList())
 			{
 				ServerList::InsertRequest(address);
 			}
 		});
-
-		// This is placed here in case the anticheat has been disabled!
-		// Make sure this is called after the memory scan!
-#ifndef DISABLE_ANTICHEAT
-		Utils::Hook(0x5ACB9E, []() // Somewhere in the renderer, past the scan check
-		{
-			AntiCheat::ScanIntegrityCheck();
-			return Utils::Hook::Call<void()>(0x4AA720)();
-		}, HOOK_CALL).install()->quick();
-#endif
-	}
-
-	Discovery::~Discovery()
-	{
-
 	}
 
 	void Discovery::preDestroy()

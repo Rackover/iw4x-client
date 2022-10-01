@@ -1,4 +1,4 @@
-#include "STDInclude.hpp"
+#include <STDInclude.hpp>
 
 namespace Steam
 {
@@ -36,7 +36,7 @@ namespace Steam
 
 	std::pair<void*, uint16_t> Interface::getMethod(const std::string& method)
 	{
-		if(this->methodCache.find(method) != this->methodCache.end())
+		if(this->methodCache.contains(method))
 		{
 			return this->methodCache[method];
 		}
@@ -156,13 +156,13 @@ namespace Steam
 		gameID.type = 1; // k_EGameIDTypeGameMod
 		gameID.appID = Proxy::AppId & 0xFFFFFF;
 
-		char* modId = const_cast<char*>("IW4x");
-		gameID.modID = *reinterpret_cast<unsigned int*>(modId) | 0x80000000;
+		const char* modId = "IW4x";
+		gameID.modID = *reinterpret_cast<const unsigned int*>(modId) | 0x80000000;
 
 		Interface clientUtils(Proxy::ClientEngine->GetIClientUtils(Proxy::SteamPipe));
 		clientUtils.invoke<void>("SetAppIDForCurrentPipe", Proxy::AppId, false);
 
-		char ourPath[MAX_PATH] = { 0 };
+		char ourPath[MAX_PATH] = {0};
 		GetModuleFileNameA(GetModuleHandle(nullptr), ourPath, sizeof(ourPath));
 
 		char ourDirectory[MAX_PATH] = { 0 };
@@ -388,25 +388,25 @@ namespace Steam
 			Proxy::LaunchWatchGuard();
 
 			Proxy::Overlay = ::Utils::Library(GAMEOVERLAY_LIB, false);
-			if (!Proxy::Overlay.IsValid()) return false;
+			if (!Proxy::Overlay.isValid()) return false;
 		}
 
 		Proxy::Client = ::Utils::Library(STEAMCLIENT_LIB, false);
-		if (!Proxy::Client.IsValid()) return false;
+		if (!Proxy::Client.isValid()) return false;
 
-		Proxy::SteamClient = Proxy::Client.Get<ISteamClient008*(const char*, int*)>("CreateInterface")("SteamClient008", nullptr);
+		Proxy::SteamClient = Proxy::Client.get<ISteamClient008*(const char*, int*)>("CreateInterface")("SteamClient008", nullptr);
 		if(!Proxy::SteamClient) return false;
 
-		Proxy::SteamBGetCallback = Proxy::Client.Get<Proxy::SteamBGetCallbackFn>("Steam_BGetCallback");
+		Proxy::SteamBGetCallback = Proxy::Client.get<Proxy::SteamBGetCallbackFn>("Steam_BGetCallback");
 		if (!Proxy::SteamBGetCallback) return false;
 
-		Proxy::SteamFreeLastCallback = Proxy::Client.Get<Proxy::SteamFreeLastCallbackFn>("Steam_FreeLastCallback");
+		Proxy::SteamFreeLastCallback = Proxy::Client.get<Proxy::SteamFreeLastCallbackFn>("Steam_FreeLastCallback");
 		if (!Proxy::SteamFreeLastCallback) return false;
 
-		Proxy::SteamGetAPICallResult = Proxy::Client.Get<Proxy::SteamGetAPICallResultFn>("Steam_GetAPICallResult");
+		Proxy::SteamGetAPICallResult = Proxy::Client.get<Proxy::SteamGetAPICallResultFn>("Steam_GetAPICallResult");
 		if (!Proxy::SteamGetAPICallResult) return false;
 
-		Proxy::SteamClient = Proxy::Client.Get<ISteamClient008*(const char*, int*)>("CreateInterface")("SteamClient008", nullptr);
+		Proxy::SteamClient = Proxy::Client.get<ISteamClient008*(const char*, int*)>("CreateInterface")("SteamClient008", nullptr);
 		if (!Proxy::SteamClient) return false;
 
 		Proxy::SteamPipe = Proxy::SteamClient->CreateSteamPipe();
@@ -415,7 +415,7 @@ namespace Steam
 		Proxy::SteamUser = Proxy::SteamClient->ConnectToGlobalUser(Proxy::SteamPipe);
 		if (!Proxy::SteamUser) return false;
 
-		Proxy::ClientEngine = Proxy::Client.Get<IClientEngine*(const char*, int*)>("CreateInterface")("CLIENTENGINE_INTERFACE_VERSION005", nullptr);
+		Proxy::ClientEngine = Proxy::Client.get<IClientEngine*(const char*, int*)>("CreateInterface")("CLIENTENGINE_INTERFACE_VERSION005", nullptr);
 		if (!Proxy::ClientEngine) return false;
 
 		Proxy::ClientUser = Proxy::ClientEngine->GetIClientUser(Proxy::SteamUser, Proxy::SteamPipe);
@@ -530,17 +530,17 @@ namespace Steam
 
 	void Proxy::SetOverlayNotificationPosition(uint32_t eNotificationPosition)
 	{
-		if (Proxy::Overlay.IsValid())
+		if (Proxy::Overlay.isValid())
 		{
-			Proxy::Overlay.Get<void(uint32_t)>("SetNotificationPosition")(eNotificationPosition);
+			Proxy::Overlay.get<void(uint32_t)>("SetNotificationPosition")(eNotificationPosition);
 		}
 	}
 
 	bool Proxy::IsOverlayEnabled()
 	{
-		if (Proxy::Overlay.IsValid())
+		if (Proxy::Overlay.isValid())
 		{
-			return Proxy::Overlay.Get<bool()>("IsOverlayEnabled")();
+			return Proxy::Overlay.get<bool()>("IsOverlayEnabled")();
 		}
 
 		return false;
@@ -548,9 +548,9 @@ namespace Steam
 
 	bool Proxy::BOverlayNeedsPresent()
 	{
-		if (Proxy::Overlay.IsValid())
+		if (Proxy::Overlay.isValid())
 		{
-			return Proxy::Overlay.Get<bool()>("BOverlayNeedsPresent")();
+			return Proxy::Overlay.get<bool()>("BOverlayNeedsPresent")();
 		}
 
 		return false;

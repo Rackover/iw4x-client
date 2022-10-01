@@ -1,4 +1,4 @@
-#include "STDInclude.hpp"
+#include <STDInclude.hpp>
 
 namespace Components
 {
@@ -25,11 +25,11 @@ namespace Components
 		HKEY hKey = nullptr;
 		std::string data;
 
-		char ownPth[MAX_PATH] = { 0 };
-		char workdir[MAX_PATH] = { 0 };
+		char ownPth[MAX_PATH] = {0};
+		char workdir[MAX_PATH] = {0};
 
 		DWORD dwsize = MAX_PATH;
-		HMODULE hModule = GetModuleHandle(nullptr);
+		HMODULE hModule = GetModuleHandleA(nullptr);
 
 		if (hModule != nullptr)
 		{
@@ -44,7 +44,7 @@ namespace Components
 			}
 			else
 			{
-				char* endPtr = strstr(workdir, "iw4x.exe");
+				auto* endPtr = std::strstr(workdir, "iw4x.exe");
 				if (endPtr != nullptr)
 				{
 					*endPtr = 0;
@@ -183,7 +183,7 @@ namespace Components
 		if (pos != std::string::npos)
 		{
 			cmdLine = cmdLine.substr(pos + 7);
-			pos = cmdLine.find_first_of("/");
+			pos = cmdLine.find_first_of('/');
 
 			if (pos != std::string::npos)
 			{
@@ -213,7 +213,7 @@ namespace Components
 		});
 
 		// Invocation handler
-		Scheduler::OnReady(ConnectProtocol::Invocation);
+		Scheduler::OnGameInitialized(ConnectProtocol::Invocation, Scheduler::Pipeline::MAIN);
 
 		ConnectProtocol::InstallProtocol();
 		ConnectProtocol::EvaluateProtocol();
@@ -232,10 +232,10 @@ namespace Components
 				// Only skip intro here, invocation will be done later.
 				Utils::Hook::Set<BYTE>(0x60BECF, 0xEB);
 
-				Scheduler::OnDelay([]()
+				Scheduler::Once([]
 				{
 					Command::Execute("openmenu popup_reconnectingtoparty", false);
-				}, 8s);
+				}, Scheduler::Pipeline::CLIENT, 8s);
 			}
 		}
 	}

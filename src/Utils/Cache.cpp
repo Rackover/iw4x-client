@@ -1,4 +1,4 @@
-#include "STDInclude.hpp"
+#include <STDInclude.hpp>
 
 namespace Utils
 {
@@ -6,14 +6,8 @@ namespace Utils
 	{
 		"https://xlabs.dev",
 		"https://raw.githubusercontent.com/XLabsProject/iw4x-client"
-		
-		//Links to old onion site - deprecated
-		//"https://iw4xcachep26muba.tor2web.xyz",
-		//"https://iw4xcachep26muba.onion.ws",
-		//"https://iw4xcachep26muba.onion.sh",
-		//"https://iw4xcachep26muba.onion.pet",
-
 	};
+
 	std::string Cache::ValidUrl;
 	std::mutex Cache::CacheMutex;
 
@@ -53,11 +47,5 @@ namespace Utils
 		{
 			return Utils::WebIO(useragent, Cache::GetUrl(Cache::ValidUrl, path)).setTimeout(timeout)->get();
 		}
-	}
-
-	void Cache::Uninitialize()
-	{
-		std::lock_guard<std::mutex> _(Cache::CacheMutex);
-		Cache::ValidUrl.clear();
 	}
 }

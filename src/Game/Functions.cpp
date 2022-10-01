@@ -1,144 +1,45 @@
-#include "STDInclude.hpp"
+#include <STDInclude.hpp>
 
+// Unsorted function definitions
 namespace Game
 {
-	std::vector<std::string> Sys_ListFilesWrapper(const std::string& directory, const std::string& extension)
-	{
-		auto fileCount = 0;
-		auto files = Game::Sys_ListFiles(directory.data(), extension.data(), 0, &fileCount, 0);
-
-		std::vector<std::string> result;
-
-		for (auto i = 0; i < fileCount; i++)
-		{
-			if (files[i])
-			{
-				result.push_back(files[i]);
-			}
-		}
-
-		Game::FS_FreeFileList(files);
-
-		return result;
-	}
-	
-	AddRefToObject_t AddRefToObject = AddRefToObject_t(0x61C360);
-	AllocObject_t AllocObject = AllocObject_t(0x434320);
-
 	AngleVectors_t AngleVectors = AngleVectors_t(0x4691A0);
 
-	BG_GetNumWeapons_t BG_GetNumWeapons = BG_GetNumWeapons_t(0x4F5CC0);
-	BG_GetWeaponName_t BG_GetWeaponName = BG_GetWeaponName_t(0x4E6EC0);
-	BG_LoadWeaponDef_LoadObj_t BG_LoadWeaponDef_LoadObj = BG_LoadWeaponDef_LoadObj_t(0x57B5F0);
-
-	Cbuf_AddServerText_t Cbuf_AddServerText = Cbuf_AddServerText_t(0x4BB9B0);
+	Cbuf_AddServerText_f_t Cbuf_AddServerText_f = Cbuf_AddServerText_f_t(0x4BB9B0);
 	Cbuf_AddText_t Cbuf_AddText = Cbuf_AddText_t(0x404B20);
+	Cbuf_InsertText_t Cbuf_InsertText = Cbuf_InsertText_t(0x4940B0);
 
+	CG_NextWeapon_f_t CG_NextWeapon_f = CG_NextWeapon_f_t(0x449DE0);
 	CG_GetClientNum_t CG_GetClientNum = CG_GetClientNum_t(0x433700);
-	CG_PlayBoltedEffect_t CG_PlayBoltedEffect = CG_PlayBoltedEffect_t(0x00430E10);
-	CG_GetBoneIndex_t CG_GetBoneIndex = CG_GetBoneIndex_t(0x00504F20);
-	
-	CL_GetClientName_t CL_GetClientName = CL_GetClientName_t(0x4563D0);
-	CL_IsCgameInitialized_t CL_IsCgameInitialized = CL_IsCgameInitialized_t(0x43EB20);
-	CL_ConnectFromParty_t CL_ConnectFromParty = CL_ConnectFromParty_t(0x433D30);
-	CL_DownloadsComplete_t CL_DownloadsComplete = CL_DownloadsComplete_t(0x42CE90);
-	CL_DrawStretchPicPhysical_t CL_DrawStretchPicPhysical = CL_DrawStretchPicPhysical_t(0x4FC120);
-	CL_GetConfigString_t CL_GetConfigString = CL_GetConfigString_t(0x44ADB0);
-	CL_GetMaxRank_t CL_GetMaxRank = CL_GetMaxRank_t(0x44BA30);
-	CL_GetRankForXP_t CL_GetRankForXP = CL_GetRankForXP_t(0x4FF8A0);
-	CL_GetRankIcon_t CL_GetRankIcon = CL_GetRankIcon_t(0x4A7B30);
-	CL_HandleRelayPacket_t CL_HandleRelayPacket = CL_HandleRelayPacket_t(0x5A8C70);
-	CL_ResetViewport_t CL_ResetViewport = CL_ResetViewport_t(0x4A8830);
-	CL_SelectStringTableEntryInDvar_f_t CL_SelectStringTableEntryInDvar_f = CL_SelectStringTableEntryInDvar_f_t(0x4A4560);
+	CG_PlayBoltedEffect_t CG_PlayBoltedEffect = CG_PlayBoltedEffect_t(0x430E10);
+	CG_GetBoneIndex_t CG_GetBoneIndex = CG_GetBoneIndex_t(0x504F20);
+	CG_ScoresDown_f_t CG_ScoresDown_f = CG_ScoresDown_f_t(0x580370);
+	CG_ScoresUp_f_t CG_ScoresUp_f = CG_ScoresUp_f_t(0x5802C0);
+	CG_ScrollScoreboardUp_t CG_ScrollScoreboardUp = CG_ScrollScoreboardUp_t(0x47A5C0);
+	CG_ScrollScoreboardDown_t CG_ScrollScoreboardDown = CG_ScrollScoreboardDown_t(0x493B50);
+	CG_GetTeamName_t CG_GetTeamName = CG_GetTeamName_t(0x4B6210);
+	CG_SetupWeaponDef_t CG_SetupWeaponDef = CG_SetupWeaponDef_t(0x4BD520);
 
 	Cmd_AddCommand_t Cmd_AddCommand = Cmd_AddCommand_t(0x470090);
 	Cmd_AddServerCommand_t Cmd_AddServerCommand = Cmd_AddServerCommand_t(0x4DCE00);
 	Cmd_ExecuteSingleCommand_t Cmd_ExecuteSingleCommand = Cmd_ExecuteSingleCommand_t(0x609540);
-	Com_ClientPacketEvent_t Com_ClientPacketEvent = Com_ClientPacketEvent_t(0x49F0B0);
-
-	Com_Error_t Com_Error = Com_Error_t(0x4B22D0);
-	Com_Printf_t Com_Printf = Com_Printf_t(0x402500);
-	Com_PrintMessage_t Com_PrintMessage = Com_PrintMessage_t(0x4AA830);
-	Com_EndParseSession_t Com_EndParseSession = Com_EndParseSession_t(0x4B80B0);
-	Com_BeginParseSession_t Com_BeginParseSession = Com_BeginParseSession_t(0x4AAB80);
-	Com_SetSpaceDelimited_t Com_SetSpaceDelimited = Com_SetSpaceDelimited_t(0x4FC710);
-	Com_Parse_t Com_Parse = Com_Parse_t(0x474D60);
-	Com_MatchToken_t Com_MatchToken = Com_MatchToken_t(0x447130);
-	Com_SetSlowMotion_t Com_SetSlowMotion = Com_SetSlowMotion_t(0x446E20);
-	Com_Quitf_t Com_Quit_f = Com_Quitf_t(0x4D4000);
 
 	Con_DrawMiniConsole_t Con_DrawMiniConsole = Con_DrawMiniConsole_t(0x464F30);
 	Con_DrawSolidConsole_t Con_DrawSolidConsole = Con_DrawSolidConsole_t(0x5A5040);
+	Con_CancelAutoComplete_t Con_CancelAutoComplete = Con_CancelAutoComplete_t(0x435580);
 
 	DB_AllocStreamPos_t DB_AllocStreamPos = DB_AllocStreamPos_t(0x418380);
 	DB_PushStreamPos_t DB_PushStreamPos = DB_PushStreamPos_t(0x458A20);
 	DB_PopStreamPos_t DB_PopStreamPos = DB_PopStreamPos_t(0x4D1D60);
-
-	DB_BeginRecoverLostDevice_t DB_BeginRecoverLostDevice = DB_BeginRecoverLostDevice_t(0x4BFF90);
-	DB_EndRecoverLostDevice_t DB_EndRecoverLostDevice = DB_EndRecoverLostDevice_t(0x46B660);
-	DB_EnumXAssets_t DB_EnumXAssets = DB_EnumXAssets_t(0x4B76D0);
-	DB_EnumXAssets_Internal_t DB_EnumXAssets_Internal = DB_EnumXAssets_Internal_t(0x5BB0A0);
-	DB_FindXAssetHeader_t DB_FindXAssetHeader = DB_FindXAssetHeader_t(0x407930);
-	DB_GetRawBuffer_t DB_GetRawBuffer = DB_GetRawBuffer_t(0x4CDC50);
-	DB_GetRawFileLen_t DB_GetRawFileLen = DB_GetRawFileLen_t(0x4DAA80);
-	DB_GetLoadedFraction_t DB_GetLoadedFraction = DB_GetLoadedFraction_t(0x468380);
-	DB_GetXAssetNameHandler_t* DB_GetXAssetNameHandlers = reinterpret_cast<DB_GetXAssetNameHandler_t*>(0x799328);
-	DB_GetXAssetSizeHandler_t* DB_GetXAssetSizeHandlers = reinterpret_cast<DB_GetXAssetSizeHandler_t*>(0x799488);
-	DB_GetXAssetTypeName_t DB_GetXAssetTypeName = DB_GetXAssetTypeName_t(0x4CFCF0);
-	DB_IsXAssetDefault_t DB_IsXAssetDefault = DB_IsXAssetDefault_t(0x48E6A0);
-	DB_LoadXAssets_t DB_LoadXAssets = DB_LoadXAssets_t(0x4E5930);
-	DB_LoadXFileData_t DB_LoadXFileData = DB_LoadXFileData_t(0x445460);
-	DB_ReadXFile_t DB_ReadXFile = DB_ReadXFile_t(0x445460);
-	DB_ReadXFileUncompressed_t DB_ReadXFileUncompressed = DB_ReadXFileUncompressed_t(0x4705E0);
-	DB_ReleaseXAssetHandler_t* DB_ReleaseXAssetHandlers = reinterpret_cast<DB_ReleaseXAssetHandler_t*>(0x799AB8);
-	DB_SetXAssetName_t DB_SetXAssetName = DB_SetXAssetName_t(0x453580);
-	DB_SetXAssetNameHandler_t* DB_SetXAssetNameHandlers = reinterpret_cast<DB_SetXAssetNameHandler_t*>(0x7993D8);
-	DB_XModelSurfsFixup_t DB_XModelSurfsFixup = DB_XModelSurfsFixup_t(0x5BAC50);
-
-	Dvar_RegisterBool_t Dvar_RegisterBool = Dvar_RegisterBool_t(0x4CE1A0);
-	Dvar_RegisterFloat_t Dvar_RegisterFloat = Dvar_RegisterFloat_t(0x648440);
-	Dvar_RegisterVec2_t Dvar_RegisterVec2 = Dvar_RegisterVec2_t(0x4F6070);
-	Dvar_RegisterVec3_t Dvar_RegisterVec3 = Dvar_RegisterVec3_t(0x4EF8E0);
-	Dvar_RegisterVec4_t Dvar_RegisterVec4 = Dvar_RegisterVec4_t(0x471500);
-	Dvar_RegisterInt_t Dvar_RegisterInt = Dvar_RegisterInt_t(0x479830);
-	Dvar_RegisterEnum_t Dvar_RegisterEnum = Dvar_RegisterEnum_t(0x412E40);
-	Dvar_RegisterString_t Dvar_RegisterString = Dvar_RegisterString_t(0x4FC7E0);
-	Dvar_RegisterColor_t Dvar_RegisterColor = Dvar_RegisterColor_t(0x4F28E0);
-
-	Dvar_GetUnpackedColorByName_t Dvar_GetUnpackedColorByName = Dvar_GetUnpackedColorByName_t(0x406530);
-	Dvar_FindVar_t Dvar_FindVar = Dvar_FindVar_t(0x4D5390);
-	Dvar_InfoString_Big_t Dvar_InfoString_Big = Dvar_InfoString_Big_t(0x4D98A0);
-	Dvar_SetCommand_t Dvar_SetCommand = Dvar_SetCommand_t(0x4EE430);
 
 	Encode_Init_t Encode_Init = Encode_Init_t(0x462AB0);
 
 	Field_Clear_t Field_Clear = Field_Clear_t(0x437EB0);
 
 	FreeMemory_t FreeMemory = FreeMemory_t(0x4D6640);
+	Free_String_t Free_String = Free_String_t(0x470E80);
 
-	FS_FileExists_t FS_FileExists = FS_FileExists_t(0x4DEFA0);
-	FS_FreeFile_t FS_FreeFile = FS_FreeFile_t(0x4416B0);
-	FS_ReadFile_t FS_ReadFile = FS_ReadFile_t(0x4F4B90);
-	FS_GetFileList_t FS_GetFileList = FS_GetFileList_t(0x441BB0);
-	FS_FreeFileList_t FS_FreeFileList = FS_FreeFileList_t(0x4A5DE0);
-	FS_FOpenFileAppend_t FS_FOpenFileAppend = FS_FOpenFileAppend_t(0x410BB0);
-	FS_FOpenFileAppend_t FS_FOpenFileWrite = FS_FOpenFileAppend_t(0x4BA530);
-	FS_FOpenFileRead_t FS_FOpenFileRead = FS_FOpenFileRead_t(0x46CBF0);
-	FS_FOpenFileRead_t FS_FOpenFileReadDatabase = FS_FOpenFileRead_t(0x42ECA0);
-	FS_FOpenFileReadForThread_t FS_FOpenFileReadForThread = FS_FOpenFileReadForThread_t(0x643270);
-	FS_FCloseFile_t FS_FCloseFile = FS_FCloseFile_t(0x462000);
-	FS_WriteFile_t FS_WriteFile = FS_WriteFile_t(0x426450);
-	FS_Write_t FS_Write = FS_Write_t(0x4C06E0);
-	FS_Read_t FS_Read = FS_Read_t(0x4A04C0);
-	FS_Seek_t FS_Seek = FS_Seek_t(0x4A63D0);
-	FS_FTell_t FS_FTell = FS_FTell_t(0x4E6760);
-	FS_Remove_t FS_Remove = FS_Remove_t(0x4660F0);
-	FS_Restart_t FS_Restart = FS_Restart_t(0x461A50);
-	FS_BuildPathToFile_t FS_BuildPathToFile = FS_BuildPathToFile_t(0x4702C0);
-	FS_IsShippedIWD_t FS_IsShippedIWD = FS_IsShippedIWD_t(0x642440);
-
-	G_GetWeaponIndexForName_t G_GetWeaponIndexForName = G_GetWeaponIndexForName_t(0x49E540);
-	G_SpawnEntitiesFromString_t G_SpawnEntitiesFromString = G_SpawnEntitiesFromString_t(0x4D8840);
+	Svcmd_EntityList_f_t Svcmd_EntityList_f = Svcmd_EntityList_f_t(0x4B6A70);
 
 	GScr_LoadGameTypeScript_t GScr_LoadGameTypeScript = GScr_LoadGameTypeScript_t(0x4ED9A0);
 
@@ -148,6 +49,9 @@ namespace Game
 	Info_ValueForKey_t Info_ValueForKey = Info_ValueForKey_t(0x47C820);
 
 	Key_SetCatcher_t Key_SetCatcher = Key_SetCatcher_t(0x43BD00);
+	Key_RemoveCatcher_t Key_RemoveCatcher = Key_RemoveCatcher_t(0x408260);
+	Key_IsKeyCatcherActive_t Key_IsKeyCatcherActive = Key_IsKeyCatcherActive_t(0x4DA010);
+	Key_SetBinding_t Key_SetBinding = Key_SetBinding_t(0x494C90);
 
 	LargeLocalInit_t LargeLocalInit = LargeLocalInit_t(0x4A62A0);
 
@@ -170,13 +74,17 @@ namespace Game
 	Load_snd_alias_list_nameArray_t Load_snd_alias_list_nameArray = Load_snd_alias_list_nameArray_t(0x4499F0);
 
 	Menus_CloseAll_t Menus_CloseAll = Menus_CloseAll_t(0x4BA5B0);
-    Menus_CloseRequest_t Menus_CloseRequest = Menus_CloseRequest_t(0x430D50);
+	Menus_CloseRequest_t Menus_CloseRequest = Menus_CloseRequest_t(0x430D50);
 	Menus_OpenByName_t Menus_OpenByName = Menus_OpenByName_t(0x4CCE60);
 	Menus_FindByName_t Menus_FindByName = Menus_FindByName_t(0x487240);
 	Menu_IsVisible_t Menu_IsVisible = Menu_IsVisible_t(0x4D77D0);
 	Menus_MenuIsInStack_t Menus_MenuIsInStack = Menus_MenuIsInStack_t(0x47ACB0);
+	Menu_HandleKey_t Menu_HandleKey = Menu_HandleKey_t(0x4C4A00);
+	Menu_GetFocused_t Menu_GetFocused = Menu_GetFocused_t(0x4AFF10);
 
 	MSG_Init_t MSG_Init = MSG_Init_t(0x45FCA0);
+	MSG_ReadBit_t MSG_ReadBit = MSG_ReadBit_t(0x476D20);
+	MSG_ReadBits_t MSG_ReadBits = MSG_ReadBits_t(0x4C3900);
 	MSG_ReadData_t MSG_ReadData = MSG_ReadData_t(0x4527C0);
 	MSG_ReadLong_t MSG_ReadLong = MSG_ReadLong_t(0x4C9550);
 	MSG_ReadShort_t MSG_ReadShort = MSG_ReadShort_t(0x40BDD0);
@@ -188,6 +96,7 @@ namespace Game
 	MSG_WriteLong_t MSG_WriteLong = MSG_WriteLong_t(0x41CA20);
 	MSG_WriteShort_t MSG_WriteShort = MSG_WriteShort_t(0x503B90);
 	MSG_WriteString_t MSG_WriteString = MSG_WriteString_t(0x463820);
+	MSG_ReadDeltaUsercmdKey_t MSG_ReadDeltaUsercmdKey = MSG_ReadDeltaUsercmdKey_t(0x491F00);
 	MSG_WriteBitsCompress_t MSG_WriteBitsCompress = MSG_WriteBitsCompress_t(0x4319D0);
 	MSG_ReadByte_t MSG_ReadByte = MSG_ReadByte_t(0x4C1C20);
 	MSG_ReadBitsCompress_t MSG_ReadBitsCompress = MSG_ReadBitsCompress_t(0x4DCC30);
@@ -203,13 +112,18 @@ namespace Game
 	NET_StringToAdr_t NET_StringToAdr = NET_StringToAdr_t(0x409010);
 	NET_OutOfBandPrint_t NET_OutOfBandPrint = NET_OutOfBandPrint_t(0x4AEF00);
 	NET_OutOfBandData_t NET_OutOfBandData = NET_OutOfBandData_t(0x49C7E0);
+	NET_OutOfBandVoiceData_t NET_OutOfBandVoiceData = NET_OutOfBandVoiceData_t(0x4FCC90);
 
 	Live_MPAcceptInvite_t Live_MPAcceptInvite = Live_MPAcceptInvite_t(0x420A6D);
 	Live_GetMapIndex_t Live_GetMapIndex = Live_GetMapIndex_t(0x4F6440);
 	Live_GetPrestige_t Live_GetPrestige = Live_GetPrestige_t(0x430F90);
 	Live_GetXp_t Live_GetXp = Live_GetXp_t(0x404C60);
+	Live_GetLocalClientName_t Live_GetLocalClientName = Live_GetLocalClientName_t(0x441FC0);
 
-	LoadModdableRawfile_t LoadModdableRawfile = LoadModdableRawfile_t(0x61ABC0);
+	LiveStorage_GetStat_t LiveStorage_GetStat = LiveStorage_GetStat_t(0x471F60);
+	LiveStorage_SetStat_t LiveStorage_SetStat = LiveStorage_SetStat_t(0x4CC5D0);
+
+	Scr_AddSourceBuffer_t Scr_AddSourceBuffer = Scr_AddSourceBuffer_t(0x61ABC0);
 
 	PC_ReadToken_t PC_ReadToken = PC_ReadToken_t(0x4ACCD0);
 	PC_ReadTokenHandle_t PC_ReadTokenHandle = PC_ReadTokenHandle_t(0x4D2060);
@@ -219,6 +133,7 @@ namespace Game
 	PartyHost_CountMembers_t PartyHost_CountMembers = PartyHost_CountMembers_t(0x497330);
 	PartyHost_GetMemberAddressBySlot_t PartyHost_GetMemberAddressBySlot = PartyHost_GetMemberAddressBySlot_t(0x44E100);
 	PartyHost_GetMemberName_t PartyHost_GetMemberName = PartyHost_GetMemberName_t(0x44BE90);
+	Party_InParty_t Party_InParty = Party_InParty_t(0x4F10C0);
 
 	Playlist_ParsePlaylists_t Playlist_ParsePlaylists = Playlist_ParsePlaylists_t(0x4295A0);
 
@@ -233,38 +148,6 @@ namespace Game
 	R_FlushSun_t R_FlushSun = R_FlushSun_t(0x53FB50);
 	R_SortWorldSurfaces_t R_SortWorldSurfaces = R_SortWorldSurfaces_t(0x53DC10);
 
-	RemoveRefToObject_t RemoveRefToObject = RemoveRefToObject_t(0x437190);
-
-	Scr_LoadGameType_t Scr_LoadGameType = Scr_LoadGameType_t(0x4D9520);
-
-	Scr_LoadScript_t Scr_LoadScript = Scr_LoadScript_t(0x45D940);
-	Scr_GetFunctionHandle_t Scr_GetFunctionHandle = Scr_GetFunctionHandle_t(0x4234F0);
-
-	Scr_GetString_t Scr_GetString = Scr_GetString_t(0x425900);
-	Scr_GetFloat_t Scr_GetFloat = Scr_GetFloat_t(0x443140);
-	Scr_GetInt_t Scr_GetInt = Scr_GetInt_t(0x4F31D0);
-	Scr_GetObject_t Scr_GetObject = Scr_GetObject_t(0x462100);
-	Scr_GetNumParam_t Scr_GetNumParam = Scr_GetNumParam_t(0x4B0E90);
-
-	Scr_ExecThread_t Scr_ExecThread = Scr_ExecThread_t(0x4AD0B0);
-	Scr_FreeThread_t Scr_FreeThread = Scr_FreeThread_t(0x4BD320);
-
-	Scr_AddEntity_t Scr_AddEntity = Scr_AddEntity_t(0x4BFB40);
-	Scr_AddString_t Scr_AddString = Scr_AddString_t(0x412310);
-	Scr_AddInt_t Scr_AddInt = Scr_AddInt_t(0x41D7D0);
-	Scr_AddFloat_t Scr_AddFloat = Scr_AddFloat_t(0x61E860);
-	Scr_AddObject_t Scr_AddObject = Scr_AddObject_t(0x430F40);
-	Scr_Notify_t Scr_Notify = Scr_Notify_t(0x4A4750);
-	Scr_NotifyLevel_t Scr_NotifyLevel = Scr_NotifyLevel_t(0x4D9C30);
-	Scr_Error_t Scr_Error = Scr_Error_t(0x61E8B0);
-	Scr_GetType_t Scr_GetType = Scr_GetType_t(0x422900);
-
-	Scr_ClearOutParams_t Scr_ClearOutParams = Scr_ClearOutParams_t(0x4386E0);
-
-	Scr_RegisterFunction_t Scr_RegisterFunction = Scr_RegisterFunction_t(0x492D50);
-	Scr_ShutdownAllocNode_t Scr_ShutdownAllocNode = Scr_ShutdownAllocNode_t(0x441650);
-	Scr_IsSystemActive_t Scr_IsSystemActive = Scr_IsSystemActive_t(0x4B24E0);
-
 	Script_Alloc_t Script_Alloc = Script_Alloc_t(0x422E70);
 	Script_SetupTokens_t Script_SetupTokens = Script_SetupTokens_t(0x4E6950);
 	Script_CleanString_t Script_CleanString = Script_CleanString_t(0x498220);
@@ -272,13 +155,21 @@ namespace Game
 	SE_Load_t SE_Load = SE_Load_t(0x502A30);
 
 	SEH_StringEd_GetString_t SEH_StringEd_GetString = SEH_StringEd_GetString_t(0x44BB30);
+	SEH_ReadCharFromString_t SEH_ReadCharFromString = SEH_ReadCharFromString_t(0x486560);
+	SEH_GetCurrentLanguage_t SEH_GetCurrentLanguage = SEH_GetCurrentLanguage_t(0x4F6110);
 
 	Dvar_SetFromStringByName_t Dvar_SetFromStringByName = Dvar_SetFromStringByName_t(0x4F52E0);
 	Dvar_SetFromStringByNameFromSource_t Dvar_SetFromStringByNameFromSource = Dvar_SetFromStringByNameFromSource_t(0x4FC770);
 	Dvar_SetStringByName_t Dvar_SetStringByName = Dvar_SetStringByName_t(0x44F060);
+	Dvar_SetString_t Dvar_SetString = Dvar_SetString_t(0x4A9580);
+	Dvar_SetBool_t Dvar_SetBool = Dvar_SetBool_t(0x4A9510);
+	Dvar_SetFloat_t Dvar_SetFloat = Dvar_SetFloat_t(0x40BB20);
+	Dvar_SetInt_t Dvar_SetInt = Dvar_SetInt_t(0x421DA0);
 
 	SL_ConvertToString_t SL_ConvertToString = SL_ConvertToString_t(0x4EC1D0);
 	SL_GetString_t SL_GetString = SL_GetString_t(0x4CDC10);
+	SL_AddRefToString_t SL_AddRefToString = SL_AddRefToString_t(0x4D9B00);
+	SL_RemoveRefToString_t SL_RemoveRefToString = SL_RemoveRefToString_t(0x47CD70);
 
 	SND_Init_t SND_Init = SND_Init_t(0x46A630);
 	SND_InitDriver_t SND_InitDriver = SND_InitDriver_t(0x4F5090);
@@ -288,71 +179,102 @@ namespace Game
 	Steam_JoinLobby_t Steam_JoinLobby = Steam_JoinLobby_t(0x49CF70);
 
 	StringTable_Lookup_t StringTable_Lookup = StringTable_Lookup_t(0x42F0E0);
+	StringTable_GetColumnValueForRow_t StringTable_GetColumnValueForRow = StringTable_GetColumnValueForRow_t(0x4F2C80);
 	StringTable_HashString_t StringTable_HashString = StringTable_HashString_t(0x475EB0);
-
-	SV_AddTestClient_t SV_AddTestClient = SV_AddTestClient_t(0x48AD30);
-	SV_GameClientNum_Score_t SV_GameClientNum_Score = SV_GameClientNum_Score_t(0x469AC0);
-	SV_GameSendServerCommand_t SV_GameSendServerCommand = SV_GameSendServerCommand_t(0x4BC3A0);
-	SV_Cmd_TokenizeString_t SV_Cmd_TokenizeString = SV_Cmd_TokenizeString_t(0x4B5780);
-	SV_Cmd_EndTokenizedString_t SV_Cmd_EndTokenizedString = SV_Cmd_EndTokenizedString_t(0x464750);
-	SV_DirectConnect_t SV_DirectConnect = SV_DirectConnect_t(0x460480);
-	SV_SetConfigstring_t SV_SetConfigstring = SV_SetConfigstring_t(0x4982E0);
-	SV_Loaded_t SV_Loaded = SV_Loaded_t(0x4EE3E0);
-	SV_ClientThink_t SV_ClientThink = SV_ClientThink_t(0x44ADD0);
-
-	Sys_Error_t Sys_Error = Sys_Error_t(0x4E0200);
-	Sys_FreeFileList_t Sys_FreeFileList = Sys_FreeFileList_t(0x4D8580);
-	Sys_IsDatabaseReady_t Sys_IsDatabaseReady = Sys_IsDatabaseReady_t(0x4CA4A0);
-	Sys_IsDatabaseReady2_t Sys_IsDatabaseReady2 = Sys_IsDatabaseReady2_t(0x441280);
-	Sys_IsMainThread_t Sys_IsMainThread = Sys_IsMainThread_t(0x4C37D0);
-	Sys_IsRenderThread_t Sys_IsRenderThread = Sys_IsRenderThread_t(0x4B20E0);
-	Sys_IsServerThread_t Sys_IsServerThread = Sys_IsServerThread_t(0x4B0270);
-	Sys_IsDatabaseThread_t Sys_IsDatabaseThread = Sys_IsDatabaseThread_t(0x4C6020);
-	Sys_SendPacket_t Sys_SendPacket = Sys_SendPacket_t(0x60FDC0);
-	Sys_ShowConsole_t Sys_ShowConsole = Sys_ShowConsole_t(0x4305E0);
-	Sys_SuspendOtherThreads_t Sys_SuspendOtherThreads = Sys_SuspendOtherThreads_t(0x45A190);
-	Sys_ListFiles_t Sys_ListFiles = Sys_ListFiles_t(0x45A660);
-	Sys_Milliseconds_t Sys_Milliseconds = Sys_Milliseconds_t(0x42A660);
 
 	TeleportPlayer_t TeleportPlayer = TeleportPlayer_t(0x496850);
 
 	UI_AddMenuList_t UI_AddMenuList = UI_AddMenuList_t(0x4533C0);
+	UI_GetActiveMenu_t UI_GetActiveMenu = UI_GetActiveMenu_t(0x4BE790);
 	UI_CheckStringTranslation_t UI_CheckStringTranslation = UI_CheckStringTranslation_t(0x4FB010);
 	UI_LoadMenus_t UI_LoadMenus = UI_LoadMenus_t(0x641460);
 	UI_UpdateArenas_t UI_UpdateArenas = UI_UpdateArenas_t(0x4A95B0);
 	UI_SortArenas_t UI_SortArenas = UI_SortArenas_t(0x630AE0);
 	UI_DrawHandlePic_t UI_DrawHandlePic = UI_DrawHandlePic_t(0x4D0EA0);
-	UI_GetContext_t UI_GetContext = UI_GetContext_t(0x4F8940);
+	ScrPlace_GetActivePlacement_t ScrPlace_GetActivePlacement = ScrPlace_GetActivePlacement_t(0x4F8940);
 	UI_TextWidth_t UI_TextWidth = UI_TextWidth_t(0x6315C0);
+	UI_TextHeight_t UI_TextHeight = UI_TextHeight_t(0x4C8630);
 	UI_DrawText_t UI_DrawText = UI_DrawText_t(0x49C0D0);
+	UI_GetFontHandle_t UI_GetFontHandle = UI_GetFontHandle_t(0x4AEA60);
+	ScrPlace_ApplyRect_t ScrPlace_ApplyRect = ScrPlace_ApplyRect_t(0x454E20);
+	UI_KeyEvent_t UI_KeyEvent = UI_KeyEvent_t(0x4970F0);
+	UI_SafeTranslateString_t UI_SafeTranslateString = UI_SafeTranslateString_t(0x4F1700);
+	UI_ReplaceConversions_t UI_ReplaceConversions = UI_ReplaceConversions_t(0x4E9740);
+	UI_ParseInfos_t UI_ParseInfos = UI_ParseInfos_t(0x4027A0);
 
 	Win_GetLanguage_t Win_GetLanguage = Win_GetLanguage_t(0x45CBA0);
 
 	Vec3UnpackUnitVec_t Vec3UnpackUnitVec = Vec3UnpackUnitVec_t(0x45CA90);
+	vectoyaw_t vectoyaw = vectoyaw_t(0x45AD10);
+	AngleNormalize360_t AngleNormalize360 = AngleNormalize360_t(0x438DC0);
 
 	unzClose_t unzClose = unzClose_t(0x41BF20);
 
-	XAssetHeader* DB_XAssetPool = reinterpret_cast<XAssetHeader*>(0x7998A8);
-	unsigned int* g_poolSize = reinterpret_cast<unsigned int*>(0x7995E8);
+	RB_DrawCursor_t RB_DrawCursor = RB_DrawCursor_t(0x534EA0);
 
-	DWORD* cmd_id = reinterpret_cast<DWORD*>(0x1AAC5D0);
-	DWORD* cmd_argc = reinterpret_cast<DWORD*>(0x1AAC614);
-	char*** cmd_argv = reinterpret_cast<char***>(0x1AAC634);
+	R_NormalizedTextScale_t R_NormalizedTextScale = R_NormalizedTextScale_t(0x5056A0);
 
-	DWORD* cmd_id_sv = reinterpret_cast<DWORD*>(0x1ACF8A0);
-	DWORD* cmd_argc_sv = reinterpret_cast<DWORD*>(0x1ACF8E4);
-	char*** cmd_argv_sv = reinterpret_cast<char***>(0x1ACF904);
+	Material_Process2DTextureCoordsForAtlasing_t Material_Process2DTextureCoordsForAtlasing = Material_Process2DTextureCoordsForAtlasing_t(0x506090);
+
+	Byte4PackRgba_t Byte4PackRgba = Byte4PackRgba_t(0x4FE910);
+	RandWithSeed_t RandWithSeed = RandWithSeed_t(0x495580);
+	GetDecayingLetterInfo_t GetDecayingLetterInfo = GetDecayingLetterInfo_t(0x5351C0);
+
+	Field_Draw_t Field_Draw = Field_Draw_t(0x4F5B40);
+	Field_AdjustScroll_t Field_AdjustScroll = Field_AdjustScroll_t(0x488C10);
+	AimAssist_ApplyAutoMelee_t AimAssist_ApplyAutoMelee = AimAssist_ApplyAutoMelee_t(0x56A360);
+
+	Weapon_RocketLauncher_Fire_t Weapon_RocketLauncher_Fire = Weapon_RocketLauncher_Fire_t(0x424680);
+
+	Jump_ClearState_t Jump_ClearState = Jump_ClearState_t(0x04B3890);
+	PM_playerTrace_t PM_playerTrace = PM_playerTrace_t(0x458980);
+	PM_Trace_t PM_Trace = PM_Trace_t(0x441F60);
+	PM_GetEffectiveStance_t PM_GetEffectiveStance = PM_GetEffectiveStance_t(0x412540);
+	PM_UpdateLean_t PM_UpdateLean = PM_UpdateLean_t(0x43DED0);
+
+	IN_RecenterMouse_t IN_RecenterMouse = IN_RecenterMouse_t(0x463D80);
+
+	IN_MouseMove_t IN_MouseMove = IN_MouseMove_t(0x64C490);
+	IN_Init_t IN_Init = IN_Init_t(0x45D620);
+	IN_Shutdown_t IN_Shutdown = IN_Shutdown_t(0x426360);
+
+	Touch_Item_t Touch_Item = Touch_Item_t(0x44FA20);
+
+	Add_Ammo_t Add_Ammo = Add_Ammo_t(0x4E1480);
+  
+	ClientUserinfoChanged_t ClientUserinfoChanged = ClientUserinfoChanged_t(0x445240);
+
+	player_die_t player_die = player_die_t(0x42BC70);
+
+	Vec3Normalize_t Vec3Normalize = Vec3Normalize_t(0x453500);
+	Vec3NormalizeFast_t Vec3NormalizeFast = Vec3NormalizeFast_t(0x478F80);
+	Vec2Normalize_t Vec2Normalize = Vec2Normalize_t(0x416F70);
+	Vec2NormalizeFast_t Vec2NormalizeFast = Vec2NormalizeFast_t(0x5FC830);
+
+	Z_VirtualAlloc_t Z_VirtualAlloc = Z_VirtualAlloc_t(0x4CFBA0);
+
+	I_strncpyz_t I_strncpyz = I_strncpyz_t(0x4D6F80);
+	I_CleanStr_t I_CleanStr = I_CleanStr_t(0x4AD470);
+
+	XNAddrToString_t XNAddrToString = XNAddrToString_t(0x452690);
+
+	Voice_IncomingVoiceData_t Voice_IncomingVoiceData = Voice_IncomingVoiceData_t(0x5001A0);
+	Voice_IsClientTalking_t Voice_IsClientTalking = Voice_IsClientTalking_t(0x4D9D20);
+
+	LargeLocalBegin_t LargeLocalBegin = LargeLocalBegin_t(0x4127A0);
+	LargeLocalBeginRight_t LargeLocalBeginRight = LargeLocalBeginRight_t(0x644140);
+
+	CmdArgs* cmd_args = reinterpret_cast<CmdArgs*>(0x1AAC5D0);
+	CmdArgs* sv_cmd_args = reinterpret_cast<CmdArgs*>(0x1ACF8A0);
 
 	cmd_function_t** cmd_functions = reinterpret_cast<cmd_function_t**>(0x1AAC658);
 
 	source_t **sourceFiles = reinterpret_cast<source_t **>(0x7C4A98);
 	keywordHash_t **menuParseKeywordHash = reinterpret_cast<keywordHash_t **>(0x63AE928);
 
-	int* svs_time = reinterpret_cast<int*>(0x31D9384);
-	int* svs_numclients = reinterpret_cast<int*>(0x31D938C);
-	client_t* svs_clients = reinterpret_cast<client_t*>(0x31D9390);
+	float* cgameFOVSensitivityScale = reinterpret_cast<float*>(0xB2F884);
 
-	UiContext *uiContext = reinterpret_cast<UiContext *>(0x62E2858);
+	UiContext* uiContext = reinterpret_cast<UiContext*>(0x62E2858);
 
 	int* arenaCount = reinterpret_cast<int*>(0x62E6930);
 	mapArena_t* arenas = reinterpret_cast<mapArena_t*>(0x62E6934);
@@ -360,15 +282,11 @@ namespace Game
 	int* gameTypeCount = reinterpret_cast<int*>(0x62E50A0);
 	gameTypeName_t* gameTypes = reinterpret_cast<gameTypeName_t*>(0x62E50A4);
 
-	searchpath_t** fs_searchpaths = reinterpret_cast<searchpath_t**>(0x63D96E0);
-
-	XBlock** g_streamBlocks = reinterpret_cast<XBlock**>(0x16E554C);
-	int* g_streamPos = reinterpret_cast<int*>(0x16E5554);
-	int* g_streamPosIndex = reinterpret_cast<int*>(0x16E5578);
-
 	bool* g_lobbyCreateInProgress = reinterpret_cast<bool*>(0x66C9BC2);
-	party_t** partyIngame = reinterpret_cast<party_t**>(0x1081C00);
-	PartyData_s** partyData = reinterpret_cast<PartyData_s**>(0x107E500);
+	PartyData* g_lobbyData = reinterpret_cast<PartyData*>(0x1081C00);
+	PartyData* g_partyData = reinterpret_cast<PartyData*>(0x107E500);
+
+	SessionData* g_serverSession = reinterpret_cast<SessionData*>(0x66B7008);
 
 	int* numIP = reinterpret_cast<int*>(0x64A1E68);
 	netIP_t* localIP = reinterpret_cast<netIP_t*>(0x64A1E28);
@@ -378,13 +296,9 @@ namespace Game
 	int* demoRecording = reinterpret_cast<int*>(0xA5EA08);
 	int* serverMessageSequence = reinterpret_cast<int*>(0xA3E9B4);
 
-	gentity_t* g_entities = reinterpret_cast<gentity_t*>(0x18835D8);
-
 	netadr_t* connectedHost = reinterpret_cast<netadr_t*>(0xA1E888);
 
 	SOCKET* ip_socket = reinterpret_cast<SOCKET*>(0x64A3008);
-
-	uint32_t* com_frameTime = reinterpret_cast<uint32_t*>(0x1AD8F3C);
 
 	SafeArea* safeArea = reinterpret_cast<SafeArea*>(0xA15F3C);
 
@@ -406,30 +320,87 @@ namespace Game
 	FxEffectDef*** varFxEffectDefHandle = reinterpret_cast<FxEffectDef***>(0x112ACC0);
 	PhysCollmap*** varPhysCollmapPtr = reinterpret_cast<PhysCollmap***>(0x112B440);
 	PhysPreset*** varPhysPresetPtr = reinterpret_cast<PhysPreset***>(0x112B378);
-	Game::MaterialPass** varMaterialPass = reinterpret_cast<Game::MaterialPass**>(0x112A960);
+	MaterialPass** varMaterialPass = reinterpret_cast<MaterialPass**>(0x112A960);
 	snd_alias_list_t*** varsnd_alias_list_name = reinterpret_cast<snd_alias_list_t***>(0x112AF38);
+	MaterialVertexShader*** varMaterialVertexShader = reinterpret_cast<MaterialVertexShader***>(0x112B338);
 
 	FxElemField* s_elemFields = reinterpret_cast<FxElemField*>(0x73B848);
 
+	visField_t* visionDefFields = reinterpret_cast<visField_t*>(0x7982F0); // Count 21
+
 	infoParm_t* infoParams = reinterpret_cast<infoParm_t*>(0x79D260); // Count 0x1E
 
-	XZone* g_zones = reinterpret_cast<XZone*>(0x14C0F80);
-	unsigned short* db_hashTable = reinterpret_cast<unsigned short*>(0x12412B0);
-
-	ScriptContainer* scriptContainer = reinterpret_cast<ScriptContainer*>(0x2040D00);
-
-	clientstate_t* clcState = reinterpret_cast<clientstate_t*>(0xB2C540);
+	clientState_t* clcState = reinterpret_cast<clientState_t*>(0xB2C540);
 
 	GfxScene* scene = reinterpret_cast<GfxScene*>(0x6944914);
 
-	XAssetHeader ReallocateAssetPool(XAssetType type, unsigned int newSize)
-	{
-		int elSize = DB_GetXAssetSizeHandlers[type]();
-		XAssetHeader poolEntry = { Utils::Memory::GetAllocator()->allocate(newSize * elSize) };
-		DB_XAssetPool[type] = poolEntry;
-		g_poolSize[type] = newSize;
-		return poolEntry;
-	}
+	Console* con = reinterpret_cast<Console*>(0x9FCCF8);
+	ConDrawInputGlob* conDrawInputGlob = reinterpret_cast<ConDrawInputGlob*>(0x9FD6F8);
+
+	int* g_console_field_width = reinterpret_cast<int*>(0x79854C);
+	float* g_console_char_height = reinterpret_cast<float*>(0x798550);
+	field_t* g_consoleField = reinterpret_cast<field_t*>(0xA1B6B0);
+
+	sharedUiInfo_t* sharedUiInfo = reinterpret_cast<sharedUiInfo_t*>(0x62E4B78);
+	ScreenPlacement* scrPlaceFull = reinterpret_cast<ScreenPlacement*>(0x10843F0);
+	ScreenPlacement* scrPlaceFullUnsafe = reinterpret_cast<ScreenPlacement*>(0x1084460);
+	ScreenPlacement* scrPlaceView = reinterpret_cast<ScreenPlacement*>(0x1084378);
+	
+	clientActive_t* clients = reinterpret_cast<clientActive_t*>(0xB2C698);
+
+	cg_s* cgArray = reinterpret_cast<cg_s*>(0x7F0F78);
+	cgs_t* cgsArray = reinterpret_cast<cgs_t*>(0x7ED3B8);
+
+	PlayerKeyState* playerKeys = reinterpret_cast<PlayerKeyState*>(0xA1B7D0);
+	kbutton_t* playersKb = reinterpret_cast<kbutton_t*>(0xA1A9A8);
+	AimAssistGlobals* aaGlobArray = reinterpret_cast<AimAssistGlobals*>(0x7A2110);
+
+	keyname_t* keyNames = reinterpret_cast<keyname_t*>(0x798580);
+	keyname_t* localizedKeyNames = reinterpret_cast<keyname_t*>(0x798880);
+
+	GraphFloat* aaInputGraph = reinterpret_cast<GraphFloat*>(0x7A2FC0);
+
+	const char* MY_CMDS = reinterpret_cast<const char*>(0x73C9C4); // Count 5
+
+	XModel** cached_models = reinterpret_cast<XModel**>(0x1AA20C8);
+
+	float (*CorrectSolidDeltas)[26][3] = reinterpret_cast<float(*)[26][3]>(0x739BB8); // Count 26
+
+	level_locals_t* level = reinterpret_cast<level_locals_t*>(0x1A831A8);
+
+	float (*penetrationDepthTable)[PENETRATE_TYPE_COUNT][SURF_TYPE_COUNT] = reinterpret_cast<float(*)[PENETRATE_TYPE_COUNT][SURF_TYPE_COUNT]>(0x7C4878);
+
+	WinMouseVars_t* s_wmv = reinterpret_cast<WinMouseVars_t*>(0x649D640);
+
+	int* window_center_x = reinterpret_cast<int*>(0x649D638);
+	int* window_center_y = reinterpret_cast<int*>(0x649D630);
+
+	DeferredQueue* deferredQueue = reinterpret_cast<DeferredQueue*>(0x1CC2CE8);
+
+	int* g_waitingForKey = reinterpret_cast<int*>(0x63A50FC);
+
+	Material** whiteMaterial = reinterpret_cast<Material**>(0x8EE4B8);
+
+	unsigned long* _tls_index = reinterpret_cast<unsigned long*>(0x66D94A8);
+
+	int* cls_uiStarted = reinterpret_cast<int*>(0xA7FFA0);
+
+	unsigned int* playerCardUIStringIndex = reinterpret_cast<unsigned int*>(0x62CD7A8);
+	char (*playerCardUIStringBuf)[PLAYER_CARD_UI_STRING_COUNT][38] = reinterpret_cast<char(*)[PLAYER_CARD_UI_STRING_COUNT][38]>(0x62CB4F8);
+
+	uiInfo_s* uiInfoArray = reinterpret_cast<uiInfo_s*>(0x62E2858);
+
+	int* logfile = reinterpret_cast<int*>(0x1AD8F28);
+
+	GamerSettingState* gamerSettings = reinterpret_cast<GamerSettingState*>(0x107D3E8);
+
+	unsigned char* g_largeLocalBuf = reinterpret_cast<unsigned char*>(0x63D9790);
+	int* g_largeLocalPos = reinterpret_cast<int*>(0x63D97B4);
+	int* g_largeLocalRightPos = reinterpret_cast<int*>(0x63D9780);
+
+	char** ui_arenaInfos = reinterpret_cast<char**>(0x62D2688);
+	int* ui_numArenas = reinterpret_cast<int*>(0x62D2788);
+	int* ui_arenaBufPos = reinterpret_cast<int*>(0x62D278C);
 
 	const char* TableLookup(StringTable* stringtable, int row, int column)
 	{
@@ -478,114 +449,14 @@ namespace Game
 		return gameType;
 	}
 
-	const char *DB_GetXAssetName(XAsset *asset)
-	{
-		if (!asset) return "";
-		return DB_GetXAssetNameHandlers[asset->type](&asset->header);
-	}
-
-	XAssetType DB_GetXAssetNameType(const char* name)
-	{
-		for (int i = 0; i < ASSET_TYPE_COUNT; ++i)
-		{
-			XAssetType type = static_cast<XAssetType>(i);
-			if (!_stricmp(DB_GetXAssetTypeName(type), name))
-			{
-				// Col map workaround!
-				if (type == Game::XAssetType::ASSET_TYPE_CLIPMAP_SP)
-				{
-					return Game::XAssetType::ASSET_TYPE_CLIPMAP_MP;
-				}
-
-				return type;
-			}
-		}
-
-		return ASSET_TYPE_INVALID;
-	}
-
-	int DB_GetZoneIndex(const std::string& name)
-	{
-		for (int i = 0; i < 32; ++i)
-		{
-			if (Game::g_zones[i].name == name)
-			{
-				return i;
-			}
-		}
-
-		return -1;
-	}
-
-	bool DB_IsZoneLoaded(const char* zone)
-	{
-		int zoneCount = Utils::Hook::Get<int>(0x1261BCC);
-		char* zoneIndices = reinterpret_cast<char*>(0x16B8A34);
-		char* zoneData = reinterpret_cast<char*>(0x14C0F80);
-
-		for (int i = 0; i < zoneCount; ++i)
-		{
-			std::string name = zoneData + 4 + 0xA4 * (zoneIndices[i] & 0xFF);
-
-			if (name == zone)
-			{
-				return true;
-			}
-		}
-
-		return false;
-	}
-
-	void DB_EnumXAssetEntries(XAssetType type, std::function<void(XAssetEntry*)> callback, bool overrides, bool lock)
-	{
-		volatile long* lockVar = reinterpret_cast<volatile long*>(0x16B8A54);
-		if (lock) InterlockedIncrement(lockVar);
-
-		while (lock && *reinterpret_cast<volatile long*>(0x16B8A58)) std::this_thread::sleep_for(1ms);
-
-		unsigned int index = 0;
-		do
-		{
-			unsigned short hashIndex = db_hashTable[index];
-			if (hashIndex)
-			{
-				do
-				{
-					XAssetEntry* asset = &Components::Maps::GetAssetEntryPool()[hashIndex];
-					hashIndex = asset->nextHash;
-					if (asset->asset.type == type)
-					{
-						callback(asset);
-						if (overrides)
-						{
-							unsigned short overrideIndex = asset->nextOverride;
-							if (asset->nextOverride)
-							{
-								do
-								{
-									asset = &Components::Maps::GetAssetEntryPool()[overrideIndex];
-									callback(asset);
-									overrideIndex = asset->nextOverride;
-								} while (overrideIndex);
-							}
-						}
-					}
-				} while (hashIndex);
-			}
-			++index;
-		} while (index < 74000);
-
-		if(lock) InterlockedDecrement(lockVar);
-	}
-
 	// this cant be MessageBox because windows.h has a define that converts it to MessageBoxW. which is just stupid
 	void ShowMessageBox(const std::string& message, const std::string& title)
 	{
-		if (!Game::CL_IsCgameInitialized())
+		if (!CL_IsCgameInitialized())
 		{
 			Dvar_SetStringByName("com_errorMessage", message.data());
 			Dvar_SetStringByName("com_errorTitle", title.data());
-			Cbuf_AddText(0, "openmenu error_popmenu_lobby");
+			Cbuf_AddText(0, "openmenu error_popmenu_lobby\n");
 		}
 	}
 
@@ -602,41 +473,18 @@ namespace Game
 		return hash;
 	}
 
-	void SV_KickClientError(client_t* client, const std::string& reason)
+	unsigned int R_HashString(const char* string, size_t maxLen)
 	{
-		if (client->state < 5)
+		unsigned int hash = 0;
+
+		while (*string && maxLen > 0)
 		{
-			Components::Network::SendCommand(client->addr, "error", reason);
+			hash = (*string | 0x20) ^ (33 * hash);
+			++string;
+			maxLen--;
 		}
 
-		SV_KickClient(client, reason.data());
-	}
-
-	void Scr_iPrintLn(int clientNum, const std::string& message)
-	{
-		Game::SV_GameSendServerCommand(clientNum, 0, Utils::String::VA("%c \"%s\"", 0x66, message.data()));
-	}
-
-	void Scr_iPrintLnBold(int clientNum, const std::string& message)
-	{
-		Game::SV_GameSendServerCommand(clientNum, 0, Utils::String::VA("%c \"%s\"", 0x67, message.data()));
-	}
-
-	int FS_FOpenFileReadCurrentThread(const char* file, int* fh)
-	{
-		if (GetCurrentThreadId() == *reinterpret_cast<DWORD*>(0x1CDE7FC))
-		{
-			return FS_FOpenFileRead(file, fh);
-		}
-		else if (GetCurrentThreadId() == *reinterpret_cast<DWORD*>(0x1CDE814))
-		{
-			return FS_FOpenFileReadDatabase(file, fh);
-		}
-		else
-		{
-			*fh = NULL;
-			return -1;
-		}
+		return hash;
 	}
 
 	void Load_IndexBuffer(void* data, IDirect3DIndexBuffer9** storeHere, int count)
@@ -651,55 +499,6 @@ namespace Game
 				(*storeHere)->Unlock();
 			}
 		}
-	}
-
-	char* Com_GetParseThreadInfo()
-	{
-		if (Game::Sys_IsMainThread())
-		{
-			return reinterpret_cast<char*>(0x6466628);
-		}
-		else if (Game::Sys_IsRenderThread())
-		{
-			return reinterpret_cast<char*>(0x646AC34);
-		}
-		else if (Game::Sys_IsServerThread())
-		{
-			return reinterpret_cast<char*>(0x646F240);
-		}
-		else if(Game::Sys_IsDatabaseThread())
-		{
-			return reinterpret_cast<char*>(0x647384C);
-		}
-		else
-		{
-			return nullptr;
-		}
-	}
-
-	void Com_SetParseNegativeNumbers(int parse)
-	{
-		char* g_parse = Com_GetParseThreadInfo();
-
-		if (g_parse)
-		{
-			g_parse[1056 * *(reinterpret_cast<DWORD*>(g_parse) + 4224) + 1032] = parse != 0;
-		}
-	}
-
-	int CL_GetMaxXP()
-	{
-		StringTable* rankTable = DB_FindXAssetHeader(ASSET_TYPE_STRINGTABLE, "mp/rankTable.csv").stringTable;
-		const char* maxrank = StringTable_Lookup(rankTable, 0, "maxrank", 1);
-		return atoi(StringTable_Lookup(rankTable, 0, maxrank, 7));
-	}
-
-	void Vec3Normalize(vec3_t& vec)
-	{
-		const float length = static_cast<float>(std::sqrt(std::pow(vec[0], 2) + std::pow(vec[1], 2) + std::pow(vec[2], 2)));
-		vec[0] /= length;
-		vec[1] /= length;
-		vec[2] /= length;
 	}
 
 	void Vec2UnpackTexCoords(const PackedTexCoords in, vec2_t* out)
@@ -777,7 +576,7 @@ namespace Game
 
 	void R_AddDebugBounds(float* color, Bounds* b)
 	{
-		Game::vec3_t v1, v2, v3, v4, v5, v6, v7, v8;
+		vec3_t v1, v2, v3, v4, v5, v6, v7, v8;
 		float* center = b->midPoint;
 		float* halfSize = b->halfSize;
 
@@ -814,22 +613,22 @@ namespace Game
 		v8[2] = center[2] + halfSize[2];
 
 		// bottom
-		Game::R_AddDebugLine(color, v1, v2);
-		Game::R_AddDebugLine(color, v2, v4);
-		Game::R_AddDebugLine(color, v4, v3);
-		Game::R_AddDebugLine(color, v3, v1);
+		R_AddDebugLine(color, v1, v2);
+		R_AddDebugLine(color, v2, v4);
+		R_AddDebugLine(color, v4, v3);
+		R_AddDebugLine(color, v3, v1);
 
 		// top
-		Game::R_AddDebugLine(color, v5, v6);
-		Game::R_AddDebugLine(color, v6, v8);
-		Game::R_AddDebugLine(color, v8, v7);
-		Game::R_AddDebugLine(color, v7, v5);
+		R_AddDebugLine(color, v5, v6);
+		R_AddDebugLine(color, v6, v8);
+		R_AddDebugLine(color, v8, v7);
+		R_AddDebugLine(color, v7, v5);
 
 		// verticals
-		Game::R_AddDebugLine(color, v1, v5);
-		Game::R_AddDebugLine(color, v2, v6);
-		Game::R_AddDebugLine(color, v3, v7);
-		Game::R_AddDebugLine(color, v4, v8);
+		R_AddDebugLine(color, v1, v5);
+		R_AddDebugLine(color, v2, v6);
+		R_AddDebugLine(color, v3, v7);
+		R_AddDebugLine(color, v4, v8);
 	}
 
 	void R_AddDebugBounds(float* color, Bounds* b, const float(*quat)[4])
@@ -879,25 +678,117 @@ namespace Game
 		}
 
 		// bottom
-		Game::R_AddDebugLine(color, v[0], v[1]);
-		Game::R_AddDebugLine(color, v[1], v[3]);
-		Game::R_AddDebugLine(color, v[3], v[2]);
-		Game::R_AddDebugLine(color, v[2], v[0]);
+		R_AddDebugLine(color, v[0], v[1]);
+		R_AddDebugLine(color, v[1], v[3]);
+		R_AddDebugLine(color, v[3], v[2]);
+		R_AddDebugLine(color, v[2], v[0]);
 
 		// top
-		Game::R_AddDebugLine(color, v[4], v[5]);
-		Game::R_AddDebugLine(color, v[5], v[7]);
-		Game::R_AddDebugLine(color, v[7], v[6]);
-		Game::R_AddDebugLine(color, v[6], v[4]);
+		R_AddDebugLine(color, v[4], v[5]);
+		R_AddDebugLine(color, v[5], v[7]);
+		R_AddDebugLine(color, v[7], v[6]);
+		R_AddDebugLine(color, v[6], v[4]);
 
 		// verticals
-		Game::R_AddDebugLine(color, v[0], v[4]);
-		Game::R_AddDebugLine(color, v[1], v[5]);
-		Game::R_AddDebugLine(color, v[2], v[6]);
-		Game::R_AddDebugLine(color, v[3], v[7]);
+		R_AddDebugLine(color, v[0], v[4]);
+		R_AddDebugLine(color, v[1], v[5]);
+		R_AddDebugLine(color, v[2], v[6]);
+		R_AddDebugLine(color, v[3], v[7]);
 	}
 
+	float GraphGetValueFromFraction(const int knotCount, const float(*knots)[2], const float fraction)
+	{
+		for (auto knotIndex = 1; knotIndex < knotCount; ++knotIndex)
+		{
+			if (knots[knotIndex][0] >= fraction)
+			{
+				const auto adjustedFraction = (fraction - knots[knotIndex - 1][0]) / (knots[knotIndex][0] - knots[knotIndex - 1][0]);
 
+				return (knots[knotIndex][1] - knots[knotIndex - 1][1]) * adjustedFraction + knots[knotIndex - 1][1];
+			}
+		}
+
+		return -1.0f;
+	}
+
+	float GraphFloat_GetValue(const GraphFloat* graph, const float fraction)
+	{
+		return GraphGetValueFromFraction(graph->knotCount, graph->knots, fraction) * graph->scale;
+	}
+
+	ScreenPlacement* ScrPlace_GetFullPlacement()
+	{
+		return scrPlaceFull;
+	}
+
+	ScreenPlacement* ScrPlace_GetUnsafeFullPlacement()
+	{
+		return scrPlaceFullUnsafe;
+	}
+
+	void UI_FilterStringForButtonAnimation(char* str, unsigned int strMaxSize)
+	{
+		if (SEH_GetCurrentLanguage() == 8)
+		{
+			return;
+		}
+
+		const auto remainder = Sys_Milliseconds() % 1000;
+		if (remainder <= 800)
+		{
+			return;
+		}
+
+		for (std::size_t idx = 0; str[idx] && idx < strMaxSize; ++idx)
+		{
+			if (str[idx] == 16)
+			{
+				str[idx] = -68;
+			}
+			else if (str[idx] == 17)
+			{
+				str[idx] = -67;
+			}
+		}
+	}
+
+	void I_strncpyz_s(char* dest, std::size_t destsize, const char* src, std::size_t count)
+	{
+		if (!destsize && !dest)
+		{
+			return;
+		}
+		if (!src || !count)
+		{
+			*dest = '\0';
+		}
+		else
+		{
+			const auto* p = reinterpret_cast<const unsigned char*>(src - 1);
+			auto* q = reinterpret_cast<unsigned char*>(dest - 1);
+			auto n = count + 1;
+			auto s = count;
+			if (destsize <= count)
+			{
+				n = destsize + 1;
+				s = destsize - 1;
+			}
+			do
+			{
+				if (!--n)
+				{
+					dest[s] = '\0';
+					return;
+				}
+				*++q = *++p;
+			} while (*q);
+		}
+	}
+
+	void I_strcpy(char* dest, std::size_t destsize, const char* src)
+	{
+		I_strncpyz_s(dest, destsize, src, destsize);
+	}
 
 #pragma optimize("", off)
 	__declspec(naked) float UI_GetScoreboardLeft(void* /*a1*/)
@@ -918,64 +809,22 @@ namespace Game
 		}
 	}
 
-	__declspec(naked) XAssetHeader DB_FindXAssetDefaultHeaderInternal(XAssetType /*type*/)
+	__declspec(naked) bool PM_IsAdsAllowed(playerState_s* /*ps*/)
 	{
 		__asm
 		{
 			push eax
 			pushad
 
-			mov eax, 5BB210h
-			mov edi, [esp + 28h]
-			call eax
-
-			mov [esp + 20h], eax
-			popad
-			pop eax
-
-			retn
-		}
-	}
-
-	__declspec(naked) XAssetEntry* DB_FindXAssetEntry(XAssetType /*type*/, const char* /*name*/)
-	{
-		__asm
-		{
-			push eax
-			pushad
-
-			mov edi, [esp + 2Ch] // name
-			push edi
-
-			mov edi, [esp + 2Ch] // type
-
-			mov eax, 5BB1B0h
-			call eax
-
-			add esp, 4h
-
-			mov [esp + 20h], eax
-			popad
-			pop eax
-
-			retn
-		}
-	}
-
-	__declspec(naked) void FS_AddLocalizedGameDirectory(const char* /*path*/, const char* /*dir*/)
-	{
-		__asm
-		{
-			pushad
-
-			mov ebx, [esp + 24h]
-			mov eax, [esp + 28h]
-			mov ecx, 642EF0h
+			mov esi, [esp + 0x24 + 0x4] // ps
+			mov ecx, 0x5755A0
 			call ecx
 
+			mov [esp + 0x20], eax
 			popad
+			pop eax
 
-			retn
+			ret
 		}
 	}
 
@@ -1005,49 +854,6 @@ namespace Game
 
 			mov eax, 53F6D0h
 			call eax
-
-			popad
-			retn
-		}
-	}
-
-	__declspec(naked) void SV_KickClient(client_t* /*client*/, const char* /*reason*/)
-	{
-		__asm
-		{
-			pushad
-
-			mov edi, 0
-			mov esi, [esp + 24h]
-			push [esp + 28h]
-			push 0
-			push 0
-
-			mov eax, 6249A0h
-			call eax
-			add esp, 0Ch
-
-			popad
-
-			retn
-		}
-	}
-
-	__declspec(naked) void Scr_NotifyId(unsigned int /*id*/, unsigned __int16 /*stringValue*/, unsigned int /*paramcount*/)
-	{
-		__asm
-		{
-			pushad
-
-			mov eax, [esp + 2Ch] // paramcount
-
-			push [esp + 28h] // stringValue
-			push [esp + 28h] // id
-
-			mov edx, 61E670h // Scr_NotifyId
-			call edx
-
-			add esp, 8h
 
 			popad
 			retn
@@ -1136,6 +942,32 @@ namespace Game
 		}
 	}
 
+	void Menu_SetNextCursorItem(UiContext* a1, menuDef_t* a2, int unk)
+	{
+		__asm
+		{
+			push unk
+			push a2
+			mov eax, a1
+			mov ebx, 0x639FE0
+			call ebx
+			add esp, 0x8 // 2 args = 2x4
+		}
+	}
+
+	void Menu_SetPrevCursorItem(UiContext* a1, menuDef_t* a2, int unk)
+	{
+		__asm
+		{
+			push unk
+			push a2
+			mov eax, a1
+			mov ebx, 0x639F20
+			call ebx
+			add esp, 0x8 // 2 args = 2x4
+		}
+	}
+
 	__declspec(naked) void R_AddDebugLine(float* /*color*/, float* /*v1*/, float* /*v2*/)
 	{
 		__asm
@@ -1195,5 +1027,193 @@ namespace Game
 			retn
 		}
 	}
+
+	Glyph* R_GetCharacterGlyph(Font_s* font, unsigned int letter)
+	{
+		static auto R_GetCharacterGlyph_t = 0x5055C0;
+		Glyph* result;
+
+		__asm
+		{
+			pushad
+
+			mov edi, letter
+			push font
+			call R_GetCharacterGlyph_t
+			add esp, 4
+			mov result, eax
+
+			popad
+		}
+
+		return result;
+	}
+
+	__declspec(naked) bool SetupPulseFXVars(const char* /*text*/, int /*maxLength*/, int /*fxBirthTime*/, int /*fxLetterTime*/, int /*fxDecayStartTime*/, int /*fxDecayDuration*/, bool* /*resultDrawRandChar*/, int* /*resultRandSeed*/, int* /*resultMaxLength*/, bool* /*resultDecaying*/, int* /*resultDecayTimeElapsed*/)
+	{
+		__asm
+		{
+			push eax
+			pushad
+
+			mov eax, [esp + 0x08 + 0x24] // maxLength
+			push [esp + 0x2C + 0x24] // resultDecayTimeElapsed
+			push [esp + 0x2C + 0x24] // resultDecaying
+			push [esp + 0x2C + 0x24] // resultMaxLength
+			push [esp + 0x2C + 0x24] // resultRandSeed
+			push [esp + 0x2C + 0x24] // resultDrawRandChar
+			push [esp + 0x2C + 0x24] // fxDecayDuration
+			push [esp + 0x2C + 0x24] // fxDecayStartTime
+			push [esp + 0x2C + 0x24] // fxLetterTime
+			push [esp + 0x2C + 0x24] // fxBirthTime
+			push [esp + 0x28 + 0x24] // text
+			mov ebx, 0x535050
+			call ebx
+			add esp, 0x28
+			mov [esp + 0x20],eax
+
+			popad
+			pop eax
+			ret
+		}
+	}
+
+	__declspec(naked) void RB_DrawChar(Material* /*material*/, float /*x*/, float /*y*/, float /*w*/, float /*h*/, float /*sinAngle*/, float /*cosAngle*/, Glyph* /*glyph*/, unsigned int /*color*/)
+	{
+		__asm
+		{
+			pushad
+
+			mov eax, [esp + 0x4 + 0x20] // material
+			mov edx, [esp + 0x20 + 0x20] // glyph
+			push [esp + 0x24 + 0x20] // color
+			push [esp + 0x20 + 0x20] // cosAngle
+			push [esp + 0x20 + 0x20] // sinAngle
+			push [esp + 0x20 + 0x20] // h
+			push [esp + 0x20 + 0x20] // w
+			push [esp + 0x20 + 0x20] // y
+			push [esp + 0x20 + 0x20] // x
+
+			mov ecx, 0x534E20
+			call ecx
+			add esp, 0x1C
+
+			popad
+			ret
+		}
+	}
+
+	__declspec(naked) void RB_DrawStretchPicRotate(Material* /*material*/, float /*x*/, float /*y*/, float /*w*/, float /*h*/, float /*s0*/, float /*t0*/, float /*s1*/, float /*t1*/, float /*sinAngle*/, float /*cosAngle*/, unsigned int /*color*/)
+	{
+		__asm
+		{
+			pushad
+
+			mov eax, [esp + 0x4 + 0x20] // material
+			push [esp + 0x30 + 0x20] // color
+			push [esp + 0x30 + 0x20] // cosAngle
+			push [esp + 0x30 + 0x20] // sinAngle
+			push [esp + 0x30 + 0x20] // t1
+			push [esp + 0x30 + 0x20] // s1
+			push [esp + 0x30 + 0x20] // t0
+			push [esp + 0x30 + 0x20] // s0
+			push [esp + 0x30 + 0x20] // h
+			push [esp + 0x30 + 0x20] // w
+			push [esp + 0x30 + 0x20] // y
+			push [esp + 0x30 + 0x20] // x
+			mov ebx, 0x5310F0
+			call ebx
+			add esp, 0x2C
+
+			popad
+			ret
+		}
+	}
+
+	__declspec(naked) char ModulateByteColors(char /*colorA*/, char /*colorB*/)
+	{
+		__asm
+		{
+			push eax
+			pushad
+
+			mov eax, [esp + 0x4 + 0x24] // colorA
+			mov ecx, [esp + 0x8 + 0x24] // colorB
+			mov ebx, 0x5353C0
+			call ebx
+			mov [esp + 0x20], eax
+
+			popad
+			pop eax
+			ret
+		}
+	}
+
+	__declspec(naked) void AimAssist_UpdateTweakables(int /*localClientNum*/)
+	{
+		__asm
+		{
+			mov eax, [esp+0x4]
+			mov ebx, 0x569950
+			call ebx
+			retn
+		}
+	}
+
+	__declspec(naked) void AimAssist_UpdateAdsLerp(const AimInput* /*aimInput*/)
+	{
+		__asm
+		{
+			mov eax, [esp + 0x4]
+			mov ebx, 0x569AA0
+			call ebx
+			retn
+		}
+	}
+
+	constexpr auto ApplyTokenToField_Func = 0x59A760;
+	__declspec(naked) bool ApplyTokenToField(unsigned int /*fieldNum*/, const char* /*token*/, visionSetVars_t* /*settings*/)
+	{
+		__asm
+		{
+			push eax
+			pushad
+
+			mov eax, [esp + 0x24 + 0x4] // fieldNum
+			mov ecx, [esp + 0x24 + 0x8] // token
+			push [esp + 0x24 + 0xC] // settings
+			call ApplyTokenToField_Func
+			add esp, 0x4
+
+			movzx eax, al // Zero extend eax
+			mov [esp + 0x20], eax
+			popad
+			pop eax
+
+			ret
+		}
+	}
+
+	int SEH_GetLocalizedTokenReference(char* token, const char* reference, const char* messageType, msgLocErrType_t errType)
+	{
+		static DWORD SEH_GetLocalizedTokenReference_t = 0x629BB0;
+		auto answer = 0;
+
+		__asm
+		{
+			pushad
+			mov esi, reference
+			mov edi, messageType
+			mov ebx, errType
+			push token
+			call SEH_GetLocalizedTokenReference_t
+			add esp, 0x4
+			mov answer, eax
+			popad
+		}
+
+		return answer;
+	}
+
 #pragma optimize("", on)
 }

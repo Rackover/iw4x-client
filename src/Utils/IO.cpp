@@ -1,4 +1,4 @@
-#include "STDInclude.hpp"
+#include <STDInclude.hpp>
 
 namespace Utils
 {
@@ -54,13 +54,18 @@ namespace Utils
 				if (size > -1)
 				{
 					data->resize(static_cast<uint32_t>(size));
-					stream.read(const_cast<char*>(data->data()), size);
+					stream.read(data->data(), size);
 					stream.close();
 					return true;
 				}
 			}
 
 			return false;
+		}
+
+		bool RemoveFile(const std::string& file)
+		{
+			return DeleteFileA(file.data()) == TRUE;
 		}
 
 		size_t FileSize(const std::string& file)

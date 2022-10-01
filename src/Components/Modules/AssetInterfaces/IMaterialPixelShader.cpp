@@ -1,55 +1,40 @@
-#include "STDInclude.hpp"
+#include <STDInclude.hpp>
+#include "IMaterialPixelShader.hpp"
 
-#define IW4X_TECHSET_VERSION "0"
+#define GFX_RENDERER_SHADER_SM3 0
 
 namespace Assets
 {
 
-    void IMaterialPixelShader::load(Game::XAssetHeader* header, const std::string& name, Components::ZoneBuilder::Zone* builder)
-    {
-        if (!header->data) this->loadNative(header, name, builder); // Check if there is a native one
-        if (!header->data) this->loadBinary(header, name, builder); // Check if we need to import a new one into the game
-    }
+	void IMaterialPixelShader::load(Game::XAssetHeader* header, const std::string& name, Components::ZoneBuilder::Zone* builder)
+	{
+		if (!header->data) this->loadBinary(header, name, builder); // Check if we need to import a new one into the game
+		if (!header->data) this->loadNative(header, name, builder); // Check if there is a native one
+	}
 
-    void IMaterialPixelShader::loadNative(Game::XAssetHeader* header, const std::string& name, Components::ZoneBuilder::Zone* /*builder*/)
-    {
-        header->pixelShader = Components::AssetHandler::FindOriginalAsset(this->getType(), name.data()).pixelShader;
-    }
+	void IMaterialPixelShader::loadNative(Game::XAssetHeader* header, const std::string& name, Components::ZoneBuilder::Zone* /*builder*/)
+	{
+		header->pixelShader = Components::AssetHandler::FindOriginalAsset(this->getType(), name.data()).pixelShader;
+	}
 
-    void IMaterialPixelShader::loadBinary(Game::XAssetHeader* header, const std::string& name, Components::ZoneBuilder::Zone* builder)
-    {
-        Components::FileSystem::File psFile(Utils::String::VA("ps/%s.iw4xPS", name.data()));
-        if (!psFile.exists()) return;
+	void IMaterialPixelShader::loadBinary(Game::XAssetHeader* header, const std::string& name, Components::ZoneBuilder::Zone* builder)
+	{
+		Components::FileSystem::File psFile(Utils::String::VA("ps/%s.cso", name.data()));
+		if (!psFile.exists()) return;
 
-        Utils::Stream::Reader reader(builder->getAllocator(), psFile.getBuffer());
+		auto buff = psFile.getBuffer();
+		auto programSize = buff.size() / 4;
+		Game::MaterialPixelShader* asset = builder->getAllocator()->allocate<Game::MaterialPixelShader>();
 
-        char* magic = reader.readArray<char>(8);
-        if (std::memcmp(magic, "IW4xPIXL", 8))
-        {
-            Components::Logger::Error(0, "Reading pixel shader '%s' failed, header is invalid!", name.data());
-        }
+		asset->name = builder->getAllocator()->duplicateString(name);
+		asset->prog.loadDef.loadForRenderer = GFX_RENDERER_SHADER_SM3;
+		asset->prog.loadDef.programSize = static_cast<unsigned short>(programSize);
+		asset->prog.loadDef.program = builder->getAllocator()->allocateArray<unsigned int>(programSize);
+		memcpy_s(asset->prog.loadDef.program, buff.size(), buff.data(), buff.size());
 
-        std::string version;
-        version.push_back(reader.read<char>());
-        if (version != IW4X_TECHSET_VERSION)
-        {
-            Components::Logger::Error("Reading pixel shader '%s' failed, expected version is %d, but it was %d!", name.data(), atoi(IW4X_TECHSET_VERSION), atoi(version.data()));
-        }
 
-        Game::MaterialPixelShader* asset = reader.readObject<Game::MaterialPixelShader>();
-
-        if (asset->name)
-        {
-            asset->name = reader.readCString();
-        }
-
-        if (asset->prog.loadDef.program)
-        {
-            asset->prog.loadDef.program = reader.readArray<unsigned int>(asset->prog.loadDef.programSize);
-        }
-
-        header->pixelShader = asset;
-    }
+		header->pixelShader = asset;
+	}
 
 	void IMaterialPixelShader::save(Game::XAssetHeader header, Components::ZoneBuilder::Zone* builder)
 	{

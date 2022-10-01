@@ -1,4 +1,4 @@
-#include "STDInclude.hpp"
+#include <STDInclude.hpp>
 
 namespace Components
 {
@@ -14,17 +14,24 @@ namespace Components
 
 	std::vector<unsigned int> ServerList::VisibleList;
 
+	Dvar::Var ServerList::UIServerSelected;
+	Dvar::Var ServerList::UIServerSelectedMap;
+	Dvar::Var ServerList::NETServerQueryLimit;
+	Dvar::Var ServerList::NETServerFrames;
+
+	bool ServerList::useMasterServer = true;
+
 	std::vector<ServerList::ServerInfo>* ServerList::GetList()
 	{
 		if (ServerList::IsOnlineList())
 		{
 			return &ServerList::OnlineList;
 		}
-		else if (ServerList::IsOfflineList())
+		if (ServerList::IsOfflineList())
 		{
 			return &ServerList::OfflineList;
 		}
-		else if (ServerList::IsFavouriteList())
+		if (ServerList::IsFavouriteList())
 		{
 			return &ServerList::FavouriteList;
 		}
@@ -72,12 +79,22 @@ namespace Components
 		{
 		case Column::Password:
 		{
-			return (server->password ? "X" : "");
+			return (server->password ? ":icon_locked:" : "");
 		}
 
 		case Column::Matchtype:
 		{
 			return ((server->matchType == 1) ? "P" : "M");
+		}
+
+		case Column::AimAssist:
+		{
+			return ((server->aimassist == 1) ? ":headshot:" : "");
+		}
+
+		case Column::VoiceChat:
+		{
+			return ((server->voice == 1) ? ":voice_on:" : "");
 		}
 
 		case Column::Hostname:
@@ -154,17 +171,17 @@ namespace Components
 
 		if (info)
 		{
-			Dvar::Var("ui_serverSelected").set(true);
-			Dvar::Var("ui_serverSelectedMap").set(info->mapname);
+			ServerList::UIServerSelected.set(true);
+			ServerList::UIServerSelectedMap.set(info->mapname);
 			Dvar::Var("ui_serverSelectedGametype").set(info->gametype);
 		}
 		else
 		{
-			Dvar::Var("ui_serverSelected").set(false);
+			ServerList::UIServerSelected.set(false);
 		}
 	}
 
-	void ServerList::UpdateVisibleList(UIScript::Token)
+	void ServerList::UpdateVisibleList([[maybe_unused]] const UIScript::Token& token, [[maybe_unused]] const Game::uiInfo_s* info)
 	{
 		auto list = ServerList::GetList();
 		if (!list) return;
@@ -173,7 +190,7 @@ namespace Components
 
 		if (tempList.empty())
 		{
-			ServerList::Refresh(UIScript::Token());
+			ServerList::Refresh(UIScript::Token(), info);
 		}
 		else
 		{
@@ -191,7 +208,12 @@ namespace Components
 		}
 	}
 
-	void ServerList::RefreshVisibleList(UIScript::Token)
+	void ServerList::RefreshVisibleList([[maybe_unused]] const UIScript::Token& token, [[maybe_unused]] const Game::uiInfo_s* info)
+	{
+		ServerList::RefreshVisibleListInternal(UIScript::Token(), info);
+	}
+
+	void ServerList::RefreshVisibleListInternal([[maybe_unused]] const UIScript::Token& token, [[maybe_unused]] const Game::uiInfo_s* info, bool refresh)
 	{
 		Dvar::Var("ui_serverSelected").set(false);
 
@@ -200,41 +222,40 @@ namespace Components
 		auto list = ServerList::GetList();
 		if (!list) return;
 
-		// Refresh entirely, if there is no entry in the list
-		if (list->empty())
+		if (refresh)
 		{
-			ServerList::Refresh(UIScript::Token());
+			ServerList::Refresh(UIScript::Token(), info);
 			return;
 		}
 
-		bool ui_browserShowFull     = Dvar::Var("ui_browserShowFull").get<bool>();
-		bool ui_browserShowEmpty    = Dvar::Var("ui_browserShowEmpty").get<bool>();
-		int ui_browserShowHardcore  = Dvar::Var("ui_browserKillcam").get<int>();
-		int ui_browserShowPassword  = Dvar::Var("ui_browserShowPassword").get<int>();
-		int ui_browserMod           = Dvar::Var("ui_browserMod").get<int>();
-		int ui_joinGametype         = Dvar::Var("ui_joinGametype").get<int>();
+		auto ui_browserShowFull     = Dvar::Var("ui_browserShowFull").get<bool>();
+		auto ui_browserShowEmpty    = Dvar::Var("ui_browserShowEmpty").get<bool>();
+		auto ui_browserShowHardcore  = Dvar::Var("ui_browserKillcam").get<int>();
+		auto ui_browserShowPassword  = Dvar::Var("ui_browserShowPassword").get<int>();
+		auto ui_browserMod           = Dvar::Var("ui_browserMod").get<int>();
+		auto ui_joinGametype         = Dvar::Var("ui_joinGametype").get<int>();
 
 		for (unsigned int i = 0; i < list->size(); ++i)
 		{
-			ServerList::ServerInfo* info = &(*list)[i];
+			auto* serverInfo = &(*list)[i];
 
 			// Filter full servers
-			if (!ui_browserShowFull && info->clients >= info->maxClients) continue;
+			if (!ui_browserShowFull && serverInfo->clients >= serverInfo->maxClients) continue;
 
 			// Filter empty servers
-			if (!ui_browserShowEmpty && info->clients <= 0) continue;
+			if (!ui_browserShowEmpty && serverInfo->clients <= 0) continue;
 
 			// Filter hardcore servers
-			if ((ui_browserShowHardcore == 0 && info->hardcore) || (ui_browserShowHardcore == 1 && !info->hardcore)) continue;
+			if ((ui_browserShowHardcore == 0 && serverInfo->hardcore) || (ui_browserShowHardcore == 1 && !serverInfo->hardcore)) continue;
 
 			// Filter servers with password
-			if ((ui_browserShowPassword == 0 && info->password) || (ui_browserShowPassword == 1 && !info->password)) continue;
+			if ((ui_browserShowPassword == 0 && serverInfo->password) || (ui_browserShowPassword == 1 && !serverInfo->password)) continue;
 
 			// Don't show modded servers
-			if ((ui_browserMod == 0 && info->mod.size()) || (ui_browserMod == 1 && !info->mod.size())) continue;
+			if ((ui_browserMod == 0 && serverInfo->mod.size()) || (ui_browserMod == 1 && !serverInfo->mod.size())) continue;
 
 			// Filter by gametype
-			if (ui_joinGametype > 0 && (ui_joinGametype - 1) < *Game::gameTypeCount  && Game::gameTypes[(ui_joinGametype - 1)].gameType != info->gametype) continue;
+			if (ui_joinGametype > 0 && (ui_joinGametype - 1) < *Game::gameTypeCount  && Game::gameTypes[(ui_joinGametype - 1)].gameType != serverInfo->gametype) continue;
 
 			ServerList::VisibleList.push_back(i);
 		}
@@ -242,7 +263,7 @@ namespace Components
 		ServerList::SortList();
 	}
 
-	void ServerList::Refresh(UIScript::Token)
+	void ServerList::Refresh([[maybe_unused]] const UIScript::Token& token, [[maybe_unused]] const Game::uiInfo_s* info)
 	{
 		Dvar::Var("ui_serverSelected").set(false);
 		//Localization::Set("MPUI_SERVERQUERIED", "Sent requests: 0/0");
@@ -269,22 +290,29 @@ namespace Components
 		}
 		else if (ServerList::IsOnlineList())
 		{
-#ifdef USE_LEGACY_SERVER_LIST
+			const auto masterPort = Dvar::Var("masterPort").get<int>();
+			const auto masterServerName = Dvar::Var("masterServerName").get<const char*>();
+
+			// Check if our dvars can properly convert to a address
+			Game::netadr_t masterServerAddr;
+			if (!ServerList::GetMasterServer(masterServerName, masterPort, masterServerAddr))
+			{
+				Logger::Print("Could not resolve address for {}:{}", masterServerName, masterPort);
+				Toast::Show("cardicon_headshot", "^1Error", Utils::String::VA("Could not resolve address for %s:%u", masterServerName, masterPort), 5000);
+				useMasterServer = false;
+				return;
+			}
+
+			Toast::Show("cardicon_headshot", "Server Browser", "Fetching servers...", 3000);
+
+			useMasterServer = true;
+
 			ServerList::RefreshContainer.awatingList = true;
 			ServerList::RefreshContainer.awaitTime = Game::Sys_Milliseconds();
-
-			int masterPort = Dvar::Var("masterPort").get<int>();
-			const char* masterServerName = Dvar::Var("masterServerName").get<const char*>();
-
 			ServerList::RefreshContainer.host = Network::Address(Utils::String::VA("%s:%u", masterServerName, masterPort));
 
-			Logger::Print("Sending serverlist request to master: %s:%u\n", masterServerName, masterPort);
-
+			Logger::Print("Sending serverlist request to master\n");
 			Network::SendCommand(ServerList::RefreshContainer.host, "getservers", Utils::String::VA("IW4 %i full empty", PROTOCOL));
-			//Network::SendCommand(ServerList::RefreshContainer.Host, "getservers", "0 full empty");
-#else
-			Node::Synchronize();
-#endif
 		}
 		else if (ServerList::IsFavouriteList())
 		{
@@ -294,14 +322,12 @@ namespace Components
 
 	void ServerList::StoreFavourite(const std::string& server)
 	{
-		//json11::Json::parse()
 		std::vector<std::string> servers;
-
-		if (Utils::IO::FileExists("players/favourites.json"))
+		
+		const auto parseData = Utils::IO::ReadFile(FavouriteFile);
+		if (!parseData.empty())
 		{
-			std::string data = Utils::IO::ReadFile("players/favourites.json");
-			json11::Json object = json11::Json::parse(data, data);
-
+			const nlohmann::json object = nlohmann::json::parse(parseData);
 			if (!object.is_array())
 			{
 				Logger::Print("Favourites storage file is invalid!\n");
@@ -309,25 +335,24 @@ namespace Components
 				return;
 			}
 
-			auto storedServers = object.array_items();
-
-			for (unsigned int i = 0; i < storedServers.size(); ++i)
+			const nlohmann::json::array_t storedServers = object;
+			for (const auto& storedServer : storedServers)
 			{
-				if (!storedServers[i].is_string()) continue;
-				if (storedServers[i].string_value() == server)
+				if (!storedServer.is_string()) continue;
+				if (storedServer.get<std::string>() == server)
 				{
 					Game::ShowMessageBox("Server already marked as favourite.", "Error");
 					return;
 				}
 
-				servers.push_back(storedServers[i].string_value());
+				servers.push_back(storedServer.get<std::string>());
 			}
 		}
 
 		servers.push_back(server);
 
-		json11::Json data = json11::Json(servers);
-		Utils::IO::WriteFile("players/favourites.json", data.dump());
+		const auto data = nlohmann::json(servers);
+		Utils::IO::WriteFile(FavouriteFile, data.dump());
 		Game::ShowMessageBox("Server added to favourites.", "Success");
 	}
 
@@ -335,10 +360,10 @@ namespace Components
 	{
 		std::vector<std::string> servers;
 
-		if (Utils::IO::FileExists("players/favourites.json"))
+		const auto parseData = Utils::IO::ReadFile(FavouriteFile);
+		if (!parseData.empty())
 		{
-			std::string data = Utils::IO::ReadFile("players/favourites.json");
-			json11::Json object = json11::Json::parse(data, data);
+			const nlohmann::json object = nlohmann::json::parse(parseData);
 
 			if (!object.is_array())
 			{
@@ -347,50 +372,56 @@ namespace Components
 				return;
 			}
 
-			for (auto& storedServer : object.array_items())
+			const nlohmann::json::array_t arr = object;
+			for (auto& storedServer : arr)
 			{
-				if (storedServer.is_string() && storedServer.string_value() != server)
+				if (storedServer.is_string() && storedServer.get<std::string>() != server)
 				{
-					servers.push_back(storedServer.string_value());
+					servers.push_back(storedServer.get<std::string>());
 				}
 			}
 		}
 
-		json11::Json data = json11::Json(servers);
-		Utils::IO::WriteFile("players/favourites.json", data.dump());
+		const auto data = nlohmann::json(servers);
+		Utils::IO::WriteFile(FavouriteFile, data.dump());
 
 		auto list = ServerList::GetList();
 		if (list) list->clear();
 		
-		ServerList::RefreshVisibleList(UIScript::Token());
+		ServerList::RefreshVisibleListInternal(UIScript::Token(), nullptr);
 		
 		Game::ShowMessageBox("Server removed from favourites.", "Success");
 	}
 
 	void ServerList::LoadFavourties()
 	{
-		if (ServerList::IsFavouriteList() && Utils::IO::FileExists("players/favourites.json"))
+		if (!ServerList::IsFavouriteList())
 		{
-			auto list = ServerList::GetList();
-			if (list) list->clear();
+			return;
+		}
 
-			std::string data = Utils::IO::ReadFile("players/favourites.json");
-			json11::Json object = json11::Json::parse(data, data);
+		auto list = ServerList::GetList();
+		if (list) list->clear();
 
-			if (!object.is_array())
-			{
-				Logger::Print("Favourites storage file is invalid!\n");
-				Game::ShowMessageBox("Favourites storage file is invalid!", "Error");
-				return;
-			}
+		const auto parseData = Utils::IO::ReadFile(FavouriteFile);
+		if (parseData.empty())
+		{
+			return;
+		}
 
-			auto servers = object.array_items();
+		const nlohmann::json object = nlohmann::json::parse(parseData);
+		if (!object.is_array())
+		{
+			Logger::Print("Favourites storage file is invalid!\n");
+			Game::ShowMessageBox("Favourites storage file is invalid!", "Error");
+			return;
+		}
 
-			for (unsigned int i = 0; i < servers.size(); ++i)
-			{
-				if (!servers[i].is_string()) continue;
-				ServerList::InsertRequest(servers[i].string_value());
-			}
+		const nlohmann::json::array_t servers = object;
+		for (const auto& server : servers)
+		{
+			if (!server.is_string()) continue;
+			ServerList::InsertRequest(server.get<std::string>());
 		}
 	}
 
@@ -434,7 +465,7 @@ namespace Components
 		}
 	}
 
-	void ServerList::Insert(Network::Address address, Utils::InfoString info)
+	void ServerList::Insert(const Network::Address& address, const Utils::InfoString& info)
 	{
 		std::lock_guard<std::recursive_mutex> _(ServerList::RefreshContainer.mutex);
 
@@ -464,13 +495,25 @@ namespace Components
 				server.securityLevel = atoi(info.get("securityLevel").data());
 				server.maxClients = atoi(info.get("sv_maxclients").data());
 				server.password = (atoi(info.get("isPrivate").data()) != 0);
+				server.aimassist = (atoi(info.get("aimAssist").data()) != 0);
+				server.voice = (atoi(info.get("voiceChat").data()) != 0);
 				server.hardcore = (atoi(info.get("hc").data()) != 0);
 				server.svRunning = (atoi(info.get("sv_running").data()) != 0);
 				server.ping = (Game::Sys_Milliseconds() - i->sendTime);
 				server.addr = address;
 
+				server.hostname = TextRenderer::StripMaterialTextIcons(server.hostname);
+				server.mapname = TextRenderer::StripMaterialTextIcons(server.mapname);
+				server.gametype = TextRenderer::StripMaterialTextIcons(server.gametype);
+				server.mod = TextRenderer::StripMaterialTextIcons(server.mod);
+
 				// Remove server from queue
 				i = ServerList::RefreshContainer.servers.erase(i);
+
+				// Servers with more than 18 players or less than 0 players are faking for sure
+				// So lets ignore those
+				if (server.clients > 18 || server.maxClients > 18 || server.clients < 0 || server.maxClients < 0)
+					return;
 
 				// Check if already inserted and remove
 				auto list = ServerList::GetList();
@@ -510,15 +553,12 @@ namespace Components
 					)
 				{
 					auto lList = ServerList::GetList();
-
 					if (lList)
 					{
 						lList->push_back(server);
-						ServerList::RefreshVisibleList(UIScript::Token());
+						ServerList::RefreshVisibleListInternal(UIScript::Token(), nullptr);
 					}
 				}
-
-				break;
 			}
 			else
 			{
@@ -529,8 +569,8 @@ namespace Components
 
 	bool ServerList::CompareVersion(const std::string& version1, const std::string& version2)
 	{
-		std::vector<std::string> subVersions1 = Utils::String::Explode(version1, '.');
-		std::vector<std::string> subVersions2 = Utils::String::Explode(version2, '.');
+		auto subVersions1 = Utils::String::Split(version1, '.');
+		auto subVersions2 = Utils::String::Split(version2, '.');
 
 		while (subVersions1.size() >= 3) subVersions1.pop_back();
 		while (subVersions2.size() >= 3) subVersions2.pop_back();
@@ -555,8 +595,7 @@ namespace Components
 	void ServerList::SortList()
 	{
 		// Only sort when the serverlist is open
-		Game::menuDef_t* menu = Game::Menus_FindByName(Game::uiContext, "pc_join_unranked");
-		if (!menu || !Game::Menu_IsVisible(Game::uiContext, menu)) return;
+		if (!ServerList::IsServerListOpen()) return;
 
 		std::stable_sort(ServerList::VisibleList.begin(), ServerList::VisibleList.end(), [](const unsigned int &server1, const unsigned int &server2) -> bool
 		{
@@ -582,8 +621,8 @@ namespace Components
 				return info1->clients < info2->clients;
 			}
 
-			std::string text1 = Utils::String::ToLower(Colors::Strip(ServerList::GetServerInfoText(info1, ServerList::SortKey, true)));
-			std::string text2 = Utils::String::ToLower(Colors::Strip(ServerList::GetServerInfoText(info2, ServerList::SortKey, true)));
+			std::string text1 = Utils::String::ToLower(TextRenderer::StripColors(ServerList::GetServerInfoText(info1, ServerList::SortKey, true)));
+			std::string text2 = Utils::String::ToLower(TextRenderer::StripColors(ServerList::GetServerInfoText(info2, ServerList::SortKey, true)));
 
 			// ASCII-based comparison
 			return text1.compare(text2) < 0;
@@ -611,24 +650,37 @@ namespace Components
 	void ServerList::Frame()
 	{
 		static Utils::Time::Interval frameLimit;
-		int interval = static_cast<int>(1000.0f / Dvar::Var("net_serverFrames").get<int>());
-		if (!frameLimit.elapsed(std::chrono::milliseconds(interval))) return;
+		const auto interval = static_cast<int>(1000.0f / ServerList::NETServerFrames.get<int>());
+
+		if (!frameLimit.elapsed(std::chrono::milliseconds(interval)))
+			return;
+
 		frameLimit.update();
 
 		std::lock_guard<std::recursive_mutex> _(ServerList::RefreshContainer.mutex);
 
 		if (ServerList::RefreshContainer.awatingList)
 		{
-			// Check if we haven't got a response within 10 seconds
+			// Stop counting if we are out of the server browser menu
+			if (!ServerList::IsServerListOpen())
+			{
+				ServerList::RefreshContainer.awatingList = false;
+			}
+
+			// Check if we haven't got a response within 5 seconds
 			if (Game::Sys_Milliseconds() - ServerList::RefreshContainer.awaitTime > 5000)
 			{
 				ServerList::RefreshContainer.awatingList = false;
 
-				Logger::Print("We haven't received a response from the master within %d seconds!\n", (Game::Sys_Milliseconds() - ServerList::RefreshContainer.awaitTime) / 1000);
+				Logger::Print("We haven't received a response from the master within {} seconds!\n", (Game::Sys_Milliseconds() - ServerList::RefreshContainer.awaitTime) / 1000);
+				Toast::Show("cardicon_headshot", "^1Error", "Failed to reach master server, using node servers instead.", 5000);
+
+				useMasterServer = false;
+				Node::Synchronize();
 			}
 		}
 
-		int requestLimit = Dvar::Var("net_serverQueryLimit").get<int>();
+		auto requestLimit = ServerList::NETServerQueryLimit.get<int>();
 		for (unsigned int i = 0; i < ServerList::RefreshContainer.servers.size() && requestLimit > 0; ++i)
 		{
 			ServerList::Container::ServerContainer* server = &ServerList::RefreshContainer.servers[i];
@@ -665,7 +717,7 @@ namespace Components
 
 		netSource.set(source);
 
-		ServerList::RefreshVisibleList(UIScript::Token());
+		ServerList::RefreshVisibleListInternal(UIScript::Token(), nullptr, true);
 	}
 
 	void ServerList::UpdateGameType()
@@ -681,7 +733,7 @@ namespace Components
 
 		joinGametype.set(gametype);
 
-		ServerList::RefreshVisibleList(UIScript::Token());
+		ServerList::RefreshVisibleListInternal(UIScript::Token(), nullptr);
 	}
 
 	void ServerList::UpdateVisibleInfo()
@@ -715,6 +767,20 @@ namespace Components
 		}
 	}
 
+	bool ServerList::GetMasterServer(const char* ip, int port, Game::netadr_t& address)
+	{
+		return Game::NET_StringToAdr(Utils::String::VA("%s:%u", ip, port), &address);
+	}
+
+	bool ServerList::IsServerListOpen()
+	{
+		auto* menu = Game::Menus_FindByName(Game::uiContext, "pc_join_unranked");
+		if (!menu) 
+			return false;
+
+		return Game::Menu_IsVisible(Game::uiContext, menu);
+	}
+
 	ServerList::ServerList()
 	{
 		ServerList::OnlineList.clear();
@@ -722,23 +788,27 @@ namespace Components
 		ServerList::FavouriteList.clear();
 		ServerList::VisibleList.clear();
 
-		Dvar::OnInit([]()
+		Scheduler::Once([]
 		{
-			Dvar::Register<bool>("ui_serverSelected", false, Game::dvar_flag::DVAR_FLAG_NONE, "Whether a server has been selected in the serverlist");
-			Dvar::Register<const char*>("ui_serverSelectedMap", "mp_afghan", Game::dvar_flag::DVAR_FLAG_NONE, "Map of the selected server");
+			ServerList::UIServerSelected = Dvar::Register<bool>("ui_serverSelected", false,
+				Game::DVAR_NONE, "Whether a server has been selected in the serverlist");
+			ServerList::UIServerSelectedMap = Dvar::Register<const char*>("ui_serverSelectedMap", "mp_afghan",
+				Game::DVAR_NONE, "Map of the selected server");
 
-			Dvar::Register<int>("net_serverQueryLimit", 1, 1, 10, Dedicated::IsEnabled() ? 0 : Game::dvar_flag::DVAR_FLAG_SAVED, "Amount of server queries per frame");
-			Dvar::Register<int>("net_serverFrames", 30, 1, 60, Dedicated::IsEnabled() ? 0 : Game::dvar_flag::DVAR_FLAG_SAVED, "Amount of server query frames per second");
-		});
+			ServerList::NETServerQueryLimit = Dvar::Register<int>("net_serverQueryLimit", 1,
+				1, 10, Dedicated::IsEnabled() ? Game::DVAR_NONE : Game::DVAR_ARCHIVE, "Amount of server queries per frame");
+			ServerList::NETServerFrames = Dvar::Register<int>("net_serverFrames", 30,
+				1, 60, Dedicated::IsEnabled() ? Game::DVAR_NONE : Game::DVAR_ARCHIVE, "Amount of server query frames per second");
+		}, Scheduler::Pipeline::MAIN);
 
 		// Fix ui_netsource dvar
 		Utils::Hook::Nop(0x4CDEEC, 5); // Don't reset the netsource when gametypes aren't loaded
-		Dvar::Register<int>("ui_netSource", 1, 0, 2, Game::DVAR_FLAG_SAVED, reinterpret_cast<const char*>(0x6D9F08));
+		Dvar::Register<int>("ui_netSource", 1, 0, 2, Game::DVAR_ARCHIVE, reinterpret_cast<const char*>(0x6D9F08));
 
 		//Localization::Set("MPUI_SERVERQUERIED", "Sent requests: 0/0");
 		Localization::Set("MPUI_SERVERQUERIED", "Servers: 0\nPlayers: 0 (0)");
 
-		Network::Handle("getServersResponse", [](Network::Address address, const std::string& data)
+		Network::OnClientPacket("getServersResponse", [](const Network::Address& address, [[maybe_unused]] const std::string& data)
 		{
 			if (ServerList::RefreshContainer.host != address) return; // Only parse from host we sent to
 
@@ -766,15 +836,13 @@ namespace Components
 				ServerList::InsertRequest(serverAddr);
 			}
 
-			Logger::Print("Parsed %d servers from master\n", ServerList::RefreshContainer.servers.size() - count);
+			Logger::Print("Parsed {} servers from master\n", ServerList::RefreshContainer.servers.size() - count);
 		});
 
 		// Set default masterServerName + port and save it 
-#ifdef USE_LEGACY_SERVER_LIST
-		Utils::Hook::Set<char*>(0x60AD92, "127.0.0.1");
-		Utils::Hook::Set<BYTE>(0x60AD90, Game::dvar_flag::DVAR_FLAG_SAVED); // masterServerName
-		Utils::Hook::Set<BYTE>(0x60ADC6, Game::dvar_flag::DVAR_FLAG_SAVED); // masterPort
-#endif
+		Utils::Hook::Set<const char*>(0x60AD92, "master.xlabs.dev");
+		Utils::Hook::Set<BYTE>(0x60AD90, Game::DVAR_NONE); // masterServerName
+		Utils::Hook::Set<BYTE>(0x60ADC6, Game::DVAR_NONE); // masterPort
 
 		// Add server list feeder
 		UIFeeder::Add(2.0f, ServerList::GetServerCount, ServerList::GetServerText, ServerList::SelectServer);
@@ -784,19 +852,19 @@ namespace Components
 		UIScript::Add("RefreshFilter", ServerList::UpdateVisibleList);
 
 		UIScript::Add("RefreshServers", ServerList::Refresh);
-		UIScript::Add("JoinServer", [](UIScript::Token)
-		{
-			ServerList::ServerInfo* info = ServerList::GetServer(ServerList::CurrentServer);
 
-			if (info)
+		UIScript::Add("JoinServer", []([[maybe_unused]] const UIScript::Token& token, [[maybe_unused]] const Game::uiInfo_s* info)
+		{
+			auto* serverInfo = ServerList::GetServer(ServerList::CurrentServer);
+			if (serverInfo)
 			{
-				Party::Connect(info->addr);
+				Party::Connect(serverInfo->addr);
 			}
 		});
-		UIScript::Add("ServerSort", [](UIScript::Token token)
-		{
-			int key = token.get<int>();
 
+		UIScript::Add("ServerSort", []([[maybe_unused]] const UIScript::Token& token, [[maybe_unused]] const Game::uiInfo_s* info)
+		{
+			auto key = token.get<int>();
 			if (ServerList::SortKey == key)
 			{
 				ServerList::SortAsc = !ServerList::SortAsc;
@@ -807,23 +875,25 @@ namespace Components
 				ServerList::SortAsc = true;
 			}
 
-			Logger::Print("Sorting server list by token: %d\n", ServerList::SortKey);
+			Logger::Print("Sorting server list by token: {}\n", ServerList::SortKey);
 			ServerList::SortList();
 		});
-		UIScript::Add("CreateListFavorite", [](UIScript::Token)
-		{
-			ServerList::ServerInfo* info = ServerList::GetCurrentServer();
 
+		UIScript::Add("CreateListFavorite", []([[maybe_unused]] const UIScript::Token& token, [[maybe_unused]] const Game::uiInfo_s* info)
+		{
+			auto* serverInfo = ServerList::GetCurrentServer();
 			if (info)
 			{
-				ServerList::StoreFavourite(info->addr.getString());
+				ServerList::StoreFavourite(serverInfo->addr.getString());
 			}
 		});
-		UIScript::Add("CreateFavorite", [](UIScript::Token)
+
+		UIScript::Add("CreateFavorite", []([[maybe_unused]] const UIScript::Token& token, [[maybe_unused]] const Game::uiInfo_s* info)
 		{
 			ServerList::StoreFavourite(Dvar::Var("ui_favoriteAddress").get<std::string>());
 		});
-		UIScript::Add("CreateCurrentServerFavorite", [](UIScript::Token)
+
+		UIScript::Add("CreateCurrentServerFavorite", []([[maybe_unused]] const UIScript::Token& token, [[maybe_unused]] const Game::uiInfo_s* info)
 		{
 			if (Game::CL_IsCgameInitialized())
 			{
@@ -834,51 +904,40 @@ namespace Components
 				}
 			}
 		});
-		UIScript::Add("DeleteFavorite", [](UIScript::Token)
-		{
-			ServerList::ServerInfo* info = ServerList::GetCurrentServer();
 
-			if (info)
+		UIScript::Add("DeleteFavorite", []([[maybe_unused]] const UIScript::Token& token, [[maybe_unused]] const Game::uiInfo_s* info)
+		{
+			auto* serverInfo = ServerList::GetCurrentServer();
+			if (serverInfo)
 			{
-				ServerList::RemoveFavourite(info->addr.getString());
-			};
+				ServerList::RemoveFavourite(serverInfo->addr.getString());
+			}
 		});
 
+#ifdef _DEBUG
 		Command::Add("playerCount", [](Command::Params*)
 		{
-			int count = 0;
-			for (auto server : ServerList::OnlineList)
+			auto count = 0;
+			for (const auto& server : ServerList::OnlineList)
 			{
 				count += server.clients;
 			}
 
-			Logger::Print("There are %d players playing.\n", count);
+			Logger::Debug("There are {} players playing", count);
 		});
-
+#endif
 		// Add required ownerDraws
 		UIScript::AddOwnerDraw(220, ServerList::UpdateSource);
 		UIScript::AddOwnerDraw(253, ServerList::UpdateGameType);
 
 		// Add frame callback
-		Scheduler::OnFrame(ServerList::Frame);
-
-		// This is placed here in case the anticheat has been disabled!
-#if !defined(DISABLE_ANTICHEAT) && defined(PROCTECT_PROCESS)
-		Scheduler::OnFrame(AntiCheat::ReadIntegrityCheck, true);
-#endif
+		Scheduler::Loop(ServerList::Frame, Scheduler::Pipeline::CLIENT);
 	}
 
 	ServerList::~ServerList()
 	{
-		ServerList::OnlineList.clear();
-		ServerList::OfflineList.clear();
-		ServerList::FavouriteList.clear();
-		ServerList::VisibleList.clear();
-
-		{
-			std::lock_guard<std::recursive_mutex> _(ServerList::RefreshContainer.mutex);
-			ServerList::RefreshContainer.awatingList = false;
-			ServerList::RefreshContainer.servers.clear();
-		}
+		std::lock_guard<std::recursive_mutex> _(ServerList::RefreshContainer.mutex);
+		ServerList::RefreshContainer.awatingList = false;
+		ServerList::RefreshContainer.servers.clear();
 	}
 }

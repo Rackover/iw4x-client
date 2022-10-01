@@ -1,9 +1,9 @@
-#include "STDInclude.hpp"
+#include <STDInclude.hpp>
 #define RAWFILE_VERSION_FILE "VERSION.TXT"
 
 namespace Components
 {
-	int QuickPatch::FrameTime = 0;
+	Dvar::Var QuickPatch::r_customAspectRatio;
 
 	void QuickPatch::UnlockStats()
 	{
@@ -48,65 +48,7 @@ namespace Components
 		}
 	}
 
-	int QuickPatch::MsgReadBitsCompressCheckSV(const char *from, char *to, int size)
-	{
-		static char buffer[0x8000];
-
-		if (size > 0x800) return 0;
-		size = Game::MSG_ReadBitsCompress(from, buffer, size);
-
-		if (size > 0x800) return 0;
-		std::memcpy(to, buffer, size);
-
-		return size;
-	}
-
-	int QuickPatch::MsgReadBitsCompressCheckCL(const char *from, char *to, int size)
-	{
-		static char buffer[0x100000];
-
-		if (size > 0x20000) return 0;
-		size = Game::MSG_ReadBitsCompress(from, buffer, size);
-
-		if (size > 0x20000) return 0;
-		std::memcpy(to, buffer, size);
-
-		return size;
-	}
-
-	int QuickPatch::SVCanReplaceServerCommand(Game::client_t* /*client*/, const char* /*cmd*/)
-	{
-		// This is a fix copied from V2. As I don't have time to investigate, let's simply trust them
-		return -1;
-	}
-
-	long QuickPatch::AtolAdjustPlayerLimit(const char* string)
-	{
-		return std::min(atol(string), 18l);
-	}
-
-	void QuickPatch::SelectStringTableEntryInDvarStub()
-	{
-		Command::ClientParams args;
-
-		if (args.length() >= 4)
-		{
-			std::string cmd = args[0];
-			std::string table = args[1];
-			std::string col = args[2];
-			std::string dvarName = args[3];
-			Game::dvar_t* dvar = Game::Dvar_FindVar(dvarName.data());
-
-			if (Command::Find(dvarName) || (dvar && (dvar->flags & (Game::DVAR_FLAG_WRITEPROTECTED | Game::DVAR_FLAG_CHEAT | Game::DVAR_FLAG_READONLY))))
-			{
-				return;
-			}
-		}
-
-		Game::CL_SelectStringTableEntryInDvar_f();
-	}
-
-	__declspec(naked) void QuickPatch::JavelinResetHookStub()
+	__declspec(naked) void QuickPatch::JavelinResetHook_Stub()
 	{
 		__asm
 		{
@@ -120,74 +62,8 @@ namespace Components
 		}
 	}
 
-	__declspec(naked) int QuickPatch::G_GetClientScore()
-	{
-		__asm
-		{
-			mov eax, [esp + 4]		// index
-			mov ecx, ds : 1A831A8h	// level: &g_clients
-
-			test ecx, ecx;
-			jz invalid_ptr;
-			
-			imul eax, 366Ch
-			mov eax, [eax + ecx + 3134h]
-			ret
-			
-		invalid_ptr:
-			xor eax, eax
-			ret
-		}
-	}
-
-	bool QuickPatch::InvalidNameCheck(char *dest, char *source, int size)
-	{
-		strncpy(dest, source, size - 1);
-		dest[size - 1] = 0;
-
-		for (int i = 0; i < size - 1; i++)
-		{
-			if (!dest[i]) break;
-
-			// Rack: Name restriction toned down to allow accents & other french characters
-			if (/*dest[i] > 125 || dest[i] < 32 || */dest[i] == '%') 
-			{
-				return false;
-			}
-		}
-
-		return true;
-	}
-
-	__declspec(naked) void QuickPatch::InvalidNameStub()
-	{
-		static const char* kick_reason = "Invalid name detected.";
-
-		__asm
-		{
-			call InvalidNameCheck;
-			test al, al
-
-			jnz returnSafe;
-
-			pushad;
-			push 1;
-			push kick_reason;
-			push edi;
-			mov eax, 0x004D1600;
-			call eax;
-			add esp, 12;
-			popad;
-
-		returnSafe:
-			push 0x00401988;
-			retn;
-		}
-	}
-
 	Game::dvar_t* QuickPatch::g_antilag;
-
-	__declspec(naked) void QuickPatch::ClientEventsFireWeaponStub()
+	__declspec(naked) void QuickPatch::ClientEventsFireWeapon_Stub()
 	{
 		__asm
 		{
@@ -203,19 +79,19 @@ namespace Components
 			mov ecx, [eax]
 
 		fireWeapon:
-			push    edx
-			push    ecx
-			push    edi
-			mov     eax, 0x4A4D50 // FireWeapon
-			call    eax
-			add     esp, 0Ch
-			pop     edi
-			pop     ecx
+			push edx
+			push ecx
+			push edi
+			mov eax, 0x4A4D50 // FireWeapon
+			call eax
+			add esp, 0Ch
+			pop edi
+			pop ecx
 			retn
 		}
 	}
 
-	__declspec(naked) void QuickPatch::ClientEventsFireWeaponMeleeStub()
+	__declspec(naked) void QuickPatch::ClientEventsFireWeaponMelee_Stub()
 	{
 		__asm
 		{
@@ -231,72 +107,45 @@ namespace Components
 			mov edx, [eax]
 
 		fireWeaponMelee:
-			push    edx
-			push    edi
-			mov     eax, 0x4F2470 // FireWeaponMelee
-			call    eax
-			add     esp, 8
-			pop     edi
-			pop     ecx
+			push edx
+			push edi
+			mov eax, 0x4F2470 // FireWeaponMelee
+			call eax
+			add esp, 8
+			pop edi
+			pop ecx
 			retn
 		}
 	}
 
-	Game::dvar_t* QuickPatch::sv_enableBounces;
-	__declspec(naked) void QuickPatch::BounceStub()
+	Game::dvar_t* QuickPatch::Dvar_RegisterAspectRatioDvar(const char* dvarName, const char** /*valueList*/, int defaultIndex, unsigned __int16 flags, const char* description)
 	{
-		__asm
+		static const char* r_aspectRatioEnum[] =
 		{
-			// check the value of sv_enableBounces
-			push eax;
-			mov eax, sv_enableBounces;
-			cmp byte ptr[eax + 16], 1;
-			pop eax;
-
-			// always bounce if sv_enableBounces is set to 1
-			je bounce;
-
-			// original code
-			cmp dword ptr[esp + 24h], 0;
-			jnz dontBounce;
-
-		bounce:
-			push 0x004B1B34;
-			retn;
-
-		dontBounce:
-			push 0x004B1B48;
-			retn;
-		}
-	}
-
-	Game::dvar_t* QuickPatch::r_customAspectRatio;
-	Game::dvar_t* QuickPatch::Dvar_RegisterAspectRatioDvar(const char* name, char**, int defaultVal, int flags, const char* description)
-	{
-		static std::vector < char * > values =
-		{
-			const_cast<char*>("auto"),
-			const_cast<char*>("standard"),
-			const_cast<char*>("wide 16:10"),
-			const_cast<char*>("wide 16:9"),
-			const_cast<char*>("custom"),
-			nullptr,
+			"auto",
+			"standard",
+			"wide 16:10",
+			"wide 16:9",
+			"custom",
+			nullptr
 		};
 
 		// register custom aspect ratio dvar
-		r_customAspectRatio = Game::Dvar_RegisterFloat("r_customAspectRatio", 16.0f / 9.0f, 4.0f / 3.0f, 63.0f / 9.0f, flags, "Screen aspect ratio. Divide the width by the height in order to get the aspect ratio value. For example: 16 / 9 = 1,77");
+		QuickPatch::r_customAspectRatio = Dvar::Register<float>("r_customAspectRatio",
+			16.0f / 9.0f, 4.0f / 3.0f, 63.0f / 9.0f, flags,
+			"Screen aspect ratio. Divide the width by the height in order to get the aspect ratio value. For example: 16 / 9 = 1,77");
 
 		// register enumeration dvar
-		return Game::Dvar_RegisterEnum(name, values.data(), defaultVal, flags, description);
+		return Game::Dvar_RegisterEnum(dvarName, r_aspectRatioEnum, defaultIndex, flags, description);
 	}
 
 	void QuickPatch::SetAspectRatio()
 	{
 		// set the aspect ratio
-		Utils::Hook::Set<float>(0x66E1C78, r_customAspectRatio->current.value);
+		Utils::Hook::Set<float>(0x66E1C78, r_customAspectRatio.get<float>());
 	}
 
-	__declspec(naked) void QuickPatch::SetAspectRatioStub()
+	__declspec(naked) void QuickPatch::SetAspectRatio_Stub()
 	{
 		__asm
 		{
@@ -305,11 +154,11 @@ namespace Components
 			je useCustomRatio;
 
 			// execute switch statement code
-			push 0x005063FC;
+			push 0x5063FC;
 			retn;
 
 		goToDefaultCase:
-			push 0x005064FC;
+			push 0x5064FC;
 			retn;
 
 		useCustomRatio:
@@ -322,80 +171,25 @@ namespace Components
 			mov eax, 1;
 
 			// continue execution
-			push 0x00506495;
+			push 0x506495;
 			retn;
 		}
 	}
 
-	Game::dvar_t* QuickPatch::g_playerCollision;
-	__declspec(naked) void QuickPatch::PlayerCollisionStub()
+	BOOL QuickPatch::IsDynClassname_Stub(const char* classname)
 	{
-		__asm
-		{
-			// check the value of g_playerCollision
-			push eax;
-			mov eax, g_playerCollision;
-			cmp byte ptr[eax + 16], 0;
-			pop eax;
-
-			// dont collide if g_playerCollision is set to 0
-			je dontcollide;
-
-			// original code
-			mov eax, dword ptr[esp + 0xa0];
-			push 0x00478376;
-			retn;
-
-		dontcollide:
-			mov eax, dword ptr[esp + 0xa0];
-			mov ecx, dword ptr[esp + 9ch];
-			push eax;
-			push ecx;
-			lea edx, [esp + 48h];
-			push edx;
-			mov eax, esi;
-			push 0x0047838b;
-			retn;
-		}
-	}
-
-	Game::dvar_t* QuickPatch::g_playerEjection;
-	__declspec(naked) void QuickPatch::PlayerEjectionStub()
-	{
-		__asm
-		{
-			// check the value of g_playerEjection
-			push eax;
-			mov eax, g_playerEjection;
-			cmp byte ptr[eax + 16], 0;
-			pop eax;
-
-			// dont eject if g_playerEjection is set to 0
-			je donteject;
-
-			push 0x005d8152;
-			retn;
-
-		donteject:
-			push 0x005d815b;
-			retn;
-		}
-	}
-
-	BOOL QuickPatch::IsDynClassnameStub(char* a1) 
-	{
-		auto version = Zones::GetEntitiesZoneVersion();
+		const auto version = Zones::Version();
 		
 		if (version >= VERSION_LATEST_CODO)
 		{
 			for (auto i = 0; i < Game::spawnVars->numSpawnVars; i++)
 			{
 				char** kvPair = Game::spawnVars->spawnVars[i];
-				auto key = kvPair[0];
-				auto val = kvPair[1];
+				const auto* key = kvPair[0];
+				const auto* val = kvPair[1];
 
-				bool isSpecOps = strncmp(key, "script_specialops", 17) == 0;
-				bool isSpecOpsOnly = val[0] == '1' && val[1] == '\0';
+				auto isSpecOps = std::strncmp(key, "script_specialops", 17) == 0;
+				auto isSpecOpsOnly = (val[0] == '1') && (val[1] == '\0');
 
 				if (isSpecOps && isSpecOpsOnly)
 				{
@@ -406,61 +200,138 @@ namespace Components
 			}
 		}
 
-		// Passthrough to the game's own IsDynClassname
-		return Utils::Hook::Call<BOOL(char*)>(0x444810)(a1);
+		return Utils::Hook::Call<BOOL(const char*)>(0x444810)(classname); // IsDynClassname
 	}
-  
+
+	void QuickPatch::CL_KeyEvent_OnEscape()
+	{
+		if (Game::Con_CancelAutoComplete())
+			return;
+
+		if (TextRenderer::HandleFontIconAutocompleteKey(0, TextRenderer::FONT_ICON_ACI_CONSOLE, Game::K_ESCAPE))
+			return;
+
+		// Close console
+		Game::Key_RemoveCatcher(0, ~Game::KEYCATCH_CONSOLE);
+	}
+
+	__declspec(naked) void QuickPatch::CL_KeyEvent_ConsoleEscape_Stub()
+	{
+		__asm
+		{
+			pushad
+			call CL_KeyEvent_OnEscape
+			popad
+
+			// Exit CL_KeyEvent function
+			mov ebx, 0x4F66F2
+			jmp ebx
+		}
+	}
+
+	void QuickPatch::R_AddImageToList_Hk(Game::XAssetHeader header, void* data)
+	{
+		auto* imageList = static_cast<Game::ImageList*>(data);
+
+		assert(imageList->count < ARRAYSIZE(imageList->image));
+
+		if (header.image->texture.basemap)
+		{
+			imageList->image[imageList->count++] = header.image;
+		}
+	}
+
+	void QuickPatch::Sys_SpawnQuitProcess_Hk()
+	{
+		if (*Game::sys_exitCmdLine[0] == '\0')
+		{
+			return;
+		}
+
+		auto workingDir = std::filesystem::current_path().string();
+		auto binary = FileSystem::GetAppdataPath() / "data" / "iw4x" / *Game::sys_exitCmdLine;
+
+		SetEnvironmentVariableA("XLABS_MW2_INSTALL", workingDir.data());
+		Utils::Library::LaunchProcess(binary.string(), "-singleplayer", workingDir);
+	}
+
+	__declspec(naked) void QuickPatch::SND_GetAliasOffset_Stub()
+	{
+		using namespace Game;
+
+		static const char* msg = "SND_GetAliasOffset: Could not find sound alias '%s'";
+		static const DWORD func = 0x4B22D0; // Com_Error
+
+		__asm
+		{
+			// Check if snd_alias_t* is null immediately after call to Com_FindSoundAlias_FastFile
+			test eax, eax
+			jz error
+
+			// Game code hook skipped
+			mov ecx, eax
+			mov edx, dword ptr [ecx + 0x4]
+
+			// Resume function
+			push 0x437CB2
+			ret
+
+		error:
+			add esp, 0x4 // Com_FindSoundAlias_FastFile takes one argument
+
+			push [esi] // alias->aliasName
+			push msg
+			push ERR_DROP
+			call func // Going to longjmp back to safety
+			add esp, 0xC
+
+			xor eax, eax
+			pop esi
+			ret
+		}
+	}
+
+	Game::dvar_t* QuickPatch::Dvar_RegisterConMinicon(const char* dvarName, [[maybe_unused]] bool value, unsigned __int16 flags, const char* description)
+	{
+#ifdef _DEBUG
+		constexpr auto value_ = true;
+#else
+		constexpr auto value_ = false;
+#endif
+		return Game::Dvar_RegisterBool(dvarName, value_, flags, description);
+	}
+
 	QuickPatch::QuickPatch()
 	{
-		QuickPatch::FrameTime = 0;
-		Scheduler::OnFrame([]()
-		{
-			QuickPatch::FrameTime = Game::Sys_Milliseconds();
-		});
-
-		// quit_hard
-		Command::Add("quit_hard", [](Command::Params*)
-		{
-			int data = false;
-			const Utils::Library ntdll("ntdll.dll");
-			ntdll.InvokePascal<void>("RtlAdjustPrivilege", 19, true, false, &data);
-			ntdll.InvokePascal<void>("NtRaiseHardError", 0xC000007B, 0, nullptr, nullptr, 6, &data);
-		});
-
 		// Filtering any mapents that is intended for Spec:Ops gamemode (CODO) and prevent them from spawning
-		Utils::Hook(0x5FBD6E, QuickPatch::IsDynClassnameStub, HOOK_CALL).install()->quick();
+		Utils::Hook(0x5FBD6E, QuickPatch::IsDynClassname_Stub, HOOK_CALL).install()->quick();
 
-		// bounce dvar
-		sv_enableBounces = Game::Dvar_RegisterBool("sv_enableBounces", false, Game::DVAR_FLAG_REPLICATED, "Enables bouncing on the server");
-		Utils::Hook(0x4B1B2D, QuickPatch::BounceStub, HOOK_JUMP).install()->quick();
+		// Hook escape handling on open console to change behaviour to close the console instead of only canceling autocomplete
+		Utils::Hook(0x4F66A3, CL_KeyEvent_ConsoleEscape_Stub, HOOK_JUMP).install()->quick();
 
 		// Intermission time dvar
-		Game::Dvar_RegisterFloat("scr_intermissionTime", 10, 0, 120, Game::DVAR_FLAG_REPLICATED | Game::DVAR_FLAG_DEDISAVED, "Time in seconds before match server loads the next map");
+		Game::Dvar_RegisterFloat("scr_intermissionTime", 10, 0, 120, Game::DVAR_NONE, "Time in seconds before match server loads the next map");
 
-		// Player Collision dvar
-		g_playerCollision = Game::Dvar_RegisterBool("g_playerCollision", true, Game::DVAR_FLAG_REPLICATED, "Flag whether player collision is on or off");
-		Utils::Hook(0x47836F, QuickPatch::PlayerCollisionStub, HOOK_JUMP).install()->quick();
-
-		// Player Ejection dvar
-		g_playerEjection = Game::Dvar_RegisterBool("g_playerEjection", true, Game::DVAR_FLAG_REPLICATED, "Flag whether player ejection is on or off");
-		Utils::Hook(0x5D814A, QuickPatch::PlayerEjectionStub, HOOK_JUMP).install()->quick();
-
-		g_antilag = Game::Dvar_RegisterBool("g_antilag", true, Game::DVAR_FLAG_REPLICATED, "Perform antilag");
-		Utils::Hook(0x5D6D56, QuickPatch::ClientEventsFireWeaponStub, HOOK_JUMP).install()->quick();
-		Utils::Hook(0x5D6D6A, QuickPatch::ClientEventsFireWeaponMeleeStub, HOOK_JUMP).install()->quick();
-
-		// Disallow invalid player names
-		Utils::Hook(0x401983, QuickPatch::InvalidNameStub, HOOK_JUMP).install()->quick();
+		g_antilag = Game::Dvar_RegisterBool("g_antilag", true, Game::DVAR_CODINFO, "Perform antilag");
+		Utils::Hook(0x5D6D56, QuickPatch::ClientEventsFireWeapon_Stub, HOOK_JUMP).install()->quick();
+		Utils::Hook(0x5D6D6A, QuickPatch::ClientEventsFireWeaponMelee_Stub, HOOK_JUMP).install()->quick();
 
 		// Javelin fix
-		Utils::Hook(0x578F52, QuickPatch::JavelinResetHookStub, HOOK_JUMP).install()->quick();
+		Utils::Hook(0x578F52, QuickPatch::JavelinResetHook_Stub, HOOK_JUMP).install()->quick();
 
 		// Add ultrawide support
-		Utils::Hook(0x0051B13B, QuickPatch::Dvar_RegisterAspectRatioDvar, HOOK_CALL).install()->quick();
-		Utils::Hook(0x005063F3, QuickPatch::SetAspectRatioStub, HOOK_JUMP).install()->quick();
+		Utils::Hook(0x51B13B, QuickPatch::Dvar_RegisterAspectRatioDvar, HOOK_CALL).install()->quick();
+		Utils::Hook(0x5063F3, QuickPatch::SetAspectRatio_Stub, HOOK_JUMP).install()->quick();
 
-		// Make sure preDestroy is called when the game shuts down
-		Scheduler::OnShutdown(Loader::PreDestroy);
+		Utils::Hook(0x4FA448, QuickPatch::Dvar_RegisterConMinicon, HOOK_CALL).install()->quick();
+
+		Utils::Hook::Set<void(*)(Game::XAssetHeader, void*)>(0x51FCDD, QuickPatch::R_AddImageToList_Hk);
+
+		Utils::Hook::Set<const char*>(0x41DB8C, "iw4x-sp.exe");
+		Utils::Hook(0x4D6989, QuickPatch::Sys_SpawnQuitProcess_Hk, HOOK_CALL).install()->quick();
+
+		// Fix crash as nullptr goes unchecked
+		Utils::Hook(0x437CAD, QuickPatch::SND_GetAliasOffset_Stub, HOOK_JUMP).install()->quick();
 
 		// protocol version (workaround for hacks)
 		Utils::Hook::Set<int>(0x4FB501, PROTOCOL);
@@ -507,14 +378,6 @@ namespace Components
 		static float buildLocColor[] = { 1.0f, 1.0f, 1.0f, 0.8f };
 		Utils::Hook::Set(0x43F710, buildLocColor);
 
-		// Shift ui version string to the left (ui_buildlocation)
-		Utils::Hook::Nop(0x6310A0, 5); // Don't register the initial dvar
-		Utils::Hook::Nop(0x6310B8, 5); // Don't write the result
-		Dvar::OnInit([]()
-		{
-				*reinterpret_cast<Game::dvar_t**>(0x62E4B64) = Game::Dvar_RegisterVec2("ui_buildLocation", -40.0f, 434.0f, -10000.0, 10000.0, Game::DVAR_FLAG_READONLY, "Where to draw the build number");
-		});
-
 		// console title
 		if (ZoneBuilder::IsEnabled())
 		{
@@ -548,7 +411,7 @@ namespace Components
 
 		// Numerical ping (cg_scoreboardPingText 1)
 		Utils::Hook::Set<BYTE>(0x45888E, 1);
-		Utils::Hook::Set<BYTE>(0x45888C, Game::dvar_flag::DVAR_FLAG_CHEAT);
+		Utils::Hook::Set<BYTE>(0x45888C, Game::DVAR_CHEAT);
 
 		// increase font sizes for chat on higher resolutions
 		static float float13 = 13.0f;
@@ -570,7 +433,7 @@ namespace Components
 		// spawn upnp thread when UPNP_init returns
 		Utils::Hook::Hook(0x47982B, []()
 		{
-			std::thread([]()
+			std::thread([]
 			{
 				// check natpmpstate
 				// state 4 is no more devices to query
@@ -698,14 +561,14 @@ namespace Components
 
 		// Fix mouse lag
 		Utils::Hook::Nop(0x4731F5, 8);
-		Scheduler::OnFrame([]()
+		Scheduler::Loop([]
 		{
 			SetThreadExecutionState(ES_DISPLAY_REQUIRED);
-		});
+		}, Scheduler::Pipeline::RENDERER);
 
 		// Fix mouse pitch adjustments
-		Dvar::Register<bool>("ui_mousePitch", false, Game::DVAR_FLAG_SAVED, "");
-		UIScript::Add("updateui_mousePitch", [](UIScript::Token)
+		Dvar::Register<bool>("ui_mousePitch", false, Game::DVAR_ARCHIVE, "");
+		UIScript::Add("updateui_mousePitch", []([[maybe_unused]] const UIScript::Token& token, [[maybe_unused]] const Game::uiInfo_s* info)
 		{
 			if (Dvar::Var("ui_mousePitch").get<bool>())
 			{
@@ -717,25 +580,7 @@ namespace Components
 			}
 		});
 
-		// Exploit fixes
-		Utils::Hook::Set<BYTE>(0x412370, 0xC3);                                                      // SV_SteamAuthClient
-		Utils::Hook::Set<BYTE>(0x5A8C70, 0xC3);                                                      // CL_HandleRelayPacket
-		Utils::Hook(0x414D92, QuickPatch::MsgReadBitsCompressCheckSV, HOOK_CALL).install()->quick(); // SV_ExecuteClientCommands
-		Utils::Hook(0x4A9F56, QuickPatch::MsgReadBitsCompressCheckCL, HOOK_CALL).install()->quick(); // CL_ParseServerMessage
-		Utils::Hook(0x407376, QuickPatch::SVCanReplaceServerCommand , HOOK_CALL).install()->quick(); // SV_CanReplaceServerCommand
-		Utils::Hook(0x5B67ED, QuickPatch::AtolAdjustPlayerLimit     , HOOK_CALL).install()->quick(); // PartyHost_HandleJoinPartyRequest
-
-
-		// Patch selectStringTableEntryInDvar
-		Utils::Hook::Set(0x405959, QuickPatch::SelectStringTableEntryInDvarStub);
-
-		// Patch G_GetClientScore for uninitialised game
-		Utils::Hook(0x469AC0, QuickPatch::G_GetClientScore, HOOK_JUMP).install()->quick();
-
-		// Ignore call to print 'Offhand class mismatch when giving weapon...'
-		Utils::Hook(0x5D9047, 0x4BB9B0, HOOK_CALL).install()->quick();
-
-		Dvar::OnInit([]() {
+		Scheduler::Once ([]() {
 			// UI version string
 			static std::string menuVersionString = VERSION"\n";
 
@@ -755,42 +600,37 @@ namespace Components
 			}
 
 			Utils::Hook::Set<const char*>(0x43F73B, menuVersionString.c_str());
-			});
+			}, Scheduler::Pipeline::MAIN);
 
-		Command::Add("unlockstats", [](Command::Params*)
-		{
-			QuickPatch::UnlockStats();
-		});
-
-		Command::Add("crash", [](Command::Params*)
-		{
-			throw new std::exception();
-		});
+		Command::Add("unlockstats", QuickPatch::UnlockStats);
 
 		Command::Add("dumptechsets", [](Command::Params* param)
 		{
-			if (param->length() != 2)
+			if (param->size() != 2)
 			{
 				Logger::Print("usage: dumptechsets <fastfile> | all\n");
 				return;
 			}
-			std::vector<std::string> fastfiles;
+
+			std::vector<std::string> fastFiles;
 
 			if (param->get(1) == "all"s)
 			{
-				for (std::string f : Utils::IO::ListFiles("zone/english"))
-					fastfiles.push_back(f.substr(7, f.length() - 10));
-				for (std::string f : Utils::IO::ListFiles("zone/dlc"))
-					fastfiles.push_back(f.substr(3, f.length() - 6));
-				for (std::string f : Utils::IO::ListFiles("zone/patch"))
-					fastfiles.push_back(f.substr(5, f.length() - 8));
+				for (const auto& f : Utils::IO::ListFiles("zone/english"))
+					fastFiles.emplace_back(f.substr(7, f.length() - 10));
+
+				for (const auto& f : Utils::IO::ListFiles("zone/dlc"))
+					fastFiles.emplace_back(f.substr(3, f.length() - 6));
+
+				for (const auto& f : Utils::IO::ListFiles("zone/patch"))
+					fastFiles.emplace_back(f.substr(5, f.length() - 8));
 			}
 			else
 			{
-				fastfiles.push_back(param->get(1));
+				fastFiles.emplace_back(param->get(1));
 			}
 
-			int count = 0;
+			auto count = 0;
 
 			AssetHandler::OnLoad([](Game::XAssetType type, Game::XAssetHeader asset, const std::string& name, bool* /*restrict*/)
 			{
@@ -812,7 +652,7 @@ namespace Components
 					if (Utils::IO::FileExists(Utils::String::VA(formatString, name.data()))) return;
 
 					Utils::Stream buffer(0x1000);
-					Game::MaterialPixelShader* dest = buffer.dest<Game::MaterialPixelShader>();
+					auto* dest = buffer.dest<Game::MaterialPixelShader>();
 					buffer.save(asset.pixelShader);
 
 					if (asset.pixelShader->prog.loadDef.program)
@@ -823,31 +663,6 @@ namespace Components
 
 					Utils::IO::WriteFile(Utils::String::VA(formatString, name.data()), buffer.toBuffer());
 				}
-
-				static std::map<const void*, unsigned int> pointerMap;
-
-				// Check if the given pointer has already been mapped
-				std::function<bool(const void*)> hasPointer = [](const void* pointer)
-				{
-					return (pointerMap.find(pointer) != pointerMap.end());
-				};
-
-				// Get stored offset for given file pointer
-				std::function<unsigned int(const void*)> getPointer = [hasPointer](const void* pointer)
-				{
-					if (hasPointer(pointer))
-					{
-						return pointerMap[pointer];
-					}
-
-					return 0U;
-				};
-
-				std::function<void(const void*, unsigned int)> storePointer = [hasPointer](const void* ptr, unsigned int offset)
-				{
-					if (hasPointer(ptr)) return;
-					pointerMap[ptr] = offset;
-				};
 
 				if (type == Game::ASSET_TYPE_TECHNIQUE_SET)
 				{
@@ -868,59 +683,54 @@ namespace Components
 
 						if (technique)
 						{
-							dest->techniques[i] = reinterpret_cast<Game::MaterialTechnique*>(getPointer(technique));
-							if (!dest->techniques)
+							// Size-check is obsolete, as the structure is dynamic
+							buffer.align(Utils::Stream::ALIGN_4);
+
+							Game::MaterialTechnique* destTechnique = buffer.dest<Game::MaterialTechnique>();
+							buffer.save(technique, 8);
+
+							// Save_MaterialPassArray
+							Game::MaterialPass* destPasses = buffer.dest<Game::MaterialPass>();
+							buffer.saveArray(technique->passArray, technique->passCount);
+
+							for (std::uint16_t j = 0; j < technique->passCount; ++j)
 							{
-								// Size-check is obsolete, as the structure is dynamic
-								buffer.align(Utils::Stream::ALIGN_4);
-								//storePointer(technique, buffer->);
+								AssertSize(Game::MaterialPass, 20);
 
-								Game::MaterialTechnique* destTechnique = buffer.dest<Game::MaterialTechnique>();
-								buffer.save(technique, 8);
+								Game::MaterialPass* destPass = &destPasses[j];
+								Game::MaterialPass* pass = &technique->passArray[j];
 
-								// Save_MaterialPassArray
-								Game::MaterialPass* destPasses = buffer.dest<Game::MaterialPass>();
-								buffer.saveArray(technique->passArray, technique->passCount);
-
-								for (short j = 0; j < technique->passCount; ++j)
+								if (pass->vertexDecl)
 								{
-									AssertSize(Game::MaterialPass, 20);
 
-									Game::MaterialPass* destPass = &destPasses[j];
-									Game::MaterialPass* pass = &technique->passArray[j];
-
-									if (pass->vertexDecl)
-									{
-
-									}
-
-									if (pass->args)
-									{
-										buffer.align(Utils::Stream::ALIGN_4);
-										buffer.saveArray(pass->args, pass->perPrimArgCount + pass->perObjArgCount + pass->stableArgCount);
-										Utils::Stream::ClearPointer(&destPass->args);
-									}
 								}
 
-								if (technique->name)
+								if (pass->args)
 								{
-									buffer.saveString(technique->name);
-									Utils::Stream::ClearPointer(&destTechnique->name);
+									buffer.align(Utils::Stream::ALIGN_4);
+									buffer.saveArray(pass->args, pass->perPrimArgCount + pass->perObjArgCount + pass->stableArgCount);
+									Utils::Stream::ClearPointer(&destPass->args);
 								}
-
-								Utils::Stream::ClearPointer(&dest->techniques[i]);
 							}
+
+							if (technique->name)
+							{
+								buffer.saveString(technique->name);
+								Utils::Stream::ClearPointer(&destTechnique->name);
+							}
+
+							Utils::Stream::ClearPointer(&dest->techniques[i]);
 						}
 					}
 				}
 			});
 
-			for (std::string fastfile : fastfiles)
+			for (const auto& fastFile : fastFiles)
 			{
-				if (!Game::DB_IsZoneLoaded(fastfile.data()))
+				if (!Game::DB_IsZoneLoaded(fastFile.data()))
 				{
 					Game::XZoneInfo info;
-					info.name = fastfile.data();
+					info.name = fastFile.data();
 					info.allocFlags = 0x20;
 					info.freeFlags = 0;
 
@@ -958,207 +768,6 @@ namespace Components
 		});
 #endif
 
-		Scheduler::OnFrame([]()
-		{
-			if (!Game::CL_IsCgameInitialized() || !Dvar::Var("r_drawAabbTrees").get<bool>()) return;
-
-			float cyan[4] = { 0.0f, 0.5f, 0.5f, 1.0f };
-			float red[4] = { 1.0f, 0.0f, 0.0f, 1.0f };
-
-			Game::clipMap_t* clipMap = *reinterpret_cast<Game::clipMap_t**>(0x7998E0);
-			//Game::GfxWorld* gameWorld = *reinterpret_cast<Game::GfxWorld**>(0x66DEE94);
-			if (!clipMap) return;
-
-            for (unsigned short i = 0; i < clipMap->smodelNodeCount; ++i)
-            {
-                Game::R_AddDebugBounds(cyan, &clipMap->smodelNodes[i].bounds);
-            }
-
-            for (unsigned int i = 0; i < clipMap->numStaticModels; i += 2)
-            {
-                Game::R_AddDebugBounds(red, &clipMap->staticModelList[i].absBounds);
-            }			
-		});
-
-		Dvar::OnInit([]
-			{
-				Dvar::Register<bool>("r_drawSceneModelBoundingBoxes", false, Game::DVAR_FLAG_CHEAT, "Draw scene model bounding boxes");
-				Dvar::Register<bool>("r_drawSceneModelCollisions", false, Game::DVAR_FLAG_CHEAT, "Draw scene model collisions");
-				Dvar::Register<bool>("r_drawTriggers", false, Game::DVAR_FLAG_CHEAT, "Draw triggers");
-				Dvar::Register<bool>("r_drawModelNames", false, Game::DVAR_FLAG_CHEAT, "Draw all model names");
-				Dvar::Register<bool>("r_drawAabbTrees", false, Game::DVAR_FLAG_USERCREATED, "Draw aabb trees");
-			});
-
-		Scheduler::OnFrame([]()
-			{
-				if (!Game::CL_IsCgameInitialized() || !Dvar::Var("r_drawModelNames").get<bool>()) return;
-
-				float sceneModelsColor[4] = { 1.0f, 1.0f, 0.0f, 1.0f };
-				float dobjsColor[4] = { 0.0f, 1.0f, 1.0f, 1.0f };
-				float staticModelsColor[4] = { 1.0f, 0.0f, 1.0f, 1.0f };
-
-				auto mapName = Dvar::Var("mapname").get<const char*>();
-				auto* scene = Game::scene;
-				auto world = Game::DB_FindXAssetEntry(Game::XAssetType::ASSET_TYPE_GFXWORLD, Utils::String::VA("maps/mp/%s.d3dbsp", mapName))->asset.header.gfxWorld;
-
-				for (auto i = 0; i < scene->sceneModelCount; i++)
-				{
-					if (!scene->sceneModel[i].model)
-						continue;
-
-					Game::R_AddDebugString(sceneModelsColor, scene->sceneModel[i].placement.base.origin, 1.0, scene->sceneModel[i].model->name);
-				}	
-
-				for (auto i = 0; i < scene->sceneDObjCount; i++)
-				{
-					if (scene->sceneDObj[i].obj) {
-						for (int j = 0; j < scene->sceneDObj[i].obj->numModels; j++)
-						{
-							Game::R_AddDebugString(dobjsColor, scene->sceneDObj[i].placement.origin, 1.0, scene->sceneDObj[i].obj->models[j]->name);
-						}
-					}
-				}
-
-				// Static models
-				for (size_t i = 0; i < world->dpvs.smodelCount; i++)
-				{
-					auto staticModel = world->dpvs.smodelDrawInsts[i];
-					if (staticModel.model) {
-						Game::R_AddDebugString(staticModelsColor, staticModel.placement.origin, 1.0, staticModel.model->name);
-					}
-				}
-			});
-
-		Scheduler::OnFrame([]()
-		{
-			if (!Game::CL_IsCgameInitialized() || !Dvar::Var("r_drawSceneModelBoundingBoxes").get<bool>()) return;
-			
-            float red[4] = { 1.0f, 0.0f, 0.0f, 1.0f };
-            float blue[4] = { 0.0f, 0.0f, 1.0f, 1.0f };
-
-			auto* scene = Game::scene;
-
-			for(auto i = 0; i < scene->sceneModelCount; i++)
-			{
-				if(!scene->sceneModel[i].model)
-					continue;
-
-				auto b = scene->sceneModel[i].model->bounds;
-				b.midPoint[0] += scene->sceneModel[i].placement.base.origin[0];
-				b.midPoint[1] += scene->sceneModel[i].placement.base.origin[1];
-				b.midPoint[2] += scene->sceneModel[i].placement.base.origin[2];
-				b.halfSize[0] *= scene->sceneModel[i].placement.scale;
-				b.halfSize[1] *= scene->sceneModel[i].placement.scale;
-				b.halfSize[2] *= scene->sceneModel[i].placement.scale;
-				Game::R_AddDebugBounds(red, &b, &scene->sceneModel[i].placement.base.quat);
-			}
-
-			for(auto i = 0; i < scene->sceneDObjCount; i++)
-			{
-				scene->sceneDObj[i].cull.bounds.halfSize[0] = std::abs(scene->sceneDObj[i].cull.bounds.halfSize[0]);
-				scene->sceneDObj[i].cull.bounds.halfSize[1] = std::abs(scene->sceneDObj[i].cull.bounds.halfSize[1]);
-				scene->sceneDObj[i].cull.bounds.halfSize[2] = std::abs(scene->sceneDObj[i].cull.bounds.halfSize[2]);
-
-				if (scene->sceneDObj[i].cull.bounds.halfSize[0] < 0 ||
-					scene->sceneDObj[i].cull.bounds.halfSize[1] < 0 ||
-					scene->sceneDObj[i].cull.bounds.halfSize[2] < 0) {
-
-					Components::Logger::Print("WARNING: Negative half size for DOBJ %s, this will cause culling issues!", scene->sceneDObj[i].obj->models[0]->name);
-				}
-
-				Game::R_AddDebugBounds(blue, &scene->sceneDObj[i].cull.bounds);
-			}
-		});
-
-		Scheduler::OnFrame([]()
-			{
-				if (!Game::CL_IsCgameInitialized()) return;
-				if (!Dvar::Var("r_drawSceneModelCollisions").get<bool>()) return;
-
-				float green[4] = { 0.0f, 1.0f, 0.0f, 1.0f };
-
-				auto* scene = Game::scene;
-
-				for (auto i = 0; i < scene->sceneModelCount; i++)
-				{
-					if (!scene->sceneModel[i].model)
-						continue;
-
-					for (auto j = 0; j < scene->sceneModel[i].model->numCollSurfs; j++) {
-						auto b = scene->sceneModel[i].model->collSurfs[j].bounds;
-						b.midPoint[0] += scene->sceneModel[i].placement.base.origin[0];
-						b.midPoint[1] += scene->sceneModel[i].placement.base.origin[1];
-						b.midPoint[2] += scene->sceneModel[i].placement.base.origin[2];
-						b.halfSize[0] *= scene->sceneModel[i].placement.scale;
-						b.halfSize[1] *= scene->sceneModel[i].placement.scale;
-						b.halfSize[2] *= scene->sceneModel[i].placement.scale;
-
-						Game::R_AddDebugBounds(green, &b, &scene->sceneModel[i].placement.base.quat);
-					}
-				}
-			});
-
-		Scheduler::OnFrame([]()
-		{
-			if (!Game::CL_IsCgameInitialized() || !Dvar::Var("r_drawTriggers").get<bool>()) return;
-
-            float hurt[4] = { 1.0f, 0.0f, 0.0f, 1.0f };
-            float hurtTouch[4] = { 0.75f, 0.0f, 0.0f, 1.0f };
-            float damage[4] = { 0.0f, 0.0f, 1.0f, 1.0f };
-            float once[4] = { 0.0f, 1.0f, 1.0f, 1.0f };
-            float multiple[4] = { 0.0f, 1.0f, 0.0f, 1.0f };
-
-			auto* entities = Game::g_entities;
-			for(auto i = 0u; i < 0x800; i++)
-			{
-				auto* ent = &entities[i];
-
-				if(ent->r.isInUse)
-				{
-					Game::Bounds b = ent->r.box;
-					b.midPoint[0] += ent->r.currentOrigin[0];
-					b.midPoint[1] += ent->r.currentOrigin[1];
-					b.midPoint[2] += ent->r.currentOrigin[2];
-
-					switch(ent->handler)
-					{
-					case Game::ENT_HANDLER_TRIGGER_HURT:
-						Game::R_AddDebugBounds(hurt, &b);
-						break;
-
-					case Game::ENT_HANDLER_TRIGGER_HURT_TOUCH:
-						Game::R_AddDebugBounds(hurtTouch, &b);
-						break;
-
-					case Game::ENT_HANDLER_TRIGGER_DAMAGE:
-						Game::R_AddDebugBounds(damage, &b);
-						break;
-
-					case Game::ENT_HANDLER_TRIGGER_MULTIPLE:
-						if(ent->spawnflags & 0x40)
-						    Game::R_AddDebugBounds(once, &b);
-						else
-							Game::R_AddDebugBounds(multiple, &b);
-						break;
-
-					default:
-						float rv = std::min((float)ent->handler, (float)5) / 5;
-						float gv = std::clamp((float)ent->handler-5, (float)0, (float)5) / 5;
-						float bv = std::clamp((float)ent->handler - 10, (float)0, (float)5) / 5;
-
-						float color[4] = { rv, gv, bv, 1.0f };
-
-						Game::R_AddDebugBounds(color, &b);
-						break;
-					}
-				}
-			}
-		});
-
-
-		// Dvars
-		Dvar::Register<bool>("ui_streamFriendly", false, Game::DVAR_FLAG_SAVED, "Stream friendly UI");
-
 		// Debug patches
 #ifdef DEBUG
 		// ui_debugMode 1
@@ -1176,18 +785,7 @@ namespace Components
 		Utils::Hook::Set<bool>(0x60AE2B, true);
 
 		// Disable cheat protection for dvars
-		Utils::Hook::Set<BYTE>(0x647682, 0xEB);
-
-		// Constantly draw the mini console
-		Utils::Hook::Set<BYTE>(0x412A45, 0xEB);
-
-		Scheduler::OnFrame([]()
-		{
-			if (*reinterpret_cast<Game::Font_s**>(0x62E4BAC))
-			{
-				Game::Con_DrawMiniConsole(0, 2, 4, (Game::CL_IsCgameInitialized() ? 1.0f : 0.4f));
-			}
-		}, true);
+		Utils::Hook::Set<BYTE>(0x646515, 0xEB); // Dvar_IsCheatProtected
 #else
 		// Remove missing tag message
 		Utils::Hook::Nop(0x4EBF1A, 5);
@@ -1199,17 +797,12 @@ namespace Components
 		}
 	}
 
-	QuickPatch::~QuickPatch()
-	{
-
-	}
-
 	bool QuickPatch::unitTest()
 	{
 		uint32_t randIntCount = 4'000'000;
-		printf("Generating %d random integers...", randIntCount);
+		Logger::Debug("Generating {} random integers...", randIntCount);
 
-		auto startTime = std::chrono::high_resolution_clock::now();
+		const auto startTime = std::chrono::high_resolution_clock::now();
 
 		for (uint32_t i = 0; i < randIntCount; ++i)
 		{
@@ -1217,9 +810,9 @@ namespace Components
 		}
 
 		auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - startTime).count();
-		Logger::Print("took %llims\n", duration);
+		Logger::Debug("took {}ms", duration);
 
-		printf("Testing ZLib compression...");
+		Logger::Debug("Testing ZLib compression...");
 
 		std::string test = Utils::String::VA("%c", Utils::Cryptography::Rand::GenerateInt());
 
@@ -1230,21 +823,20 @@ namespace Components
 
 			if (test != decompressed)
 			{
-				printf("Error\n");
-				printf("Compressing %d bytes and decompressing failed!\n", test.size());
+				Logger::PrintError(Game::CON_CHANNEL_ERROR, "Compressing {} bytes and decompressing failed!\n", test.size());
 				return false;
 			}
 
-			auto size = test.size();
+			const auto size = test.size();
 			for (unsigned int j = 0; j < size; ++j)
 			{
 				test.append(Utils::String::VA("%c", Utils::Cryptography::Rand::GenerateInt()));
 			}
 		}
 
-		printf("Success\n");
+		Logger::Debug("Success");
 
-		printf("Testing trimming...");
+		Logger::Debug("Testing trimming...");
 		std::string trim1 = " 1 ";
 		std::string trim2 = "   1";
 		std::string trim3 = "1   ";
@@ -1257,7 +849,7 @@ namespace Components
 		if (trim2 != "1") return false;
 		if (trim3 != "1") return false;
 
-		printf("Success\n");
+		Logger::Debug("Success");
 		return true;
 	}
 }
