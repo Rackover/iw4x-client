@@ -391,6 +391,9 @@ namespace Components
 		static float cgFov90 = 85.0f;
 		Utils::Hook::Set<float*>(0x4F8E28, &cgFov90);
 
+		// MaxFPS 85
+		Utils::Hook::Set<int>(0x60AD17 + 1, 85);
+
 		// set max volume to 1
 		static float volume = 1.0f;
 		Utils::Hook::Set<float*>(0x408078, &volume);

@@ -21,7 +21,8 @@ namespace Components
 			return;
 		}
 
-		Dvar::Var("xblive_privateserver").set(false);
+		// ?? 
+		//Dvar::Var("xblive_privateserver").set(false);
 
 		auto playlistFilename = Dvar::Var("playlistFilename").get<std::string>();
 		FileSystem::File playlist(playlistFilename);
