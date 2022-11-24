@@ -36,19 +36,19 @@ namespace Utils::Json
 	unsigned long ReadFlags(const std::string binaryFlags, const size_t size)
 	{
 		std::bitset<64>	input;
-		const size_t binarySize = size * 8;
+		const auto binarySize = size * 8;
 
-		if (binaryFlags.size() > binarySize) {
+		if (binaryFlags.size() > binarySize)
+		{
 			Components::Logger::Print("Flag {} might not be properly translated, it seems to contain an error (invalid length)\n", binaryFlags);
 			return 0;
 		}
 
-		size_t i = binarySize - 1;
+		auto i = binarySize - 1;
 		for (char bit : binaryFlags)
 		{
 			if (i < 0)
 			{
-				// Uhmm
 				Components::Logger::Print("Flag {} might not be properly translated, it seems to contain an error (invalid length)\n", binaryFlags);
 				break;
 			}

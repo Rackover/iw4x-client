@@ -105,16 +105,16 @@ namespace Assets
 						argument->type = jsonArgument["type"].get<Game::MaterialShaderArgumentType>();
 						argument->dest = jsonArgument["dest"].get<unsigned short>();
 
-						if (argument->type == Game::MaterialShaderArgumentType::MTL_ARG_LITERAL_VERTEX_CONST
-							|| argument->type == Game::MaterialShaderArgumentType::MTL_ARG_LITERAL_PIXEL_CONST)
+						if (argument->type == Game::MaterialShaderArgumentType::MTL_ARG_LITERAL_VERTEX_CONST ||
+							argument->type == Game::MaterialShaderArgumentType::MTL_ARG_LITERAL_PIXEL_CONST)
 						{
 							argument->u.literalConst = builder->getAllocator()->allocateArray<float>(4);
 
 							auto literals = jsonArgument["literals"].get<std::vector<float>>();
 							std::copy(literals.begin(), literals.end(), argument->u.literalConst);
 						}
-						else if (argument->type == Game::MaterialShaderArgumentType::MTL_ARG_CODE_VERTEX_CONST 
-							|| argument->type == Game::MaterialShaderArgumentType::MTL_ARG_CODE_PIXEL_CONST)
+						else if (argument->type == Game::MaterialShaderArgumentType::MTL_ARG_CODE_VERTEX_CONST ||
+							argument->type == Game::MaterialShaderArgumentType::MTL_ARG_CODE_PIXEL_CONST)
 						{
 							if (jsonArgument["codeConst"].is_object())
 							{
@@ -125,9 +125,9 @@ namespace Assets
 								argument->u.codeConst.rowCount = codeConst["rowCount"].get<unsigned char>();
 							}
 						}
-						else if (argument->type == Game::MaterialShaderArgumentType::MTL_ARG_MATERIAL_PIXEL_SAMPLER
-							|| argument->type == Game::MaterialShaderArgumentType::MTL_ARG_MATERIAL_VERTEX_CONST
-							|| argument->type == Game::MaterialShaderArgumentType::MTL_ARG_MATERIAL_PIXEL_CONST)
+						else if (argument->type == Game::MaterialShaderArgumentType::MTL_ARG_MATERIAL_PIXEL_SAMPLER ||
+							argument->type == Game::MaterialShaderArgumentType::MTL_ARG_MATERIAL_VERTEX_CONST ||
+							argument->type == Game::MaterialShaderArgumentType::MTL_ARG_MATERIAL_PIXEL_CONST)
 						{
 							argument->u.nameHash = jsonArgument["nameHash"].get<unsigned int>();
 						}

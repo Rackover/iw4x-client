@@ -18,7 +18,7 @@ namespace Utils::Compression
 		compression = Z_NO_COMPRESSION;
 #endif
 
-		if (compress2(reinterpret_cast<Bytef*>(buffer), &length, reinterpret_cast<Bytef*>(const_cast<char*>(data.data())), data.size(), Z_BEST_COMPRESSION) != Z_OK)
+		if (compress2(reinterpret_cast<Bytef*>(buffer), &length, (const Bytef*)(data.data()), data.size(), Z_BEST_COMPRESSION) != Z_OK)
 		{
 			return {};
 		}
@@ -37,11 +37,7 @@ namespace Utils::Compression
 			return {};
 		}
 
-		int ret;
-		Memory::Allocator allocator;
-
-		std::uint8_t* dest = allocator.allocateArray<uint8_t>(CHUNK);
-		const char* dataPtr = data.data();
+		const auto* dataPtr = data.data();
 
 		do
 		{
@@ -57,8 +53,15 @@ namespace Utils::Compression
 				ret = inflate(&stream, Z_NO_FLUSH);
 				if (ret != Z_OK && ret != Z_STREAM_END)
 				{
-					inflateEnd(&stream);
-					return {};
+					stream.avail_out = CHUNK;
+					stream.next_out = dest;
+
+					ret = inflate(&stream, Z_NO_FLUSH);
+					if (ret != Z_OK && ret != Z_STREAM_END)
+					{
+						inflateEnd(&stream);
+						return {};
+					}
 				}
 
 				buffer.append(reinterpret_cast<const char*>(dest), CHUNK - stream.avail_out);

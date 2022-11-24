@@ -172,28 +172,29 @@ namespace Components
 		return Utils::Hook::Call<int(int, float, float, const char*, Game::vec4_t*, int)>(0x005033E0)(a1, a2, a3, Utils::String::VA("%s (^3%s^7)", mat->info.name, mat->techniqueSet->name), color, a6);
 	}
 
-	void ListSamplers() {
-
-		Game::GfxCmdBufSourceState* source = reinterpret_cast<Game::GfxCmdBufSourceState*>(0x6CAF080);
+	void ListSamplers()
+	{
+		static auto* source = reinterpret_cast<Game::GfxCmdBufSourceState*>(0x6CAF080);
 
 		Game::Font_s* font = Game::R_RegisterFont("fonts/smallFont", 0);
 		auto height = Game::R_TextHeight(font);
 		auto scale = 1.0f;
-		float color[4] = { 0.0f, 1.0f, 0.0f, 1.0f };
+		float color[4] = {0.0f, 1.0f, 0.0f, 1.0f};
 
-		for (size_t i = 0; i < 27; i++)
+		for (std::size_t i = 0; i < 27; ++i)
 		{
 			if (source->input.codeImages[i] == nullptr)
 			{
 				color[0] = 1.f;
 			}
-			else {
+			else
+			{
 				color[0] = 0.f;
 			}
 
 			std::stringstream str;
-			str << std::format("{}/{:#X} => ", i, i).c_str() << (source->input.codeImages[i] == nullptr ? "---" : source->input.codeImages[i]->name) << " " << std::to_string(source->input.codeImageSamplerStates[i]).c_str();
-			Game::R_AddCmdDrawText(Utils::String::VA("%s", str.str().data()), 0x7FFFFFFF, font, 15.0f, (height * scale + 1) * (i + 1) + 14.0f, scale, scale, 0.0f, color, Game::ITEM_TEXTSTYLE_NORMAL);
+			str << std::format("{}/{:#X} => ", i, i) << (source->input.codeImages[i] == nullptr ? "---" : source->input.codeImages[i]->name) << " " << std::to_string(source->input.codeImageSamplerStates[i]);
+			Game::R_AddCmdDrawText(Utils::String::VA("%s", str.str().data()), std::numeric_limits<int>::max(), font, 15.0f, (height * scale + 1) * (i + 1) + 14.0f, scale, scale, 0.0f, color, Game::ITEM_TEXTSTYLE_NORMAL);
 		}
 	}
 
@@ -467,20 +468,48 @@ namespace Components
 		}
 	}
 
-	void Renderer::ForceTechnique() {
+	void Renderer::ForceTechnique()
+	{
 		auto forceTechnique = r_forceTechnique.get<int>();
 
-		if (forceTechnique > 0) {
+		if (forceTechnique > 0)
+		{
 			Utils::Hook::Set(0x6FABDF4, forceTechnique);
 		}
 	}
 
-	int Renderer::FixSunShadowPartitionSize(
-		Game::GfxCamera* camera,
-		Game::GfxSunShadowMapMetrics* mapMetrics,
-		Game::GfxSunShadow* sunShadow,
-		Game::GfxSunShadowClip* clip,
-		float* partitionFraction)
+	void* Renderer::SkipBrokenXModelSurfacesNonOptimized(Game::GfxStaticModelDrawStream* stream, Game::GfxCmdBufSourceState* source, Game::GfxCmdBufState* buffer)
+	{
+		
+		// Something wrong in iw3xport or iw4x or maybe even cod4, makes it that we end up with invalid surfaces in xmodels sometimes
+		// Very annoying, crashes the game instantly. For now we skip them
+		if (Maps::IsCustomMap())
+		{
+			// This bad practice - also, it's working. So until we can fix that XModelSurfs bug...
+			if (IsBadReadPtr(stream->localSurf, sizeof(Game::XSurface)))
+			{
+				return nullptr;
+			}
+		}
+
+		return Utils::Hook::Call<void* (Game::GfxStaticModelDrawStream*, Game::GfxCmdBufSourceState*, Game::GfxCmdBufState*)>(0x557C70)(stream, source, buffer);
+	}
+
+	void* Renderer::SkipBrokenXModelSurfaces(Game::GfxStaticModelDrawStream* stream, Game::GfxCmdBufSourceState* source, Game::GfxCmdBufState* buffer)
+	{
+		if (Maps::IsCustomMap())
+		{
+			// See SkipBrokenXModelSurfacesNonOptimized
+			if (IsBadReadPtr(stream->localSurf, sizeof(Game::XSurface)))
+			{
+				return nullptr;
+			}
+		}
+
+		return Utils::Hook::Call<void*(Game::GfxStaticModelDrawStream*, Game::GfxCmdBufSourceState*, Game::GfxCmdBufState*)>(0x557B50)(stream, source, buffer);
+	}
+
+	int Renderer::FixSunShadowPartitionSize(Game::GfxCamera* camera, Game::GfxSunShadowMapMetrics* mapMetrics, Game::GfxSunShadow* sunShadow, Game::GfxSunShadowClip* clip, float* partitionFraction)
 	{
 
 		auto result = Utils::Hook::Call<int(Game::GfxCamera*, Game::GfxSunShadowMapMetrics*, Game::GfxSunShadow*, Game::GfxSunShadowClip*, float*)>(0x5463B0)(camera, mapMetrics, sunShadow, clip, partitionFraction);
@@ -492,7 +521,6 @@ namespace Components
 		}
 
 		return result;
-
 	}
 
 	Renderer::Renderer()
@@ -564,7 +592,7 @@ namespace Components
 			Renderer::r_drawModelNames = Game::Dvar_RegisterEnum("r_drawModelNames", values, 0, Game::DVAR_CHEAT, "Draw all model names");
 			Renderer::r_drawAABBTrees = Game::Dvar_RegisterBool("r_drawAabbTrees", false, Game::DVAR_CHEAT, "Draw aabb trees");
 			Renderer::r_playerDrawDebugDistance = Game::Dvar_RegisterInt("r_drawDebugDistance", 1000, 0, 50000, Game::DVAR_ARCHIVE, "r_draw debug functions draw distance, relative to the player");
-			Renderer::r_forceTechnique = Game::Dvar_RegisterInt("r_force_technique", 0, 0, 14, Game::DVAR_NONE, "Forces a base technique on the renderer");
+			Renderer::r_forceTechnique = Game::Dvar_RegisterInt("r_forceTechnique", 0, 0, 14, Game::DVAR_NONE, "Forces a base technique on the renderer");
 
 		}, Scheduler::Pipeline::MAIN);
 	}

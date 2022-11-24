@@ -3,7 +3,6 @@
 
 namespace Assets
 {
-
 	void IFxWorld::save(Game::XAssetHeader header, Components::ZoneBuilder::Zone* builder)
 	{
 		AssertSize(Game::FxWorld, 116);
@@ -195,9 +194,10 @@ namespace Assets
 		// Generate
 		map = builder->getAllocator()->allocate<Game::FxWorld>();
 		map->name = builder->getAllocator()->duplicateString(name);
-		
+	
 		// No glass for you!
-		ZeroMemory(&map->glassSys, sizeof(Game::FxGlassSystem));
+		ZeroMemory(&map->glassSys, sizeof(map->glassSys));
+
 		map->glassSys.firstFreePiece = 0xFFFF; // That's how rust has it (no glass)
 
 		header->fxWorld = map;
