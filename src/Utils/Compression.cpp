@@ -11,7 +11,7 @@ namespace Utils::Compression
 		// Make sure the buffer is large enough
 		if (length < 100) length *= 10;
 
-		char* buffer = allocator.allocateArray<char>(length);
+		auto* buffer = allocator.allocateArray<char>(length);
 		auto compression = Z_BEST_COMPRESSION;
 
 #if DEBUG
@@ -41,8 +41,8 @@ namespace Utils::Compression
 
 		do
 		{
-			stream.avail_in = std::min(static_cast<size_t>(CHUNK), data.size() - (dataPtr - data.data()));
-			stream.next_in = reinterpret_cast<const uint8_t*>(dataPtr);
+			stream.avail_in = std::min(static_cast<std::size_t>(CHUNK), data.size() - (dataPtr - data.data()));
+			stream.next_in = reinterpret_cast<const std::uint8_t*>(dataPtr);
 			dataPtr += stream.avail_in;
 
 			do
@@ -53,15 +53,8 @@ namespace Utils::Compression
 				ret = inflate(&stream, Z_NO_FLUSH);
 				if (ret != Z_OK && ret != Z_STREAM_END)
 				{
-					stream.avail_out = CHUNK;
-					stream.next_out = dest;
-
-					ret = inflate(&stream, Z_NO_FLUSH);
-					if (ret != Z_OK && ret != Z_STREAM_END)
-					{
-						inflateEnd(&stream);
-						return {};
-					}
+					inflateEnd(&stream);
+					return {};
 				}
 
 				buffer.append(reinterpret_cast<const char*>(dest), CHUNK - stream.avail_out);
