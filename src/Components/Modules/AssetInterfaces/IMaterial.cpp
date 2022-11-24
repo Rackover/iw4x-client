@@ -751,18 +751,6 @@ namespace Assets
 		header->material = Components::AssetHandler::FindOriginalAsset(this->getType(), name.data()).material;
 	}
 
-<<<<<<< HEAD
-	void IMaterial::loadJson(Game::XAssetHeader* header, const std::string& name, [[maybe_unused]] Components::ZoneBuilder::Zone* builder)
-	{
-		Components::FileSystem::File materialInfo(std::format("materials/{}.json", name));
-
-		if (!materialInfo.exists()) return;
-
-		header->material = nullptr;
-	}
-
-=======
->>>>>>> 92f5e2c7 (FXworld support, JSON materials)
 	void IMaterial::mark(Game::XAssetHeader header, Components::ZoneBuilder::Zone* builder)
 	{
 		Game::Material* asset = header.material;
