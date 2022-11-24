@@ -84,7 +84,7 @@ namespace Assets
 		Utils::String::Replace(name, "maps/mp/", "");
 		Utils::String::Replace(name, ".d3dbsp", "");
 
-		Components::FileSystem::File gameWorld(Utils::String::VA("gameworld/%s.iw4x.json", name.data()));
+		Components::FileSystem::File gameWorld(std::format("gameworld/{}.iw4x.json", name));
 
 		if (gameWorld.exists())
 		{

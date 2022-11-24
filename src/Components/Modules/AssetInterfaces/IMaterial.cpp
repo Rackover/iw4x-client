@@ -663,10 +663,10 @@ namespace Assets
 		{
 			Components::Logger::Print("No replacement found for material {} with techset {}\n", asset->info.name, asset->techniqueSet->name);
 			std::string techName = asset->techniqueSet->name;
-			if (this->techSetCorrespondance.contains(techName))
+			if (const auto itr = techSetCorrespondance.find(techName); itr != techSetCorrespondance.end())
 			{
-				auto& iw4TechSetName = this->techSetCorrespondance.at(techName);
-				Game::XAssetEntry* iw4TechSet = Game::DB_FindXAssetEntry(Game::XAssetType::ASSET_TYPE_TECHNIQUE_SET, iw4TechSetName.data());
+				auto& iw4TechSetName = itr->second;
+				auto* iw4TechSet = Game::DB_FindXAssetEntry(Game::ASSET_TYPE_TECHNIQUE_SET, iw4TechSetName.data());
 
 				if (iw4TechSet)
 				{
@@ -678,8 +678,8 @@ namespace Assets
 								Components::Logger::Print("Material {} with techset {} has been mapped to {} (last chance!), taking the sort key of material {}\n",
 									asset->info.name, asset->techniqueSet->name, header.material->techniqueSet->name, header.material->info.name);
 
-								if (header.material->techniqueSet == iw4TechSet->asset.header.techniqueSet
-									&& std::string(header.material->info.name).find("icon") != std::string::npos) // Yeah this has a tendency to fuck up a LOT of transparent materials
+								// Yeah this has a tendency to fuck up a LOT of transparent materials
+								if (header.material->techniqueSet == iw4TechSet->asset.header.techniqueSet && std::string(header.material->info.name).find("icon") != std::string::npos)
 								{
 									Components::Logger::Print("Material {} with techset {} has been mapped to {} (last chance!), taking the sort key of material {}\n",
 										asset->info.name, asset->techniqueSet->name, header.material->techniqueSet->name, header.material->info.name);
