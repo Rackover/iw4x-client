@@ -1293,8 +1293,6 @@ namespace Game
 		int sprintStartMaxLength;
 	};
 
-
-	/* 1018 */
 	struct MantleState
 	{
 		float yaw;
@@ -1328,7 +1326,6 @@ namespace Game
 		int ammoCount;
 	};
 
-
 	struct ClipAmmo
 	{
 		int clipIndex;
@@ -1342,7 +1339,6 @@ namespace Game
 		NUM_WEAPON_HANDS = 0x2,
 		WEAPON_HAND_DEFAULT = 0x0,
 	};
-
 
 	struct PlayerWeaponCommonState
 	{
@@ -1494,7 +1490,7 @@ namespace Game
 		int archived;
 	};
 
-	enum playerStateFlag
+	enum
 	{
 		PMF_PRONE = 1 << 0,
 		PMF_DUCKED = 1 << 1,
@@ -1521,7 +1517,7 @@ namespace Game
 		PMF_DIVING = 1 << 22,
 	};
 
-	enum playerStateOtherFlag
+	enum
 	{
 		POF_INVULNERABLE = 1 << 0,
 		POF_REMOTE_EYES = 1 << 1,
@@ -1557,7 +1553,7 @@ namespace Game
 		PM_DEAD_LINKED = 0x9,
 	};
 
-	enum playerEFlag
+	enum
 	{
 		EF_NONSOLID_BMODEL = 1 << 0,
 		EF_TELEPORT_BIT = 1 << 1,
@@ -1585,14 +1581,14 @@ namespace Game
 		EF_SOFT = 1 << 23,
 	};
 
-	enum playerLinkFlag
+	enum
 	{
 		PLF_ANGLES_LOCKED = 1 << 0,
 		PLF_USES_OFFSET = 1 << 1,
 		PLF_WEAPONVIEW_ONLY = 1 << 2,
 	};
 
-	enum playerWeaponFlag
+	enum
 	{
 		PWF_USE_RELOAD = 1 << 0,
 		PWF_USING_OFFHAND = 1 << 1,
@@ -2653,7 +2649,7 @@ namespace Game
 		TriggerSlab* slabs;
 	};
 
-	struct /*__declspec(align(2))*/ Stage
+	struct Stage
 	{
 		const char* name;
 		float origin[3];
@@ -3199,7 +3195,7 @@ namespace Game
 		unsigned int segmentCount;
 	};
 
-	struct /*__declspec(align(2))*/ G_GlassPiece
+	struct G_GlassPiece
 	{
 		unsigned __int16 damageTaken;
 		unsigned __int16 collapseTime;
@@ -3754,7 +3750,7 @@ namespace Game
 		unsigned __int16 packed;
 	};
 
-	struct __declspec(align(4)) GfxSModelSurf
+	struct GfxSModelSurf
 	{
 		GfxSModelSurfHeader header;
 		GfxSModelSurfVisDataRef visDataRefs[1];
@@ -5527,7 +5523,6 @@ namespace Game
 		AddonMapEnts* addonMapEnts;
 	};
 
-	/* 9210 */
 	struct weaponParms
 	{
 		float forward[3];
@@ -7312,7 +7307,7 @@ namespace Game
 		R_RENDERTARGET_NONE = 0xD,
 	};
 
-	struct /*__declspec(align(16))*/ GfxCmdBufState
+	struct GfxCmdBufState
 	{
 		char refSamplerState[16];
 		unsigned int samplerState[16];
@@ -7580,13 +7575,13 @@ namespace Game
 		float specularScale;
 	};
 
-	struct __declspec(align(4)) GfxStageInfo
+	struct GfxStageInfo
 	{
 		Stage activeStage;
 		bool activeStageValid;
 	};
 
-	struct __declspec(align(4)) GfxCompositeFx
+	struct GfxCompositeFx
 	{
 		GfxFilm film;
 		float distortionScale[3];
@@ -7628,7 +7623,6 @@ namespace Game
 		GfxMeshData meshData;
 	};
 
-	/* 2583 */
 	struct GfxSparkSurfList
 	{
 		GfxSparkSurf* surfs;
@@ -7637,7 +7631,7 @@ namespace Game
 
 	enum GfxCodeSurfListType
 	{
-		GFX_CODE_SURFLIST_INVALID = 0xFFFFFFFF,
+		GFX_CODE_SURFLIST_INVALID = -1,
 		GFX_CODE_SURFLIST_TRANS = 0x0,
 		GFX_CODE_SURFLIST_EMISSIVE = 0x1,
 		GFX_CODE_SURFLIST_TYPE_COUNT = 0x2,
@@ -9928,7 +9922,6 @@ namespace Game
 		int hasSunDirChanged;
 	};
 
-
 	struct GfxFog
 	{
 		int startTime;
@@ -9969,7 +9962,6 @@ namespace Game
 		GfxCmdBuf cmdBuf;
 	};
 
-	/* 1693 */
 	struct __declspec(align(4)) GfxDebugPoly
 	{
 		float color[4];
@@ -9978,7 +9970,6 @@ namespace Game
 		bool outline;
 	};
 
-	/* 1694 */
 	struct GfxDebugPlume
 	{
 		float origin[3];
@@ -9988,7 +9979,6 @@ namespace Game
 		int duration;
 	};
 
-	/* 1695 */
 	struct DebugGlobals
 	{
 		float(*verts)[3];
@@ -10034,7 +10024,6 @@ namespace Game
 		GfxViewParms viewParms;
 	};
 
-	/* 2704 */
 	struct GfxSunShadowPartition
 	{
 		GfxViewportParms viewportParms;
@@ -10165,32 +10154,18 @@ namespace Game
 
 	struct GfxDrawListIter
 	{
-		//int addedPrimitive;
-		//GfxCmdRingBuf* cmdBuf;
-		//GfxBspSurfIter bspSurfIter;
-		//GfxBspLightMapSurfIter bspLightMapSurfIter;
-		//GfxSModelRigidSurfIter smodelRigidSurfIter;
-		//GfxDrawSurfIter drawSurfIter;
-		//GfxCodeSurfIter codeSurfIter;
-		//GfxMarkSurfIter markSurfIter;
-		//GfxGlassSurfIter glassSurfIter;
-		//GfxCloudSurfIter cloudSurfIter;
-		//GfxSparkSurfIter sparkSurfIter;
-		
-		
-  GfxBspSurfIter bspSurfIter;
-  GfxPreTessSurfIter bspPreTessSurfIter;
-  GfxSModelRigidSurfIter smodelRigidSurfIter;
-  GfxSModelSkinnedSurfIter smodelSkinnedSurfIter;
-  GfxSModelCachedSurfIter smodelCachedSurfIter;
-  GfxSModelPreTessSurfIter smodelPreTessSurfIter;
-  GfxDrawSurfIter drawSurfIter;
-  GfxCodeSurfIter codeSurfIter;
-  GfxMarkSurfIter markSurfIter;
-  GfxGlassSurfIter glassSurfIter;
-  GfxCloudSurfIter cloudSurfIter;
-  GfxSparkSurfIter sparkSurfIter;
-		
+		GfxBspSurfIter bspSurfIter;
+		GfxPreTessSurfIter bspPreTessSurfIter;
+		GfxSModelRigidSurfIter smodelRigidSurfIter;
+		GfxSModelSkinnedSurfIter smodelSkinnedSurfIter;
+		GfxSModelCachedSurfIter smodelCachedSurfIter;
+		GfxSModelPreTessSurfIter smodelPreTessSurfIter;
+		GfxDrawSurfIter drawSurfIter;
+		GfxCodeSurfIter codeSurfIter;
+		GfxMarkSurfIter markSurfIter;
+		GfxGlassSurfIter glassSurfIter;
+		GfxCloudSurfIter cloudSurfIter;
+		GfxSparkSurfIter sparkSurfIter;
 	};
 
 	struct $5C4E5A598A7F10AE01B04D2C53999B6C
@@ -10335,9 +10310,6 @@ namespace Game
 		GfxDrawSurf drawSurfs[16384];
 		GfxLight sceneLights[253];
 	};
-
-
-
 
 #pragma endregion
 
