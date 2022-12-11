@@ -171,6 +171,23 @@ namespace Components
 				}
 			}
 
+			if (this->dataMap.getColumns(i) > 2)
+			{
+				auto oldName = this->dataMap.getElementAt(i, 1);
+				auto newName = this->dataMap.getElementAt(i, 2);
+				auto typeName = this->dataMap.getElementAt(i, 0);
+				auto type = Game::DB_GetXAssetNameType(typeName.data());
+
+				if (type < Game::XAssetType::ASSET_TYPE_COUNT && type >= 0)
+				{
+					this->renameAsset(type, oldName, newName);
+				}
+				else
+				{
+					Logger::Error(Game::ERR_FATAL, "Unable to rename '{}' to '{}' as the asset type '{}' is invalid!", oldName, newName, typeName);
+				}
+			}
+
 			if (!this->loadAssetByName(this->dataMap.getElementAt(i, 0), this->dataMap.getElementAt(i, 1), false))
 			{
 				return false;
