@@ -151,15 +151,16 @@ namespace Assets
 							/// H0
 							[[maybe_unused]] auto idealSize = water->M * water->N * sizeof(Game::complex_s);
 							auto h064 = waterJson["H0"].get<std::string>();
-							auto predictedSize = static_cast<unsigned int>(std::ceilf((h064.size() / 4.f) * 3.f));
+							auto predictedSize = static_cast<unsigned long>(std::ceilf((h064.size() / 4.f) * 3.f));
 							assert(predictedSize >= idealSize);
 
 							auto h0 = reinterpret_cast<Game::complex_s*>(builder->getAllocator()->allocate(predictedSize));
 
-							[[maybe_unused]] unsigned int decodedH0 = mg_base64_decode(
-								reinterpret_cast<const unsigned char*>(h064.data()),
+							[[maybe_unused]] unsigned int decodedH0 = base64_decode(
+								reinterpret_cast<const char*>(h064.data()),
 								h064.size(),
-								reinterpret_cast<char*>(h0)
+								reinterpret_cast<unsigned char*>(h0),
+								&predictedSize
 							);
 
 							assert(decodedH0 == h064.size());
@@ -168,15 +169,16 @@ namespace Assets
 							/// WTerm
 							[[maybe_unused]]  auto idealWTermSize = water->M * water->N * sizeof(float);
 							auto wTerm64 = waterJson["wTerm"].get<std::string>();
-							auto predictedWTermSize = static_cast<unsigned int>(std::ceilf((wTerm64.size() / 4.f) * 3.f));
+							auto predictedWTermSize = static_cast<unsigned long>(std::ceilf((wTerm64.size() / 4.f) * 3.f));
 							assert(predictedWTermSize >= idealWTermSize);
 
 							auto wTerm = reinterpret_cast<float*>(builder->getAllocator()->allocate(predictedWTermSize));
 
-							[[maybe_unused]] unsigned int decodedWTerm = mg_base64_decode(
-								reinterpret_cast<const unsigned char*>(wTerm64.data()),
+							[[maybe_unused]] unsigned int decodedWTerm = base64_decode(
+								reinterpret_cast<const char*>(wTerm64.data()),
 								wTerm64.size(),
-								reinterpret_cast<char*>(wTerm)
+								reinterpret_cast<unsigned char*>(wTerm),
+								&predictedWTermSize
 							);
 
 							assert(decodedWTerm == wTerm64.size());
