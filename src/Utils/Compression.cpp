@@ -12,13 +12,14 @@ namespace Utils::Compression
 		if (length < 100) length *= 10;
 
 		auto* buffer = allocator.allocateArray<char>(length);
-		auto compression = Z_BEST_COMPRESSION;
 
-#if DEBUG
-		compression = Z_NO_COMPRESSION;
+#ifdef _DEBUG
+		constexpr auto compression = Z_NO_COMPRESSION;
+#else
+		constexpr auto compression = Z_BEST_COMPRESSION;
 #endif
 
-		if (compress2(reinterpret_cast<Bytef*>(buffer), &length, (const Bytef*)(data.data()), data.size(), Z_BEST_COMPRESSION) != Z_OK)
+		if (compress2((Bytef*)(buffer), &length, (const Bytef*)(data.data()), data.size(), compression) != Z_OK)
 		{
 			return {};
 		}
@@ -37,6 +38,10 @@ namespace Utils::Compression
 			return {};
 		}
 
+		int ret;
+		Memory::Allocator allocator;
+
+		auto* dest = allocator.allocateArray<std::uint8_t>(CHUNK);
 		const auto* dataPtr = data.data();
 
 		do

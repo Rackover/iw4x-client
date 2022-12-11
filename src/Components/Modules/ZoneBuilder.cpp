@@ -475,7 +475,7 @@ namespace Components
 			// That's the reason why the count is incremented by 1, if scriptStrings are available.
 
 			// Write ScriptString pointer table
-			for (std::size_t i = 0; i < this->scriptStrings.size(); ++i)
+			for (std::size_t k = 0; k < this->scriptStrings.size(); ++k)
 			{
 				this->buffer.saveMax(4);
 			}

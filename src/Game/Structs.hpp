@@ -1114,9 +1114,6 @@ namespace Game
 	struct MaterialInfo
 	{
 		const char* name;
-		char gameFlags;
-		char sortKey;
-		const char* name;
 		unsigned char gameFlags;
 		unsigned char sortKey;
 		unsigned char textureAtlasRowCount;
@@ -1306,7 +1303,6 @@ namespace Game
 		int flags;
 	};
 
-	/* 1019 */
 	struct PlayerActiveWeaponState
 	{
 		int weapAnim;
@@ -1318,7 +1314,6 @@ namespace Game
 		unsigned int weaponShotCount;
 	};
 
-	/* 1020 */
 	struct PlayerEquippedWeaponState
 	{
 		bool usedBefore;
@@ -1327,14 +1322,13 @@ namespace Game
 		bool needsRechamber[2];
 	};
 
-	/* 1021 */
 	struct GlobalAmmo
 	{
 		int ammoType;
 		int ammoCount;
 	};
 
-	/* 1022 */
+
 	struct ClipAmmo
 	{
 		int clipIndex;
@@ -1349,7 +1343,7 @@ namespace Game
 		WEAPON_HAND_DEFAULT = 0x0,
 	};
 
-	/* 1023 */
+
 	struct PlayerWeaponCommonState
 	{
 		int offHandIndex;
@@ -1381,13 +1375,11 @@ namespace Game
 		ACTIONSLOTTYPECOUNT = 0x4,
 	};
 
-	/* 1024 */
 	struct ActionSlotParam_SpecifyWeapon
 	{
 		unsigned int index;
 	};
 
-	/* 1025 */
 	struct ActionSlotParam
 	{
 		ActionSlotParam_SpecifyWeapon specifyWeapon;
@@ -1404,7 +1396,6 @@ namespace Game
 		OBJST_NUMSTATES = 0x6,
 	};
 
-	/* 1026 */
 	struct objective_t
 	{
 		objectiveState_t state;
@@ -1414,8 +1405,6 @@ namespace Game
 		int icon;
 	};
 
-
-	/* 104 */
 	enum he_type_t
 	{
 		HE_TYPE_FREE = 0x0,
@@ -1445,7 +1434,6 @@ namespace Game
 		char a;
 	};
 
-	/* 1028 */
 	union hudelem_color_t
 	{
 		hud_color __s0;
@@ -1496,6 +1484,14 @@ namespace Game
 		int fxDecayDuration;
 		int soundID;
 		int flags;
+	};
+
+	struct game_hudelem_s
+	{
+		hudelem_s elem;
+		int clientNum;
+		int team;
+		int archived;
 	};
 
 	enum playerStateFlag
@@ -2345,9 +2341,6 @@ namespace Game
 
 	struct XModel
 	{
-		const char* name;
-		char numBones;
-		char numRootBones;
 		const char* name;
 		unsigned char numBones;
 		unsigned char numRootBones;

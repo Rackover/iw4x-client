@@ -18,7 +18,7 @@ namespace Assets
 		}
 	}
 
-	void IXModel::loadXSurface(Game::XSurface* surf, Utils::Stream::Reader* reader, Components::ZoneBuilder::Zone* builder)
+	void IXModel::loadXSurface(Game::XSurface* surf, Utils::Stream::Reader* reader, [[maybe_unused]] Components::ZoneBuilder::Zone* builder)
 	{
 		if (surf->vertInfo.vertsBlend)
 		{

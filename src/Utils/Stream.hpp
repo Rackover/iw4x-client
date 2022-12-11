@@ -42,16 +42,16 @@ namespace Utils
 
 			template <typename T> T* readArrayOnce(std::size_t count = 1)
 			{
-				constexpr char POINTER = 255;
-				constexpr char FOLLOWING = 254;
+				constexpr auto POINTER = 255;
+				constexpr auto FOLLOWING = 254;
 				
-				char b = readByte();	
+				int b = readByte();	
 				switch (b)
 				{
 				case POINTER:
 				{
 					auto ptr = read<int>();
-					auto voidPtr = reinterpret_cast<void*>(ptr);
+					auto* voidPtr = reinterpret_cast<void*>(ptr);
 
 					if (allocator->isPointerMapped(voidPtr))
 					{
@@ -60,7 +60,6 @@ namespace Utils
 
 					throw std::runtime_error("Bad data: missing ptr");
 				}
-
 				case FOLLOWING:
 				{
 					auto filePosition = position;
@@ -68,7 +67,6 @@ namespace Utils
 					allocator->mapPointer(reinterpret_cast<void*>(filePosition), data);
 					return data;
 				}
-
 				default:
 					throw std::runtime_error("Bad data");
 				}

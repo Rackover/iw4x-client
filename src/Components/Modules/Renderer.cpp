@@ -478,37 +478,6 @@ namespace Components
 		}
 	}
 
-	void* Renderer::SkipBrokenXModelSurfacesNonOptimized(Game::GfxStaticModelDrawStream* stream, Game::GfxCmdBufSourceState* source, Game::GfxCmdBufState* buffer)
-	{
-		
-		// Something wrong in iw3xport or iw4x or maybe even cod4, makes it that we end up with invalid surfaces in xmodels sometimes
-		// Very annoying, crashes the game instantly. For now we skip them
-		if (Maps::IsCustomMap())
-		{
-			// This bad practice - also, it's working. So until we can fix that XModelSurfs bug...
-			if (IsBadReadPtr(stream->localSurf, sizeof(Game::XSurface)))
-			{
-				return nullptr;
-			}
-		}
-
-		return Utils::Hook::Call<void* (Game::GfxStaticModelDrawStream*, Game::GfxCmdBufSourceState*, Game::GfxCmdBufState*)>(0x557C70)(stream, source, buffer);
-	}
-
-	void* Renderer::SkipBrokenXModelSurfaces(Game::GfxStaticModelDrawStream* stream, Game::GfxCmdBufSourceState* source, Game::GfxCmdBufState* buffer)
-	{
-		if (Maps::IsCustomMap())
-		{
-			// See SkipBrokenXModelSurfacesNonOptimized
-			if (IsBadReadPtr(stream->localSurf, sizeof(Game::XSurface)))
-			{
-				return nullptr;
-			}
-		}
-
-		return Utils::Hook::Call<void*(Game::GfxStaticModelDrawStream*, Game::GfxCmdBufSourceState*, Game::GfxCmdBufState*)>(0x557B50)(stream, source, buffer);
-	}
-
 	int Renderer::FixSunShadowPartitionSize(Game::GfxCamera* camera, Game::GfxSunShadowMapMetrics* mapMetrics, Game::GfxSunShadow* sunShadow, Game::GfxSunShadowClip* clip, float* partitionFraction)
 	{
 
