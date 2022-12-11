@@ -352,21 +352,15 @@ namespace Components
 			// Static models
 			for (size_t i = 0; i < world->dpvs.smodelCount; i++)
 			{
-				auto staticModel = world->dpvs.smodelDrawInsts[i];
+				auto staticModel = &world->dpvs.smodelDrawInsts[i];
+				Game::Bounds* b = &world->dpvs.smodelInsts[i].bounds;
 
-				if (Utils::Maths::Vec3SqrDistance(playerPosition, staticModel.placement.origin) < sqrDist)
+				if (Utils::Maths::Vec3SqrDistance(playerPosition, staticModel->placement.origin) < sqrDist)
 				{
-					if (staticModel.model)
+					if (staticModel->model)
 					{
-						Game::Bounds b = staticModel.model->bounds;
-						b.midPoint[0] += staticModel.placement.origin[0];
-						b.midPoint[1] += staticModel.placement.origin[1];
-						b.midPoint[2] += staticModel.placement.origin[2];
-						b.halfSize[0] *= staticModel.placement.scale;
-						b.halfSize[1] *= staticModel.placement.scale;
-						b.halfSize[2] *= staticModel.placement.scale;
 
-						Game::R_AddDebugBounds(staticModelsColor, &b);
+ 						Game::R_AddDebugBounds(staticModelsColor, b);
 					}
 				}
 			}
@@ -481,36 +475,6 @@ namespace Components
 		}
 	}
 
-	void* Renderer::SkipBrokenXModelSurfacesNonOptimized(Game::GfxStaticModelDrawStream* stream, Game::GfxCmdBufSourceState* source, Game::GfxCmdBufState* buffer) {
-		
-		// Something wrong in iw3xport or iw4x or maybe even cod4, makes it that we end up with invalid surfaces in xmodels sometimes
-		// Very annoying, crashes the game instantly. For now we skip them
-		if (Maps::IsCustomMap())
-		{
-			// This bad practice - also, it's working. So until we can fix that XModelSurfs bug...
-			if (IsBadReadPtr(stream->localSurf, sizeof(Game::XSurface)))
-			{
-				return nullptr;
-			}
-		}
-
-		return Utils::Hook::Call<void* (Game::GfxStaticModelDrawStream*, Game::GfxCmdBufSourceState*, Game::GfxCmdBufState*)>(0x557C70)(stream, source, buffer);
-	}
-
-	void* Renderer::SkipBrokenXModelSurfaces(Game::GfxStaticModelDrawStream* stream, Game::GfxCmdBufSourceState* source, Game::GfxCmdBufState* buffer)
-	{
-		if (Maps::IsCustomMap())
-		{
-			// See SkipBrokenXModelSurfacesNonOptimized
-			if (IsBadReadPtr(stream->localSurf, sizeof(Game::XSurface)))
-			{
-				return nullptr;
-			}
-		}
-
-		return Utils::Hook::Call<void* (Game::GfxStaticModelDrawStream*, Game::GfxCmdBufSourceState*, Game::GfxCmdBufState*)>(0x557B50)(stream, source, buffer);
-	}
-
 	int Renderer::FixSunShadowPartitionSize(
 		Game::GfxCamera* camera,
 		Game::GfxSunShadowMapMetrics* mapMetrics,
@@ -551,8 +515,6 @@ namespace Components
 		// COD4 Map Fixes
 		// The day map porting is perfect we should be able to remove these
 		Utils::Hook(0x546A09, FixSunShadowPartitionSize, HOOK_CALL).install()->quick();
-		Utils::Hook(0x5587BF, SkipBrokenXModelSurfacesNonOptimized, HOOK_CALL).install()->quick();
-		Utils::Hook(0x55875F, SkipBrokenXModelSurfaces, HOOK_CALL).install()->quick();
 
 		// Log broken materials
 		Utils::Hook(0x0054CAAA, Renderer::StoreGfxBufContextPtrStub1, HOOK_JUMP).install()->quick();

@@ -95,6 +95,15 @@ namespace Game
 		ASSET_TYPE_INVALID = -1,
 	};
 
+	enum surfType_t
+	{
+		R_SMODEL_SURFTYPE_RIGID = 0x0,
+		R_SMODEL_SURFTYPE_SKINNED = 0x1,
+		R_SMODEL_SURFTYPE_CACHED = 0x2,
+		R_SMODEL_SURFTYPE_PRETESS = 0x3,
+		R_SMODEL_SURFTYPE_COUNT = 0x4,
+	};
+
 	enum ShaderCodeConstants
 	{
 		CONST_SRC_CODE_MAYBE_DIRTY_PS_BEGIN = 0x0,
@@ -1102,11 +1111,14 @@ namespace Game
 		unsigned __int64 packed;
 	};
 
-	struct /*__declspec(align(4))*/ MaterialInfo
+	struct MaterialInfo
 	{
 		const char* name;
 		char gameFlags;
 		char sortKey;
+		const char* name;
+		unsigned char gameFlags;
+		unsigned char sortKey;
 		unsigned char textureAtlasRowCount;
 		unsigned char textureAtlasColumnCount;
 		GfxDrawSurf drawSurf;
@@ -2336,22 +2348,25 @@ namespace Game
 		const char* name;
 		char numBones;
 		char numRootBones;
+		const char* name;
+		unsigned char numBones;
+		unsigned char numRootBones;
 		unsigned char numsurfs;
-		char lodRampType;
+		unsigned char lodRampType;
 		float scale;
 		unsigned int noScalePartBits[6];
 		unsigned __int16* boneNames;
-		char* parentList;
-		__int16* quats;
+		unsigned char *parentList;
+		short* quats;
 		float* trans;
-		char* partClassification;
+		unsigned char* partClassification;
 		DObjAnimMat* baseMat;
 		Material** materialHandles;
 		XModelLodInfo lodInfo[4];
-		char maxLoadedLod;
-		char numLods;
-		char collLod;
-		char flags;
+		unsigned char maxLoadedLod;
+		unsigned char numLods;
+		unsigned char collLod;
+		unsigned char flags;
 		XModelCollSurf_s* collSurfs;
 		int numCollSurfs;
 		int contents;
@@ -2492,6 +2507,12 @@ namespace Game
 		float envelopMax;
 		float envelopPercentage;
 		SpeakerMap* speakerMap;
+	};
+
+	struct Poly
+	{
+		float(*pts)[3];
+		unsigned int ptCount;
 	};
 
 	enum SunShadowPartition
@@ -3517,6 +3538,13 @@ namespace Game
 		GfxLightGridColors* colors;
 	};
 
+	struct GfxSModelSurfVisDataHeader
+	{
+		XSurface* surfs;
+		unsigned __int16 smodelCount;
+		unsigned __int16 smodelIndexes[1];
+	};
+
 	struct GfxBrushModelWritable
 	{
 		Bounds bounds;
@@ -3634,10 +3662,10 @@ namespace Game
 
 	struct GfxSurfaceLightingAndFlagsFields
 	{
-		char lightmapIndex;
-		char reflectionProbeIndex;
-		char primaryLightIndex;
-		char flags;
+		unsigned char lightmapIndex;
+		unsigned char reflectionProbeIndex;
+		unsigned char primaryLightIndex;
+		unsigned char flags;
 	};
 
 	union GfxSurfaceLightingAndFlags
@@ -3671,10 +3699,10 @@ namespace Game
 		XModel* model;
 		unsigned __int16 cullDist;
 		unsigned __int16 lightingHandle;
-		char reflectionProbeIndex;
-		char primaryLightIndex;
-		char flags;
-		char firstMtlSkinIndex;
+		unsigned char reflectionProbeIndex;
+		unsigned char primaryLightIndex;
+		unsigned char flags;
+		unsigned char firstMtlSkinIndex;
 		GfxColor groundLighting;
 		unsigned __int16 cacheId[4];
 	};
@@ -3694,16 +3722,85 @@ namespace Game
 		unsigned int emissiveSurfsEnd;
 		unsigned int smodelVisDataCount;
 		unsigned int surfaceVisDataCount;
-		char* smodelVisData[3];
-		char* surfaceVisData[3];
+		unsigned char* smodelVisData[3];
+		unsigned char* surfaceVisData[3];
 		unsigned __int16* sortedSurfIndex;
 		GfxStaticModelInst* smodelInsts;
 		GfxSurface* surfaces;
 		GfxSurfaceBounds* surfacesBounds;
 		GfxStaticModelDrawInst* smodelDrawInsts;
 		GfxDrawSurf* surfaceMaterials;
-		unsigned int* surfaceCastsSunShadow;
+		unsigned int*  surfaceCastsSunShadow;
 		volatile int usageCount;
+	};
+
+	struct GfxSModelSurfHeaderFields
+	{
+		char reflectionProbeIndex;
+		char sceneLightIndex;
+		unsigned __int16 materialSortedIndex : 12;
+		unsigned __int16 visDataRefCountLessOne : 4;
+	};
+	
+	union GfxSModelSurfHeader
+	{
+		GfxSModelSurfHeaderFields fields;
+		unsigned int packed;
+		unsigned __int16 array[2];
+	};
+
+	struct GfxSModelSurfVisDataRefFields
+	{
+		unsigned __int16 surfIndex : 4;
+		unsigned __int16 visDataIndexPacked : 12;
+	};
+
+	union GfxSModelSurfVisDataRef
+	{
+		GfxSModelSurfVisDataRefFields fields;
+		unsigned __int16 packed;
+	};
+
+	struct __declspec(align(4)) GfxSModelSurf
+	{
+		GfxSModelSurfHeader header;
+		GfxSModelSurfVisDataRef visDataRefs[1];
+	};
+
+	struct GfxSModelSurfDelaySortFields
+	{
+		unsigned __int16 unused;
+		GfxSModelSurfVisDataRef visDataRef;
+		GfxSModelSurfHeader header;
+	};
+
+	union GfxSModelSurfDelaySort
+	{
+		GfxSModelSurfDelaySortFields fields;
+		unsigned __int64 packed;
+	};
+
+	struct GfxSModelSurfBuildList
+	{
+		GfxSModelSurfHeader lastSurfHeader;
+		GfxSModelSurf* lastSModelSurf;
+		unsigned int visDataRefCount;
+		char* surfDataBegin;
+		char* surfDataPos;
+		char* surfDataEnd;
+		GfxSModelSurfHeader minDelaySortKey;
+		GfxSModelSurfDelaySort* delaySurfList;
+		unsigned int delaySurfCount;
+		unsigned int delaySurfLimit;
+	};
+
+	struct GfxSModelSurfDrawData
+	{
+		unsigned int shadowCasterMaterialIndex;
+		char* visData;
+		unsigned int visDataUsed;
+		unsigned int visDataLimit;
+		GfxSModelSurfBuildList buildList[4][4];
 	};
 
 	struct GfxWorldDpvsDynamic
@@ -7291,10 +7388,12 @@ namespace Game
 	};
 
 
+	struct GfxCmdBufSourceState;
+
 	struct GfxCmdBufContext
 	{
-		/*GfxCmdBufSourceState*/ void* source;
-		GfxCmdBufState* state;
+		GfxCmdBufSourceState *source;
+		GfxCmdBufState *state;
 	};
 
 	struct GfxDrawGroupSetupFields
@@ -10008,7 +10107,7 @@ namespace Game
 	struct GfxSModelSurfIter
 	{
 		const char* visData;
-		const char* current;
+		unsigned __int16* current;
 		const char* end;
 		const char* mark;
 	};
@@ -10018,6 +10117,10 @@ namespace Game
 		const unsigned __int16* current;
 		const unsigned __int16* end;
 		const unsigned __int16* mark;
+	};
+
+	struct GfxBspLightMapSurfIter : GfxBspSurfIter
+	{
 	};
 
 	struct GfxPreTessSurfIter
@@ -10050,20 +10153,51 @@ namespace Game
 	{
 	};
 
+	struct GfxCmdRingBuf
+	{
+		struct GfxDrawListIter* drawListIter;
+		unsigned int memoryPos;
+		unsigned int maxMemoryPos;
+		char* memoryPool;
+		unsigned int fencePosIndex;
+		volatile unsigned int fenceIndex;
+		unsigned int availIndex;
+		unsigned int availMemoryPos;
+		unsigned int reserveMemoryPos0;
+		unsigned int reserveMemoryPos1;
+		unsigned int fencePos[64];
+		unsigned int fence[64];
+		unsigned int checkMemoryPos;
+	};
+
 	struct GfxDrawListIter
 	{
-		GfxBspSurfIter bspSurfIter;
-		GfxPreTessSurfIter bspPreTessSurfIter;
-		GfxSModelRigidSurfIter smodelRigidSurfIter;
-		GfxSModelSkinnedSurfIter smodelSkinnedSurfIter;
-		GfxSModelCachedSurfIter smodelCachedSurfIter;
-		GfxSModelPreTessSurfIter smodelPreTessSurfIter;
-		GfxDrawSurfIter drawSurfIter;
-		GfxCodeSurfIter codeSurfIter;
-		GfxMarkSurfIter markSurfIter;
-		GfxGlassSurfIter glassSurfIter;
-		GfxCloudSurfIter cloudSurfIter;
-		GfxSparkSurfIter sparkSurfIter;
+		//int addedPrimitive;
+		//GfxCmdRingBuf* cmdBuf;
+		//GfxBspSurfIter bspSurfIter;
+		//GfxBspLightMapSurfIter bspLightMapSurfIter;
+		//GfxSModelRigidSurfIter smodelRigidSurfIter;
+		//GfxDrawSurfIter drawSurfIter;
+		//GfxCodeSurfIter codeSurfIter;
+		//GfxMarkSurfIter markSurfIter;
+		//GfxGlassSurfIter glassSurfIter;
+		//GfxCloudSurfIter cloudSurfIter;
+		//GfxSparkSurfIter sparkSurfIter;
+		
+		
+  GfxBspSurfIter bspSurfIter;
+  GfxPreTessSurfIter bspPreTessSurfIter;
+  GfxSModelRigidSurfIter smodelRigidSurfIter;
+  GfxSModelSkinnedSurfIter smodelSkinnedSurfIter;
+  GfxSModelCachedSurfIter smodelCachedSurfIter;
+  GfxSModelPreTessSurfIter smodelPreTessSurfIter;
+  GfxDrawSurfIter drawSurfIter;
+  GfxCodeSurfIter codeSurfIter;
+  GfxMarkSurfIter markSurfIter;
+  GfxGlassSurfIter glassSurfIter;
+  GfxCloudSurfIter cloudSurfIter;
+  GfxSparkSurfIter sparkSurfIter;
+		
 	};
 
 	struct $5C4E5A598A7F10AE01B04D2C53999B6C
@@ -10122,21 +10256,6 @@ namespace Game
 		int isSceneScissorViewport[5];
 		GfxDrawListInfo* dynLightDrawListInfo[5];
 		GfxSurfsIterator iteratorPool[55];
-	};
-
-	struct GfxSModelSurfHeaderFields
-	{
-		char reflectionProbeIndex;
-		char sceneLightIndex;
-		unsigned __int16 materialSortedIndex : 12;
-		unsigned __int16 visDataRefCountLessOne : 4;
-	};
-
-	union GfxSModelSurfHeader
-	{
-		GfxSModelSurfHeaderFields fields;
-		unsigned int packed;
-		unsigned __int16 array[2];
 	};
 
 	struct GfxStaticModelDrawStream
