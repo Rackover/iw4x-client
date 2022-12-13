@@ -174,7 +174,7 @@ namespace Assets
 							auto h0 = reinterpret_cast<Game::complex_s*>(builder->getAllocator()->allocate(predictedSize));
 
 							[[maybe_unused]] auto h0Result = base64_decode(
-								reinterpret_cast<const char*>(h064.data()),
+								h064.data(),
 								h064.size(),
 								reinterpret_cast<unsigned char*>(h0),
 								&predictedSize
@@ -190,7 +190,7 @@ namespace Assets
 							auto wTerm = reinterpret_cast<float*>(builder->getAllocator()->allocate(predictedWTermSize));
 
 							[[maybe_unused]] auto wTermResult = base64_decode(
-								reinterpret_cast<const char*>(wTerm64.data()),
+								wTerm64.data(),
 								wTerm64.size(),
 								reinterpret_cast<unsigned char*>(wTerm),
 								&predictedWTermSize
