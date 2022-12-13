@@ -108,9 +108,16 @@ namespace Assets
 				return;
 			}
 
-			if (gameWorldJson["version"].get<int>() != IW4X_GAMEWORLD_VERSION)
+			auto version = gameWorldJson["version"].is_number() ? gameWorldJson["version"].get<int>() : 0;
+			if (version != IW4X_GAMEWORLD_VERSION)
 			{
-				Components::Logger::PrintError(Game::CON_CHANNEL_ERROR, "Invalid GameWorld json version for {}, expected {} and got {}\n", name, IW4X_GAMEWORLD_VERSION, gameWorldJson["version"].get<int>());
+				Components::Logger::PrintError(Game::CON_CHANNEL_ERROR, "Invalid GameWorld json version for {}, expected {} and got {}\n", name, IW4X_GAMEWORLD_VERSION, version);
+				return;
+			}
+
+			if (!gameWorldJson["name"].is_string())
+			{
+				Components::Logger::PrintError(Game::CON_CHANNEL_ERROR, "Missing gameworld name! on {}\n", name);
 				return;
 			}
 
