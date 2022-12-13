@@ -31,7 +31,8 @@ namespace Assets
 
 		nlohmann::json technique;
 
-		try {
+		try
+		{
 			technique = nlohmann::json::parse(techFile.getBuffer());
 		}
 		catch (std::exception& e)
@@ -46,10 +47,10 @@ namespace Assets
 			Components::Logger::Error(Game::ERR_FATAL,
 				"Reading technique '{}' failed, expected version is {}, but it was {}!", name, IW4X_TECHSET_VERSION, version);
 		}
-		
+
 		unsigned short flags = static_cast<unsigned short>(Utils::Json::ReadFlags(technique["flags"].get<std::string>(), sizeof(short)));
 
-		if (technique["passArray"].is_array()) 
+		if (technique["passArray"].is_array())
 		{
 			nlohmann::json::array_t passArray = technique["passArray"];
 
@@ -91,7 +92,7 @@ namespace Assets
 				pass->customSamplerFlags = jsonPass["customSamplerFlags"].get<char>();
 
 
-				if (jsonPass["arguments"].is_array()) 
+				if (jsonPass["arguments"].is_array())
 				{
 					nlohmann::json::array_t jsonAguments = jsonPass["arguments"];
 
@@ -149,7 +150,7 @@ namespace Assets
 		if (!tsFile.exists()) return;
 
 		nlohmann::json techset;
-		
+
 		try
 		{
 			techset = nlohmann::json::parse(tsFile.getBuffer());
@@ -179,11 +180,11 @@ namespace Assets
 			asset->name = builder->getAllocator()->duplicateString(techset["name"].get<std::string>());
 		}
 
-		asset->hasBeenUploaded = techset["hasBeenUploaded"].get<bool>(); 
-		asset->worldVertFormat = techset["worldVertFormat"].get<char>(); 
+		asset->hasBeenUploaded = techset["hasBeenUploaded"].get<bool>();
+		asset->worldVertFormat = techset["worldVertFormat"].get<char>();
 
 
-		if (techset["remappedTechniqueSet"].is_string() )
+		if (techset["remappedTechniqueSet"].is_string())
 		{
 			auto remapped = techset["remappedTechniqueSet"].get<std::string>();
 
@@ -192,7 +193,6 @@ namespace Assets
 				builder->loadAssetByName(Game::XAssetType::ASSET_TYPE_TECHNIQUE_SET, remapped, false);
 			}
 		}
-
 
 		if (techset["techniques"].is_object())
 		{
@@ -211,7 +211,7 @@ namespace Assets
 	}
 
 	void IMaterialTechniqueSet::mark(Game::XAssetHeader header, Components::ZoneBuilder::Zone* builder)
-	{ 
+	{
 		Game::MaterialTechniqueSet* asset = header.techniqueSet;
 
 		for (int i = 0; i < ARRAYSIZE(Game::MaterialTechniqueSet::techniques); ++i)

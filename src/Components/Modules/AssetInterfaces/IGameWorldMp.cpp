@@ -88,19 +88,29 @@ namespace Assets
 
 		if (gameWorld.exists())
 		{
-			auto gameWorldJson = nlohmann::json::parse(gameWorld.getBuffer());
+			nlohmann::json gameWorldJson;
+			
+			try {
 
-			Game::GameWorldMp* asset = builder->getAllocator()->allocate<Game::GameWorldMp>();
+				gameWorldJson = nlohmann::json::parse(gameWorld.getBuffer());
+			}
+			catch (const std::exception& e)
+			{
+				Components::Logger::PrintError(Game::CON_CHANNEL_ERROR, "Invalid JSON for gameworld {}! {}", name, e.what());
+				return;
+			}
+
+			auto* asset = builder->getAllocator()->allocate<Game::GameWorldMp>();
 
 			if (!gameWorldJson.is_object())
 			{
-				Components::Logger::Print("Invalid GameWorldMp json for {}\n", name);
+				Components::Logger::PrintError(Game::CON_CHANNEL_ERROR, "Invalid GameWorldMp json for {}\n", name);
 				return;
 			}
 
 			if (gameWorldJson["version"].get<int>() != IW4X_GAMEWORLD_VERSION)
 			{
-				Components::Logger::PrintError(Game::CON_CHANNEL_ERROR, "Invalid GameWorld json version for {}, expected {} and got {}\n", name, IW4X_GAMEWORLD_VERSION, gameWorldJson["version"].get<std::string>());
+				Components::Logger::PrintError(Game::CON_CHANNEL_ERROR, "Invalid GameWorld json version for {}, expected {} and got {}\n", name, IW4X_GAMEWORLD_VERSION, gameWorldJson["version"].get<int>());
 				return;
 			}
 
@@ -111,52 +121,60 @@ namespace Assets
 			{
 				auto jsonGlassData = gameWorldJson["glassData"];
 
-				glassData->damageToDestroy = jsonGlassData["damageToDestroy"].get<unsigned short>();
-				glassData->damageToWeaken = jsonGlassData["damageToWeaken"].get<unsigned short>();
-
-				if (jsonGlassData["glassNames"].is_array())
+				try
 				{
-					nlohmann::json::array_t glassNames = jsonGlassData["glassNames"];
-					glassData->glassNameCount = glassNames.size();
-					glassData->glassNames = builder->getAllocator()->allocateArray<Game::G_GlassName>(glassData->glassNameCount);
+					glassData->damageToDestroy = jsonGlassData["damageToDestroy"].get<unsigned short>();
+					glassData->damageToWeaken = jsonGlassData["damageToWeaken"].get<unsigned short>();
 
-					for (size_t i = 0; i < glassData->glassNameCount; i++)
+					if (jsonGlassData["glassNames"].is_array())
 					{
-						auto jsonGlassName = glassNames[i];
-						glassData->glassNames[i].nameStr = builder->getAllocator()->duplicateString(jsonGlassName["nameStr"]);
+						nlohmann::json::array_t glassNames = jsonGlassData["glassNames"];
+						glassData->glassNameCount = glassNames.size();
+						glassData->glassNames = builder->getAllocator()->allocateArray<Game::G_GlassName>(glassData->glassNameCount);
 
-						glassData->glassNames[i].name = jsonGlassName["name"].get<unsigned short>();
-
-						if (jsonGlassName["piecesIndices"].is_array())
+						for (size_t i = 0; i < glassData->glassNameCount; i++)
 						{
-							nlohmann::json::array_t jsonPiecesIndices = jsonGlassName["piecesIndices"];
-							glassData->glassNames[i].pieceCount = static_cast<unsigned short>(jsonPiecesIndices.size());
+							auto jsonGlassName = glassNames[i];
+							glassData->glassNames[i].nameStr = builder->getAllocator()->duplicateString(jsonGlassName["nameStr"]);
 
-							for (size_t j = 0; j < glassData->glassNames[i].pieceCount; j++)
+							glassData->glassNames[i].name = jsonGlassName["name"].get<unsigned short>();
+
+							if (jsonGlassName["piecesIndices"].is_array())
 							{
-								glassData->glassNames[i].pieceIndices[j] = jsonPiecesIndices[j].get<unsigned short>();
+								nlohmann::json::array_t jsonPiecesIndices = jsonGlassName["piecesIndices"];
+								glassData->glassNames[i].pieceCount = static_cast<unsigned short>(jsonPiecesIndices.size());
+
+								for (size_t j = 0; j < glassData->glassNames[i].pieceCount; j++)
+								{
+									glassData->glassNames[i].pieceIndices[j] = jsonPiecesIndices[j].get<unsigned short>();
+								}
 							}
 						}
 					}
-				}
 
-				if (gameWorldJson["glassPieces"].is_array())
-				{
-					nlohmann::json::array_t glassPieces = gameWorldJson["glassPieces"];
-					glassData->pieceCount = glassPieces.size();
-					glassData->glassPieces = builder->getAllocator()->allocateArray<Game::G_GlassPiece>(glassData->pieceCount);
-
-					for (size_t i = 0; i < glassData->pieceCount; i++)
+					if (gameWorldJson["glassPieces"].is_array())
 					{
-						glassData->glassPieces[i].collapseTime = glassPieces[i]["collapseTime"].get<unsigned short>();
-						glassData->glassPieces[i].damageTaken = glassPieces[i]["damageTaken"].get<unsigned short>();
-						glassData->glassPieces[i].lastStateChangeTime = glassPieces[i]["lastStateChangeTime"].get<int>();
-						glassData->glassPieces[i].impactDir = glassPieces[i]["impactDir"].get<char>();
+						nlohmann::json::array_t glassPieces = gameWorldJson["glassPieces"];
+						glassData->pieceCount = glassPieces.size();
+						glassData->glassPieces = builder->getAllocator()->allocateArray<Game::G_GlassPiece>(glassData->pieceCount);
 
-						nlohmann::json::array_t jsonPos = glassPieces[i]["impactPos"];
-						glassData->glassPieces[i].impactPos[0] = jsonPos[0].get<char>();
-						glassData->glassPieces[i].impactPos[1] = jsonPos[1].get<char>();
+						for (size_t i = 0; i < glassData->pieceCount; i++)
+						{
+							glassData->glassPieces[i].collapseTime = glassPieces[i]["collapseTime"].get<unsigned short>();
+							glassData->glassPieces[i].damageTaken = glassPieces[i]["damageTaken"].get<unsigned short>();
+							glassData->glassPieces[i].lastStateChangeTime = glassPieces[i]["lastStateChangeTime"].get<int>();
+							glassData->glassPieces[i].impactDir = glassPieces[i]["impactDir"].get<char>();
+
+							nlohmann::json::array_t jsonPos = glassPieces[i]["impactPos"];
+							glassData->glassPieces[i].impactPos[0] = jsonPos[0].get<char>();
+							glassData->glassPieces[i].impactPos[1] = jsonPos[1].get<char>();
+						}
 					}
+				}
+				catch (const nlohmann::json::exception& e)
+				{
+					Components::Logger::PrintError(Game::CON_CHANNEL_ERROR, "Malformed GameWorldMp json for {} ({})\n", name, e.what());
+					return;
 				}
 			}
 

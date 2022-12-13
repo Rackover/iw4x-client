@@ -101,7 +101,7 @@ namespace Assets
 			}
 
 			Game::XModel* asset = reader.readObject<Game::XModel>();
-						
+
 			if (asset->name)
 			{
 				asset->name = reader.readCString();

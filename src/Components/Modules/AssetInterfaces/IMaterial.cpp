@@ -50,7 +50,15 @@ namespace Assets
 		Game::Material* asset = builder->getAllocator()->allocate<Game::Material>();
 
 
-		auto materialJson = nlohmann::json::parse(materialInfo.getBuffer());
+		nlohmann::json materialJson;
+		try
+		{
+			materialJson = nlohmann::json::parse(materialInfo.getBuffer());
+		}
+		catch (const std::exception& e)
+		{
+			Components::Logger::Print("Invalid material json for {} (broken json {})\n", name, e.what());
+		}
 
 		if (!materialJson.is_object())
 		{
@@ -64,16 +72,25 @@ namespace Assets
 			return;
 		}
 
-		asset->info.name = builder->getAllocator()->duplicateString(materialJson["name"].get<std::string>());
-		asset->info.gameFlags = static_cast<char>(Utils::Json::ReadFlags(materialJson["gameFlags"].get<std::string>(), sizeof(char)));
 
-		asset->info.sortKey = materialJson["sortKey"].get<char>();
-		// * We do techset later * //
-		asset->info.textureAtlasRowCount = materialJson["textureAtlasRowCount"].get<unsigned char>();
-		asset->info.textureAtlasColumnCount = materialJson["textureAtlasColumnCount"].get<unsigned char>();
-		asset->info.surfaceTypeBits = static_cast<unsigned int>(Utils::Json::ReadFlags(materialJson["surfaceTypeBits"].get<std::string>(), sizeof(int)));
-		asset->info.hashIndex = materialJson["hashIndex"].get<unsigned short>();
-		asset->cameraRegion = materialJson["cameraRegion"].get<char>();
+		try
+		{
+			asset->info.name = builder->getAllocator()->duplicateString(materialJson["name"].get<std::string>());
+			asset->info.gameFlags = static_cast<char>(Utils::Json::ReadFlags(materialJson["gameFlags"].get<std::string>(), sizeof(char)));
+
+			asset->info.sortKey = materialJson["sortKey"].get<char>();
+			// * We do techset later * //
+			asset->info.textureAtlasRowCount = materialJson["textureAtlasRowCount"].get<unsigned char>();
+			asset->info.textureAtlasColumnCount = materialJson["textureAtlasColumnCount"].get<unsigned char>();
+			asset->info.surfaceTypeBits = static_cast<unsigned int>(Utils::Json::ReadFlags(materialJson["surfaceTypeBits"].get<std::string>(), sizeof(int)));
+			asset->info.hashIndex = materialJson["hashIndex"].get<unsigned short>();
+			asset->cameraRegion = materialJson["cameraRegion"].get<char>();
+		}
+		catch (const nlohmann::json::exception& e)
+		{
+			Components::Logger::PrintError(Game::CON_CHANNEL_ERROR, "Invalid material json for {} (broken json {})\n", name, e.what());
+			return;
+		}
 
 		if (materialJson["gfxDrawSurface"].is_object())
 		{
@@ -215,13 +232,13 @@ namespace Assets
 
 		if (materialJson["stateBitsTable"].is_array())
 		{
-			nlohmann::json::array_t arr = materialJson["stateBitsTable"];
-			asset->stateBitsCount = static_cast<unsigned char>(arr.size());
+			nlohmann::json::array_t array = materialJson["stateBitsTable"];
+			asset->stateBitsCount = static_cast<unsigned char>(array.size());
 
-			asset->stateBitsTable = builder->getAllocator()->allocateArray<Game::GfxStateBits>(arr.size());
+			asset->stateBitsTable = builder->getAllocator()->allocateArray<Game::GfxStateBits>(array.size());
 
 			size_t statebitTableIndex = 0;
-			for (auto& jsonStateBitEntry : arr)
+			for (auto& jsonStateBitEntry : array)
 			{
 				auto stateBit = &asset->stateBitsTable[statebitTableIndex++];
 
@@ -416,20 +433,8 @@ namespace Assets
 			return techset;
 		}
 
-		//// Match the name in case it's a known correspondance
-		//if (IMaterial::techSetCorrespondance.contains(techsetName)) 
-		//{
-		//	techsetName = IMaterial::techSetCorrespondance.at(techsetName);
-		//}
-
-		//// Pass 2: Find header if we've loaded it before
-		//entry = Game::DB_FindXAssetEntry(Game::XAssetType::ASSET_TYPE_TECHNIQUE_SET, techsetName.data());
-		//if (entry != nullptr) 
-		//{
-		//	return entry->asset.header.techniqueSet;
-		//}
-		//
-
+		// We do no more cause we use CoD4 techset and they should always be present
+		// If one day we want to go back to mw2 fallback we can add extra steps here!
 
 		return nullptr;
 	}
@@ -589,7 +594,7 @@ namespace Assets
 						// This is temp, as nobody has time to fix materials
 						asset->stateBitsCount = header.material->stateBitsCount;
 						asset->stateBitsTable = header.material->stateBitsTable;
-						std::memcpy(asset->stateBitsEntry, header.material->stateBitsEntry, 48);
+						std::memcpy(asset->stateBitsEntry, header.material->stateBitsEntry, ARRAYSIZE(asset->stateBitsEntry));
 						asset->constantCount = header.material->constantCount;
 						asset->constantTable = header.material->constantTable;
 						Components::Logger::Print("For {}, copied constants & statebits from {}\n", asset->info.name, header.material->info.name);
