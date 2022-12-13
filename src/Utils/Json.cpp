@@ -33,7 +33,7 @@ namespace Utils::Json
 		}
 	}
 
-	unsigned long ReadFlags(const std::string binaryFlags, const size_t size)
+	unsigned long ReadFlags(const std::string binaryFlags, size_t size)
 	{
 		std::bitset<64>	input;
 		const auto binarySize = size * 8;
