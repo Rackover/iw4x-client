@@ -156,32 +156,30 @@ namespace Assets
 
 							auto h0 = reinterpret_cast<Game::complex_s*>(builder->getAllocator()->allocate(predictedSize));
 
-							[[maybe_unused]] unsigned int decodedH0 = base64_decode(
+							[[maybe_unused]] auto h0Result = base64_decode(
 								reinterpret_cast<const char*>(h064.data()),
 								h064.size(),
 								reinterpret_cast<unsigned char*>(h0),
 								&predictedSize
 							);
 
-							assert(decodedH0 == h064.size());
+							assert(h0Result == CRYPT_OK);
 							water->H0 = h0;
 
 							/// WTerm
-							[[maybe_unused]]  auto idealWTermSize = water->M * water->N * sizeof(float);
 							auto wTerm64 = waterJson["wTerm"].get<std::string>();
 							auto predictedWTermSize = static_cast<unsigned long>(std::ceilf((wTerm64.size() / 4.f) * 3.f));
-							assert(predictedWTermSize >= idealWTermSize);
 
 							auto wTerm = reinterpret_cast<float*>(builder->getAllocator()->allocate(predictedWTermSize));
 
-							[[maybe_unused]] unsigned int decodedWTerm = base64_decode(
+							[[maybe_unused]] auto wTermResult = base64_decode(
 								reinterpret_cast<const char*>(wTerm64.data()),
 								wTerm64.size(),
 								reinterpret_cast<unsigned char*>(wTerm),
 								&predictedWTermSize
 							);
 
-							assert(decodedWTerm == wTerm64.size());
+							assert(wTermResult == CRYPT_OK);
 							water->wTerm = wTerm;
 						}
 
