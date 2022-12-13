@@ -90,7 +90,8 @@ namespace Assets
 		{
 			nlohmann::json gameWorldJson;
 			
-			try {
+			try
+			{
 
 				gameWorldJson = nlohmann::json::parse(gameWorld.getBuffer());
 			}
