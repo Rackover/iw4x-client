@@ -468,20 +468,8 @@ namespace Components
 		// Write ScriptString pointer table
 		for (std::size_t i = 0; i < this->scriptStrings.size(); ++i)
 		{
-			this->buffer.saveNull(4);
-			// Empty script string?
-			// This actually represents a NULL string, but as scriptString.
-			// So scriptString loading for NULL scriptStrings from fastfile results in a NULL scriptString.
-			// That's the reason why the count is incremented by 1, if scriptStrings are available.
-
-			// Write ScriptString pointer table
-			for (std::size_t k = 0; k < this->scriptStrings.size(); ++k)
-			{
-				this->buffer.saveMax(4);
-			}
+			this->buffer.saveMax(4);
 		}
-
-		this->buffer.align(Utils::Stream::ALIGN_4);
 
 		// Write ScriptStrings
 		for (auto ScriptString : this->scriptStrings)
