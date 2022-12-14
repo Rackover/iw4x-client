@@ -7375,7 +7375,6 @@ namespace Game
 		TEXTURE_SRC_CODE_COUNT = 0x1B,
 	};
 
-
 	struct GfxCmdBufSourceState;
 
 	struct GfxCmdBufContext
@@ -7773,7 +7772,6 @@ namespace Game
 		GfxRenderTargetId sunShadowRenderTargetId;
 		unsigned int sunShadowTileCount;
 	};
-
 
 	struct GfxLight
 	{
@@ -10168,15 +10166,13 @@ namespace Game
 		GfxSparkSurfIter sparkSurfIter;
 	};
 
-	struct $5C4E5A598A7F10AE01B04D2C53999B6C
-	{
-		unsigned int spliceIndex;
-		unsigned int sortKey;
-	};
-
 	union GfxSurfsIteratorSortKey
 	{
-		$5C4E5A598A7F10AE01B04D2C53999B6C fields;
+		struct
+		{
+			unsigned int spliceIndex;
+			unsigned int sortKey;
+		} fields;
 		unsigned __int64 packed;
 	};
 

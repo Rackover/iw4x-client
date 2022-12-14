@@ -32,8 +32,8 @@ namespace Assets
 		auto version = reader.read<char>();
 		if (version != IW4X_TECHSET_VERSION)
 		{
-			Components::Logger::Error(Game::ERR_FATAL, "Reading vertex declaration '{}' failed, expected version is {}, but it was {}!",
-				name, IW4X_TECHSET_VERSION, static_cast<int>(version));
+			Components::Logger::Error(Game::ERR_FATAL, "Reading vertex declaration '{}' failed, expected version is {}, but it was {:d}!",
+				name, IW4X_TECHSET_VERSION, version);
 		}
 
 		Game::MaterialVertexDeclaration* asset = reader.readObject<Game::MaterialVertexDeclaration>();

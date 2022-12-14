@@ -20,7 +20,7 @@ namespace Assets
 	{
 		AssertSize(Game::MaterialPass, 20);
 
-		Components::FileSystem::File techFile(std::format("techniques/{}.iw4xTech", name));
+		Components::FileSystem::File techFile(std::format("techniques/{}.iw4x.json", name));
 		if (!techFile.exists())
 		{
 			*tech = nullptr;
@@ -146,7 +146,7 @@ namespace Assets
 
 	void IMaterialTechniqueSet::loadFromDisk(Game::XAssetHeader* header, const std::string& name, Components::ZoneBuilder::Zone* builder)
 	{
-		Components::FileSystem::File tsFile(std::format("techsets/{}.iw4xTS", name));
+		Components::FileSystem::File tsFile(std::format("techsets/{}.iw4x.json", name));
 		if (!tsFile.exists()) return;
 
 		nlohmann::json techset;

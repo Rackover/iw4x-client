@@ -72,7 +72,6 @@ namespace Assets
 			return;
 		}
 
-
 		try
 		{
 			asset->info.name = builder->getAllocator()->duplicateString(materialJson["name"].get<std::string>());
@@ -108,7 +107,6 @@ namespace Assets
 		}
 
 		asset->stateFlags = static_cast<char>(Utils::Json::ReadFlags(materialJson["stateFlags"].get<std::string>(), sizeof(char)));
-
 
 		if (materialJson["textureTable"].is_array())
 		{
@@ -163,7 +161,6 @@ namespace Assets
 							{
 								std::copy(codeConstant.begin(), codeConstant.end(), water->codeConstant);
 							}
-
 
 							/// H0
 							[[maybe_unused]] auto idealSize = water->M * water->N * sizeof(Game::complex_s);
