@@ -45,7 +45,7 @@ namespace Utils
 				constexpr auto POINTER = 255;
 				constexpr auto FOLLOWING = 254;
 				
-				unsigned char b = static_cast<unsigned char>(readByte());	
+				b = static_cast<unsigned char>(readByte());	
 				switch (b)
 				{
 				case POINTER:
