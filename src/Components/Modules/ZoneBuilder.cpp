@@ -1011,7 +1011,7 @@ namespace Components
 		memcpy_s(allocatedSpace, length, data, length);
 
 		data = allocatedSpace;
-		sound->data = reinterpret_cast<char*>(allocatedSpace);
+		sound->data = static_cast<char*>(allocatedSpace);
 		sound->info.data_ptr = allocatedSpace;
 	}
 
