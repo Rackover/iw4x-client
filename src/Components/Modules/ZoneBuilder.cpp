@@ -1022,6 +1022,18 @@ namespace Components
 		sound->info.data_ptr = allocatedSpace;
 	}
 
+	HANDLE ZoneBuilder::Sys_CreateFile_FromZonebuilderFolder(const char* dir, const char* zoneFileName)
+	{
+		auto handle = Utils::Hook::Call<HANDLE(const char*, const char*)>(0x4B2EF0)(dir, zoneFileName);
+
+		if (handle == INVALID_HANDLE_VALUE)
+		{
+			handle = Utils::Hook::Call<HANDLE(const char*, const char*)>(0x4B2EF0)("zone\\zonebuilder\\", zoneFileName);
+		}
+	
+		return handle;
+	}
+
 	ZoneBuilder::ZoneBuilder()
 	{
 		// ReSharper disable CppStaticAssertFailure
@@ -1033,6 +1045,8 @@ namespace Components
 		{
 			// Prevent loading textures (preserves loaddef)
 			//Utils::Hook::Set<BYTE>(Game::Load_Texture, 0xC3);
+
+			Utils::Hook(0x5BC832, Sys_CreateFile_FromZonebuilderFolder, HOOK_CALL).install()->quick();
 
 			// Store the loaddef
 			Utils::Hook(Game::Load_Texture, StoreTexture, HOOK_JUMP).install()->quick();

@@ -148,6 +148,7 @@ namespace Components
 		static void ResetThreadRole();
 
 		static bool IsThreadMainThreadHook();
+		static HANDLE Sys_CreateFile_FromZonebuilderFolder(const char* dir, const char* zoneFileName);
 
 		static void Com_Quitf_t();
 
