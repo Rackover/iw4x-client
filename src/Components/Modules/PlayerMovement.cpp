@@ -248,9 +248,9 @@ namespace Components
 			false, Game::DVAR_CODINFO, "Allows to treat any surface as a ladder");
 	}
 
-	void PlayerMovement::PM_playerTraceForLadder(Game::pmove_s* a1, Game::trace_t* results, const float* start, const float* end, Game::Bounds* bounds, int passEntityNum, int contentMask)
+	void PlayerMovement::PM_playerTraceForLadder(Game::pmove_s* pm, Game::trace_t* results, const float* start, const float* end, Game::Bounds* bounds, int passEntityNum, int contentMask)
 	{
-		Utils::Hook::Call<void(Game::pmove_s*, Game::trace_t*, const float*, const float*, Game::Bounds*, int, int)>(0X458980)(a1, results, start, end, bounds, passEntityNum, contentMask);
+		Utils::Hook::Call<void(Game::pmove_s*, Game::trace_t*, const float*, const float*, Game::Bounds*, int, int)>(0X458980)(pm, results, start, end, bounds, passEntityNum, contentMask);
 
 #define SURF_LADDER 0x00000008
 		if (results && BGClimbAnything.get<bool>())
