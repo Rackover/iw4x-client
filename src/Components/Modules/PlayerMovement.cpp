@@ -7,6 +7,7 @@ namespace Components
 	Dvar::Var PlayerMovement::BGRocketJumpScale;
 	Dvar::Var PlayerMovement::BGPlayerEjection;
 	Dvar::Var PlayerMovement::BGPlayerCollision;
+	Dvar::Var PlayerMovement::BGClimbAnything;
 	const Game::dvar_t* PlayerMovement::CGNoclipScaler;
 	const Game::dvar_t* PlayerMovement::CGUfoScaler;
 	const Game::dvar_t* PlayerMovement::PlayerSpectateSpeedScale;
@@ -242,6 +243,20 @@ namespace Components
 
 		BGPlayerCollision = Dvar::Register<bool>("bg_playerCollision",
 			true, Game::DVAR_CODINFO, "Push intersecting players away from each other");
+
+		BGClimbAnything = Dvar::Register<bool>("bg_climbAnything",
+			false, Game::DVAR_CODINFO, "Allows to treat any surface as a ladder");
+	}
+
+	void PlayerMovement::PM_playerTraceForLadder(Game::pmove_s* a1, Game::trace_t* results, const float* start, const float* end, Game::Bounds* bounds, int passEntityNum, int contentMask)
+	{
+		Utils::Hook::Call<void(Game::pmove_s*, Game::trace_t*, const float*, const float*, Game::Bounds*, int, int)>(0X458980)(a1, results, start, end, bounds, passEntityNum, contentMask);
+
+#define SURF_LADDER 0x00000008
+		if (results && BGClimbAnything.get<bool>())
+		{
+			results[0].surfaceFlags |= SURF_LADDER;
+		}
 	}
 
 	PlayerMovement::PlayerMovement()
@@ -265,6 +280,9 @@ namespace Components
 
 		// Hook Dvar_RegisterFloat. Only thing that's changed is that the 0x80 flag is not used.
 		Utils::Hook(0x448990, Dvar_RegisterSpectateSpeedScale, HOOK_CALL).install()->quick();
+
+		Utils::Hook(0x573F39, PM_playerTraceForLadder, HOOK_CALL).install()->quick();
+		Utils::Hook(0x573E93, PM_playerTraceForLadder, HOOK_CALL).install()->quick();
 
 		// PM_CmdScaleForStance
 		Utils::Hook(0x572D9B, PM_PlayerDuckedSpeedScaleStub, HOOK_JUMP).install()->quick();
