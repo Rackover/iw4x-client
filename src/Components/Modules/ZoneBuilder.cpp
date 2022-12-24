@@ -1022,16 +1022,16 @@ namespace Components
 		sound->info.data_ptr = allocatedSpace;
 	}
 
-	HANDLE ZoneBuilder::Sys_CreateFile_Stub(const char* dir, const char* zoneFileName)
+	Game::Sys_File Sys_CreateFile_Stub(const char* dir, const char* filename)
 	{
-		auto handle = Game::Sys_CreateFile(dir, zoneFileName);
+		auto file = Game::Sys_CreateFile(dir, filename);
 
-		if (handle == INVALID_HANDLE_VALUE)
+		if (file.handle == INVALID_HANDLE_VALUE)
 		{
-			handle = Game::Sys_CreateFile("zone\\zonebuilder\\", zoneFileName);
+			file = Game::Sys_CreateFile("zone\\zonebuilder\\", filename);
 		}
 	
-		return handle;
+		return file;
 	}
 
 	ZoneBuilder::ZoneBuilder()

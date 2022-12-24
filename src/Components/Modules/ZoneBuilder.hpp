@@ -148,7 +148,7 @@ namespace Components
 		static void ResetThreadRole();
 
 		static bool IsThreadMainThreadHook();
-		static HANDLE Sys_CreateFile_Stub(const char* dir, const char* zoneFileName);
+		static Game::Sys_File Sys_CreateFile_Stub(const char* dir, const char* filename);
 
 		static void Com_Quitf_t();
 

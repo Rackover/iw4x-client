@@ -65,7 +65,7 @@ namespace Game
 	typedef void(*Sys_SetValue_t)(int valueIndex, void* data);
 	extern Sys_SetValue_t Sys_SetValue;
 
-	typedef HANDLE(*Sys_CreateFile_t)(const char* dir, const char* zoneFileName);
+	typedef Sys_File(*Sys_CreateFile_t)(const char* dir, const char* filename);
 	extern Sys_CreateFile_t Sys_CreateFile;
 
 	extern char(*sys_exitCmdLine)[1024];

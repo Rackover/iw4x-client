@@ -10459,6 +10459,11 @@ namespace Game
 		char* buffer;
 	};
 
+	struct Sys_File
+	{
+		HANDLE handle;
+	};
+
 #pragma endregion
 
 #ifndef IDA
