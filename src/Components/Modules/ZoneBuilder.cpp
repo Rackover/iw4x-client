@@ -1022,7 +1022,7 @@ namespace Components
 		sound->info.data_ptr = allocatedSpace;
 	}
 
-	Game::Sys_File Sys_CreateFile_Stub(const char* dir, const char* filename)
+	Game::Sys_File ZoneBuilder::Sys_CreateFile_Stub(const char* dir, const char* filename)
 	{
 		auto file = Game::Sys_CreateFile(dir, filename);
 
