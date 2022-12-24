@@ -1024,11 +1024,11 @@ namespace Components
 
 	HANDLE ZoneBuilder::Sys_CreateFile_FromZonebuilderFolder(const char* dir, const char* zoneFileName)
 	{
-		auto handle = Utils::Hook::Call<HANDLE(const char*, const char*)>(0x4B2EF0)(dir, zoneFileName);
+		auto handle = Game::Sys_CreateFile(dir, zoneFileName);
 
 		if (handle == INVALID_HANDLE_VALUE)
 		{
-			handle = Utils::Hook::Call<HANDLE(const char*, const char*)>(0x4B2EF0)("zone\\zonebuilder\\", zoneFileName);
+			handle = Game::Sys_CreateFile("zone\\zonebuilder\\", zoneFileName);
 		}
 	
 		return handle;
