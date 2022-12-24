@@ -10,6 +10,8 @@ namespace Components
 	private:
 		enum BouncesSettings { DISABLED, ENABLED, DOUBLE };
 
+		static constexpr auto SURF_LADDER = 0x8;
+
 		static Dvar::Var BGRocketJump;
 		static Dvar::Var BGRocketJumpScale;
 		static Dvar::Var BGPlayerEjection;
@@ -24,7 +26,7 @@ namespace Components
 		static const Game::dvar_t* PlayerDuckedSpeedScale;
 		static const Game::dvar_t* PlayerProneSpeedScale;
 		
-		static void PM_playerTraceForLadder(Game::pmove_s* pm, Game::trace_t* results, const float* start, const float* end, Game::Bounds* bounds, int passEntityNum, int contentMask);
+		static void PM_PlayerTrace_Stub(Game::pmove_s* pm, Game::trace_t* results, const float* start, const float* end, Game::Bounds* bounds, int passEntityNum, int contentMask);
 		static void PM_PlayerDuckedSpeedScaleStub();
 		static void PM_PlayerProneSpeedScaleStub();
 

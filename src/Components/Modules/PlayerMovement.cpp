@@ -16,6 +16,16 @@ namespace Components
 	const Game::dvar_t* PlayerMovement::PlayerDuckedSpeedScale;
 	const Game::dvar_t* PlayerMovement::PlayerProneSpeedScale;
 
+	void PlayerMovement::PM_PlayerTrace_Stub(Game::pmove_s* pm, Game::trace_t* results, const float* start, const float* end, Game::Bounds* bounds, int passEntityNum, int contentMask)
+	{
+		Game::PM_playerTrace(pm, results, start, end, bounds, passEntityNum, contentMask);
+
+		if (results && BGClimbAnything.get<bool>())
+		{
+			results[0].surfaceFlags |= SURF_LADDER;
+		}
+	}
+
 	__declspec(naked) void PlayerMovement::PM_PlayerDuckedSpeedScaleStub()
 	{
 		__asm
@@ -248,17 +258,6 @@ namespace Components
 			false, Game::DVAR_CODINFO, "Allows to treat any surface as a ladder");
 	}
 
-	void PlayerMovement::PM_playerTraceForLadder(Game::pmove_s* pm, Game::trace_t* results, const float* start, const float* end, Game::Bounds* bounds, int passEntityNum, int contentMask)
-	{
-		Utils::Hook::Call<void(Game::pmove_s*, Game::trace_t*, const float*, const float*, Game::Bounds*, int, int)>(0X458980)(pm, results, start, end, bounds, passEntityNum, contentMask);
-
-#define SURF_LADDER 0x00000008
-		if (results && BGClimbAnything.get<bool>())
-		{
-			results[0].surfaceFlags |= SURF_LADDER;
-		}
-	}
-
 	PlayerMovement::PlayerMovement()
 	{
 		AssertOffset(Game::playerState_s, eFlags, 0xB0);
@@ -280,9 +279,6 @@ namespace Components
 
 		// Hook Dvar_RegisterFloat. Only thing that's changed is that the 0x80 flag is not used.
 		Utils::Hook(0x448990, Dvar_RegisterSpectateSpeedScale, HOOK_CALL).install()->quick();
-
-		Utils::Hook(0x573F39, PM_playerTraceForLadder, HOOK_CALL).install()->quick();
-		Utils::Hook(0x573E93, PM_playerTraceForLadder, HOOK_CALL).install()->quick();
 
 		// PM_CmdScaleForStance
 		Utils::Hook(0x572D9B, PM_PlayerDuckedSpeedScaleStub, HOOK_JUMP).install()->quick();
@@ -306,6 +302,9 @@ namespace Components
 		Utils::Hook(0x5D8153, StuckInClient_Hk, HOOK_CALL).install()->quick();
 		Utils::Hook(0x45A5BF, CM_TransformedCapsuleTrace_Hk, HOOK_CALL).install()->quick(); // SV_ClipMoveToEntity
 		Utils::Hook(0x5A0CAD, CM_TransformedCapsuleTrace_Hk, HOOK_CALL).install()->quick(); // CG_ClipMoveToEntity
+
+		Utils::Hook(0x573F39, PM_PlayerTrace_Stub, HOOK_CALL).install()->quick();
+		Utils::Hook(0x573E93, PM_PlayerTrace_Stub, HOOK_CALL).install()->quick();
 
 		Script::AddMethod("IsSprinting", GScr_IsSprinting);
 
