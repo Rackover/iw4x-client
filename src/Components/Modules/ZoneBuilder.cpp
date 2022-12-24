@@ -1022,7 +1022,7 @@ namespace Components
 		sound->info.data_ptr = allocatedSpace;
 	}
 
-	HANDLE ZoneBuilder::Sys_CreateFile_FromZonebuilderFolder(const char* dir, const char* zoneFileName)
+	HANDLE ZoneBuilder::Sys_CreateFile_Stub(const char* dir, const char* zoneFileName)
 	{
 		auto handle = Game::Sys_CreateFile(dir, zoneFileName);
 
@@ -1046,7 +1046,7 @@ namespace Components
 			// Prevent loading textures (preserves loaddef)
 			//Utils::Hook::Set<BYTE>(Game::Load_Texture, 0xC3);
 
-			Utils::Hook(0x5BC832, Sys_CreateFile_FromZonebuilderFolder, HOOK_CALL).install()->quick();
+			Utils::Hook(0x5BC832, Sys_CreateFile_Stub, HOOK_CALL).install()->quick();
 
 			// Store the loaddef
 			Utils::Hook(Game::Load_Texture, StoreTexture, HOOK_JUMP).install()->quick();
