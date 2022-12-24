@@ -16,7 +16,7 @@ namespace Components
 	const Game::dvar_t* PlayerMovement::PlayerDuckedSpeedScale;
 	const Game::dvar_t* PlayerMovement::PlayerProneSpeedScale;
 
-	void PlayerMovement::PM_PlayerTrace_Stub(Game::pmove_s* pm, Game::trace_t* results, const float* start, const float* end, Game::Bounds* bounds, int passEntityNum, int contentMask)
+	void PlayerMovement::PM_PlayerTraceStub(Game::pmove_s* pm, Game::trace_t* results, const float* start, const float* end, Game::Bounds* bounds, int passEntityNum, int contentMask)
 	{
 		Game::PM_playerTrace(pm, results, start, end, bounds, passEntityNum, contentMask);
 
@@ -303,8 +303,8 @@ namespace Components
 		Utils::Hook(0x45A5BF, CM_TransformedCapsuleTrace_Hk, HOOK_CALL).install()->quick(); // SV_ClipMoveToEntity
 		Utils::Hook(0x5A0CAD, CM_TransformedCapsuleTrace_Hk, HOOK_CALL).install()->quick(); // CG_ClipMoveToEntity
 
-		Utils::Hook(0x573F39, PM_PlayerTrace_Stub, HOOK_CALL).install()->quick();
-		Utils::Hook(0x573E93, PM_PlayerTrace_Stub, HOOK_CALL).install()->quick();
+		Utils::Hook(0x573F39, PM_PlayerTraceStub, HOOK_CALL).install()->quick();
+		Utils::Hook(0x573E93, PM_PlayerTraceStub, HOOK_CALL).install()->quick();
 
 		Script::AddMethod("IsSprinting", GScr_IsSprinting);
 
