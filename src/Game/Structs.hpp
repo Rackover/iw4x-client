@@ -882,8 +882,8 @@ namespace Game
 	{
 		float normal[3];
 		float dist;
-		char type;
-		char pad[3];
+		unsigned char type;
+		unsigned char pad[3];
 	};
 
 	struct cbrushside_t
@@ -896,13 +896,13 @@ namespace Game
 
 	struct cbrush_t
 	{
-		unsigned __int16 numsides;
-		unsigned __int16 glassPieceIndex;
+		unsigned short numsides;
+		unsigned short glassPieceIndex;
 		cbrushside_t* sides;
-		char* baseAdjacentSide;
-		__int16 axialMaterialNum[2][3];
-		char firstAdjacentSideOffsets[2][3];
-		char edgeCount[2][3];
+		unsigned char* baseAdjacentSide;
+		short axialMaterialNum[2][3];
+		unsigned char firstAdjacentSideOffsets[2][3];
+		unsigned char edgeCount[2][3];
 	};
 
 	struct BrushWrapper
@@ -2637,7 +2637,7 @@ namespace Game
 
 	struct cLeafBrushNode_s
 	{
-		char axis;
+		unsigned char axis;
 		__int16 leafBrushCount;
 		int contents;
 		cLeafBrushNodeData_t data;
@@ -2654,9 +2654,9 @@ namespace Game
 
 	struct CollisionPartition
 	{
-		char triCount;
-		char borderCount;
-		char firstVertSegment;
+		unsigned char triCount;
+		unsigned char borderCount;
+		unsigned char firstVertSegment;
 		int firstTri;
 		CollisionBorder* borders;
 	};
@@ -3002,7 +3002,7 @@ namespace Game
 		unsigned int numBrushSides;
 		cbrushside_t* brushsides;
 		unsigned int numBrushEdges;
-		char* brushEdges;
+		unsigned char* brushEdges;
 		unsigned int numNodes;
 		cNode_t* nodes;
 		unsigned int numLeafs;
@@ -3017,7 +3017,7 @@ namespace Game
 		float(*verts)[3];
 		int triCount;
 		unsigned __int16* triIndices;
-		char* triEdgeIsWalkable;
+		unsigned char* triEdgeIsWalkable;
 		int borderCount;
 		CollisionBorder* borders;
 		int partitionCount;
@@ -3394,9 +3394,9 @@ namespace Game
 		float texCoordOrigin[2];
 		unsigned int supportMask;
 		float areaX2;
-		char defIndex;
-		char vertCount;
-		char fanDataCount;
+		unsigned char defIndex;
+		unsigned char vertCount;
+		unsigned char fanDataCount;
 		char pad[1];
 	};
 
@@ -8641,6 +8641,12 @@ namespace Game
 		unsigned __int16 children;
 	};
 
+	struct ClientEntSound
+	{
+		float origin[3];
+		snd_alias_list_t* aliasList;
+	};
+
 	struct FxEffect
 	{
 		const FxEffectDef* def;
@@ -10657,6 +10663,128 @@ namespace Game
 	struct Sys_File
 	{
 		HANDLE handle;
+	};
+
+	struct FxCamera
+	{
+		float origin[3];
+		volatile int isValid;
+		float frustum[6][4];
+		float axis[3][3];
+		unsigned int frustumPlaneCount;
+		float viewOffset[3];
+		bool thermal;
+		unsigned int pad[2];
+	};
+
+	struct r_double_index_t
+	{
+		unsigned __int16 value[2];
+	};
+
+	struct FxSpriteInfo
+	{
+		r_double_index_t* indices;
+		unsigned int indexCount;
+		Material* material;
+		const char* name;
+	};
+
+	struct FxVisBlocker
+	{
+		float origin[3];
+		unsigned __int16 radius;
+		unsigned __int16 visibility;
+	};
+
+	struct FxVisState
+	{
+		FxVisBlocker blocker[256];
+		volatile int blockerCount;
+		unsigned int pad[3];
+	};
+
+	union $BEE35B72E4B6D2B912CC97FF2640574A
+	{
+		unsigned __int16 lightingHandle;
+		unsigned __int16 sparkCloudHandle;
+		unsigned __int16 sparkFountainHandle;
+	};
+
+	union $A58BA6DA60295001BBA5E9F807131CF1
+	{
+		int physObjId;
+		float origin[3];
+	};
+
+	struct __declspec(align(4)) FxElem
+	{
+		char defIndex;
+		char sequence;
+		char atRestFraction;
+		char emitResidual;
+		unsigned __int16 nextElemHandleInEffect;
+		unsigned __int16 prevElemHandleInEffect;
+		int msecBegin;
+		float baseVel[3];
+		$A58BA6DA60295001BBA5E9F807131CF1 ___u8;
+		$BEE35B72E4B6D2B912CC97FF2640574A u;
+	};
+
+	struct FxSystem
+	{
+		FxCamera camera;
+		FxCamera cameraPrev;
+		FxSpriteInfo sprite;
+		FxEffect* effects;
+		FxElem *elems;
+		void* trails;
+		void* trailElems;
+		void* bolts;
+		void* sparkClouds;
+		void* sparkFountains;
+		void* sparkFountainClusters;
+		unsigned __int16* deferredElems;
+		volatile int firstFreeElem;
+		volatile int firstFreeTrailElem;
+		volatile int firstFreeTrail;
+		volatile int firstFreeBolt;
+		volatile int firstFreeSparkCloud;
+		volatile int firstFreeSparkFountain;
+		volatile int firstFreeSparkFountainCluster;
+		volatile int deferredElemCount;
+		volatile int activeElemCount;
+		volatile int activeTrailElemCount;
+		volatile int activeTrailCount;
+		volatile int activeBoltCount;
+		volatile int activeSparkCloudCount;
+		volatile int activeSparkFountainCount;
+		volatile int activeSparkFountainClusterCount;
+		volatile int gfxCloudCount;
+		FxVisState* visState;
+		FxVisState* visStateBufferRead;
+		FxVisState* visStateBufferWrite;
+		volatile int firstActiveEffect;
+		volatile int firstNewEffect;
+		volatile int firstFreeEffect;
+		unsigned __int16 allEffectHandles[1024];
+		volatile int activeSpotLightEffectCount;
+		volatile int activeSpotLightElemCount;
+		unsigned __int16 activeSpotLightEffectHandle;
+		unsigned __int16 activeSpotLightElemHandle;
+		__int16 activeSpotLightBoltDobj;
+		volatile int iteratorCount;
+		int msecNow;
+		volatile int msecDraw;
+		int frameCount;
+		bool isInitialized;
+		bool needsGarbageCollection;
+		bool isArchiving;
+		char localClientNum;
+		unsigned int restartList[32];
+		FxEffect** restartEffectsList;
+		unsigned int restartCount;
+		unsigned int pad1[14];
 	};
 
 #pragma endregion
