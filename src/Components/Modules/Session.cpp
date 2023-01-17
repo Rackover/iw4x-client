@@ -1,4 +1,7 @@
 #include <STDInclude.hpp>
+#include <proto/session.pb.h>
+
+#include "Session.hpp"
 
 namespace Components
 {

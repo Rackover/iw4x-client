@@ -1,4 +1,8 @@
 #include <STDInclude.hpp>
+#include <proto/rcon.pb.h>
+
+#include "RCon.hpp"
+#include "Party.hpp"
 
 namespace Components
 {
@@ -75,7 +79,7 @@ namespace Components
 
 	bool RCon::RateLimitCheck(const Network::Address& address, const int time)
 	{
-		auto ip = address.getIP();
+		const auto ip = address.getIP();
 
 		if (!RateLimit.contains(ip.full))
 		{

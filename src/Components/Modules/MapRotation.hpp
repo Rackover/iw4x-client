@@ -12,9 +12,9 @@ namespace Components
 		bool unitTest() override;
 
 	private:
-		struct ParseRotationError : public std::exception
+		struct MapRotationParseError : public std::exception
 		{
-			const char* what() const noexcept override { return "Parse Rotation Error"; }
+			[[nodiscard]] const char* what() const noexcept override { return "Map Rotation Parse Error"; }
 		};
 
 		class RotationData
@@ -37,8 +37,6 @@ namespace Components
 
 			[[nodiscard]] bool empty() const noexcept;
 			[[nodiscard]] bool contains(const std::string& key, const std::string& value) const;
-
-			[[nodiscard]] nlohmann::json to_json() const;
 
 		private:
 			std::vector<rotationEntry> rotationEntries_;

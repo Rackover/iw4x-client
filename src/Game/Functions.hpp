@@ -15,6 +15,9 @@ namespace Game
 	typedef void(*Cbuf_InsertText_t)(int localClientNum, const char* text);
 	extern Cbuf_InsertText_t Cbuf_InsertText;
 
+	typedef void(*Cbuf_Execute_t)(int localClientNum, int controllerIndex);
+	extern Cbuf_Execute_t Cbuf_Execute;
+
 	typedef void(*CG_DrawDisconnect_t)(int localClientNum);
 	extern CG_DrawDisconnect_t CG_DrawDisconnect;
 
@@ -48,10 +51,10 @@ namespace Game
 	typedef void(*CG_SetupWeaponDef_t)(int localClientNum, unsigned int weapIndex);
 	extern CG_SetupWeaponDef_t CG_SetupWeaponDef;
 
-	typedef void(*Cmd_AddCommand_t)(const char* cmdName, void(*function), cmd_function_t* allocedCmd, int isKey);
+	typedef void(*Cmd_AddCommand_t)(const char* cmdName, void(*function), cmd_function_s* allocedCmd, int isKey);
 	extern Cmd_AddCommand_t Cmd_AddCommand;
 
-	typedef void(*Cmd_AddServerCommand_t)(const char* name, void(*callback), cmd_function_t* data);
+	typedef void(*Cmd_AddServerCommand_t)(const char* name, void(*callback), cmd_function_s* data);
 	extern Cmd_AddServerCommand_t Cmd_AddServerCommand;
 
 	typedef void(*Cmd_ExecuteSingleCommand_t)(int localClientNum, int controllerIndex, const char* cmd);
@@ -467,11 +470,14 @@ namespace Game
 	typedef void(*Vec3UnpackUnitVec_t)(PackedUnitVec, vec3_t*);
 	extern Vec3UnpackUnitVec_t Vec3UnpackUnitVec;
 	
-	typedef float(*vectoyaw_t)(vec2_t* vec);
-	extern vectoyaw_t vectoyaw;
+	typedef float(*vectoryaw_t)(vec2_t* vec);
+	extern vectoryaw_t vectoryaw;
 	
 	typedef float(*AngleNormalize360_t)(float val);
 	extern AngleNormalize360_t AngleNormalize360;
+
+	typedef void(*_VectorMA_t)(float* va, float scale, float* vb, float* vc);
+	extern _VectorMA_t _VectorMA;
 
 	typedef void(*unzClose_t)(void* handle);
 	extern unzClose_t unzClose;
@@ -505,6 +511,9 @@ namespace Game
 
 	typedef gentity_s*(*Weapon_RocketLauncher_Fire_t)(gentity_s* ent, unsigned int weaponIndex, float spread, weaponParms* wp, const float* gunVel, lockonFireParms* lockParms, bool magicBullet);
 	extern Weapon_RocketLauncher_Fire_t Weapon_RocketLauncher_Fire;
+
+	typedef int(*Bullet_Fire_t)(gentity_s* attacker, float spread, weaponParms* wp, gentity_s* weaponEnt, PlayerHandIndex hand, int gameTime);
+	extern Bullet_Fire_t Bullet_Fire;
 
 	typedef void(*Jump_ClearState_t)(playerState_s* ps);
 	extern Jump_ClearState_t Jump_ClearState;
@@ -560,12 +569,6 @@ namespace Game
 	typedef void(*Vec2NormalizeFast_t)(float* v);
 	extern Vec2NormalizeFast_t Vec2NormalizeFast;
 
-	typedef void*(*Z_VirtualAlloc_t)(int size);
-	extern Z_VirtualAlloc_t Z_VirtualAlloc;
-
-	typedef void*(*Z_Malloc_t)(int size);
-	extern Z_Malloc_t Z_Malloc;
-
 	typedef void(*I_strncpyz_t)(char* dest, const char* src, int destsize);
 	extern I_strncpyz_t I_strncpyz;
 
@@ -590,6 +593,9 @@ namespace Game
 	typedef void(*LargeLocalReset_t)();
 	extern LargeLocalReset_t LargeLocalReset;
 
+	typedef void(*longjmp_internal_t)(jmp_buf env, int status);
+	extern longjmp_internal_t longjmp_internal;
+
 	constexpr std::size_t STATIC_MAX_LOCAL_CLIENTS = 1;
 	constexpr std::size_t MAX_LOCAL_CLIENTS = 1;
 	constexpr std::size_t MAX_CLIENTS = 18;
@@ -598,7 +604,7 @@ namespace Game
 	extern CmdArgs* cmd_args;
 	extern CmdArgs* sv_cmd_args;
 
-	extern cmd_function_t** cmd_functions;
+	extern cmd_function_s** cmd_functions;
 
 	extern float* cgameFOVSensitivityScale;
 
@@ -620,11 +626,6 @@ namespace Game
 
 	extern int* numIP;
 	extern netIP_t* localIP;
-
-	extern int* demoFile;
-	extern int* demoPlaying;
-	extern int* demoRecording;
-	extern int* serverMessageSequence;
 
 	extern netadr_t* connectedHost;
 	extern SOCKET* ip_socket;
@@ -712,7 +713,9 @@ namespace Game
 
 	extern Material** whiteMaterial;
 
-	extern unsigned long* _tls_index;
+	extern unsigned long* g_dwTlsIndex;
+
+	extern bgs_t* level_bgs;
 
 	constexpr std::size_t PLAYER_CARD_UI_STRING_COUNT = 18;
 	extern unsigned int* playerCardUIStringIndex;
@@ -733,6 +736,8 @@ namespace Game
 	extern int* ui_arenaBufPos;
 
 	extern punctuation_s* default_punctuations;
+
+	extern bool* s_havePlaylists;
 
 	constexpr auto MAX_MSGLEN = 0x20000;
 

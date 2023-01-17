@@ -1,4 +1,12 @@
 #include <STDInclude.hpp>
+#include <Utils/InfoString.hpp>
+
+#include "Gamepad.hpp"
+#include "Party.hpp"
+#include "ServerInfo.hpp"
+#include "ServerList.hpp"
+#include "UIFeeder.hpp"
+#include "Voice.hpp"
 
 #include <version.hpp>
 
@@ -131,11 +139,11 @@ namespace Components
 	Utils::InfoString ServerInfo::GetInfo()
 	{
 		auto maxClientCount = *Game::svs_clientCount;
-		const auto password = Dvar::Var("g_password").get<std::string>();
+		const auto* password = *Game::g_password ? (*Game::g_password)->current.string : "";
 
 		if (!maxClientCount)
 		{
-			maxClientCount = Dvar::Var("party_maxplayers").get<int>();
+			maxClientCount = *Game::party_maxplayers ? (*Game::party_maxplayers)->current.integer : 18;
 		}
 
 		Utils::InfoString info(Game::Dvar_InfoString_Big(Game::DVAR_SERVERINFO));
@@ -145,8 +153,8 @@ namespace Components
 		info.set("shortversion", SHORTVERSION);
 		info.set("version", (*Game::version)->current.string);
 		info.set("mapname", (*Game::sv_mapname)->current.string);
-		info.set("isPrivate", password.empty() ? "0" : "1");
-		info.set("checksum", Utils::String::VA("%X", Utils::Cryptography::JenkinsOneAtATime::Compute(Utils::String::VA("%u", Game::Sys_Milliseconds()))));
+		info.set("isPrivate", *password ? "1" : "0");
+		info.set("checksum", Utils::String::VA("%X", Utils::Cryptography::JenkinsOneAtATime::Compute(std::to_string(Game::Sys_Milliseconds()))));
 		info.set("aimAssist", (Gamepad::sv_allowAimAssist.get<bool>() ? "1" : "0"));
 		info.set("voiceChat", (Voice::SV_VoiceEnabled() ? "1" : "0"));
 
@@ -161,7 +169,7 @@ namespace Components
 		// 1 - Party, use Steam_JoinLobby to connect
 		// 2 - Match, use CL_ConnectFromParty to connect
 
-		if (Dvar::Var("party_enable").get<bool>() && Dvar::Var("party_host").get<bool>()) // Party hosting
+		if (Party::IsEnabled() && Dvar::Var("party_host").get<bool>()) // Party hosting
 		{
 			info.set("matchtype", "1");
 		}
@@ -255,7 +263,7 @@ namespace Components
 			Dvar::Var("uiSi_aimAssist").set(info.get("aimAssist") == "0" ? "@MENU_DISABLED" : "@MENU_ENABLED");
 			Dvar::Var("uiSi_voiceChat").set(info.get("voiceChat") == "0" ? "@MENU_DISABLED" : "@MENU_ENABLED");
 
-			switch (atoi(info.get("scr_team_fftype").data()))
+			switch (std::strtol(info.get("scr_team_fftype").data(), nullptr, 10))
 			{
 			default:
 				Dvar::Var("uiSi_ffType").set("@MENU_DISABLED");
@@ -271,12 +279,13 @@ namespace Components
 				break;
 			}
 
-			if (info.get("fs_game").size() > 5)
+			if (Utils::String::StartsWith(info.get("fs_game"), "mods/"))
 			{
-				Dvar::Var("uiSi_ModName").set(info.get("fs_game").data() + 5);
+				auto mod = info.get("fs_game");
+				Dvar::Var("uiSi_ModName").set(mod.substr(5));
 			}
 
-			auto lines = Utils::String::Split(data, '\n');
+			const auto lines = Utils::String::Split(data, '\n');
 
 			if (lines.size() <= 1) return;
 

@@ -26,31 +26,11 @@ namespace Components
 		static std::string GetMotd();
 
 	private:
-		class JoinContainer
-		{
-		public:
-			Network::Address target;
-			std::string challenge;
-			std::string motd;
-			DWORD joinTime;
-			bool valid;
-			int matchType;
-
-			Utils::InfoString info;
-
-			// Party-specific stuff
-			DWORD requestTime;
-			bool awaitingPlaylist;
-		};
-
-		static JoinContainer Container;
-		static std::map<uint64_t, Network::Address> LobbyMap;
+		static std::map<std::uint64_t, Network::Address> LobbyMap;
 
 		static Dvar::Var PartyEnable;
 
 		static SteamID GenerateLobbyId();
-
-		static Game::dvar_t* RegisterMinPlayers(const char* name, int value, int min, int max, Game::DvarFlags flag, const char* description);
 
 		static DWORD UIDvarIntStub(char* dvar);
 	};

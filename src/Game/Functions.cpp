@@ -8,6 +8,7 @@ namespace Game
 	Cbuf_AddServerText_f_t Cbuf_AddServerText_f = Cbuf_AddServerText_f_t(0x4BB9B0);
 	Cbuf_AddText_t Cbuf_AddText = Cbuf_AddText_t(0x404B20);
 	Cbuf_InsertText_t Cbuf_InsertText = Cbuf_InsertText_t(0x4940B0);
+	Cbuf_Execute_t Cbuf_Execute = Cbuf_Execute_t(0x4E2C80);
 
 	CG_DrawDisconnect_t CG_DrawDisconnect = CG_DrawDisconnect_t(0x454A70);
 	CG_NextWeapon_f_t CG_NextWeapon_f = CG_NextWeapon_f_t(0x449DE0);
@@ -163,14 +164,6 @@ namespace Game
 	SEH_ReadCharFromString_t SEH_ReadCharFromString = SEH_ReadCharFromString_t(0x486560);
 	SEH_GetCurrentLanguage_t SEH_GetCurrentLanguage = SEH_GetCurrentLanguage_t(0x4F6110);
 
-	Dvar_SetFromStringByName_t Dvar_SetFromStringByName = Dvar_SetFromStringByName_t(0x4F52E0);
-	Dvar_SetFromStringByNameFromSource_t Dvar_SetFromStringByNameFromSource = Dvar_SetFromStringByNameFromSource_t(0x4FC770);
-	Dvar_SetStringByName_t Dvar_SetStringByName = Dvar_SetStringByName_t(0x44F060);
-	Dvar_SetString_t Dvar_SetString = Dvar_SetString_t(0x4A9580);
-	Dvar_SetBool_t Dvar_SetBool = Dvar_SetBool_t(0x4A9510);
-	Dvar_SetFloat_t Dvar_SetFloat = Dvar_SetFloat_t(0x40BB20);
-	Dvar_SetInt_t Dvar_SetInt = Dvar_SetInt_t(0x421DA0);
-
 	SND_Init_t SND_Init = SND_Init_t(0x46A630);
 	SND_InitDriver_t SND_InitDriver = SND_InitDriver_t(0x4F5090);
 
@@ -205,8 +198,9 @@ namespace Game
 	Win_GetLanguage_t Win_GetLanguage = Win_GetLanguage_t(0x45CBA0);
 
 	Vec3UnpackUnitVec_t Vec3UnpackUnitVec = Vec3UnpackUnitVec_t(0x45CA90);
-	vectoyaw_t vectoyaw = vectoyaw_t(0x45AD10);
+	vectoryaw_t vectoryaw = vectoryaw_t(0x45AD10);
 	AngleNormalize360_t AngleNormalize360 = AngleNormalize360_t(0x438DC0);
+	_VectorMA_t _VectorMA = _VectorMA_t(0x5084D0);
 
 	unzClose_t unzClose = unzClose_t(0x41BF20);
 
@@ -225,6 +219,7 @@ namespace Game
 	AimAssist_ApplyAutoMelee_t AimAssist_ApplyAutoMelee = AimAssist_ApplyAutoMelee_t(0x56A360);
 
 	Weapon_RocketLauncher_Fire_t Weapon_RocketLauncher_Fire = Weapon_RocketLauncher_Fire_t(0x424680);
+	Bullet_Fire_t Bullet_Fire = Bullet_Fire_t(0x4402C0);
 
 	Jump_ClearState_t Jump_ClearState = Jump_ClearState_t(0x04B3890);
 	PM_playerTrace_t PM_playerTrace = PM_playerTrace_t(0x458980);
@@ -252,9 +247,6 @@ namespace Game
 	Vec2Normalize_t Vec2Normalize = Vec2Normalize_t(0x416F70);
 	Vec2NormalizeFast_t Vec2NormalizeFast = Vec2NormalizeFast_t(0x5FC830);
 
-	Z_VirtualAlloc_t Z_VirtualAlloc = Z_VirtualAlloc_t(0x4CFBA0);
-	Z_Malloc_t Z_Malloc = Z_Malloc_t(0x4F3680);
-
 	I_strncpyz_t I_strncpyz = I_strncpyz_t(0x4D6F80);
 	I_CleanStr_t I_CleanStr = I_CleanStr_t(0x4AD470);
 
@@ -267,10 +259,12 @@ namespace Game
 	LargeLocalBeginRight_t LargeLocalBeginRight = LargeLocalBeginRight_t(0x644140);
 	LargeLocalReset_t LargeLocalReset = LargeLocalReset_t(0x430630);
 
+	longjmp_internal_t longjmp_internal = longjmp_internal_t(0x6B8898);
+
 	CmdArgs* cmd_args = reinterpret_cast<CmdArgs*>(0x1AAC5D0);
 	CmdArgs* sv_cmd_args = reinterpret_cast<CmdArgs*>(0x1ACF8A0);
 
-	cmd_function_t** cmd_functions = reinterpret_cast<cmd_function_t**>(0x1AAC658);
+	cmd_function_s** cmd_functions = reinterpret_cast<cmd_function_s**>(0x1AAC658);
 
 	source_t** sourceFiles = reinterpret_cast<source_t**>(0x7C4A98);
 
@@ -292,11 +286,6 @@ namespace Game
 
 	int* numIP = reinterpret_cast<int*>(0x64A1E68);
 	netIP_t* localIP = reinterpret_cast<netIP_t*>(0x64A1E28);
-
-	int* demoFile = reinterpret_cast<int*>(0xA5EA1C);
-	int* demoPlaying = reinterpret_cast<int*>(0xA5EA0C);
-	int* demoRecording = reinterpret_cast<int*>(0xA5EA08);
-	int* serverMessageSequence = reinterpret_cast<int*>(0xA3E9B4);
 
 	netadr_t* connectedHost = reinterpret_cast<netadr_t*>(0xA1E888);
 
@@ -381,7 +370,9 @@ namespace Game
 
 	Material** whiteMaterial = reinterpret_cast<Material**>(0x8EE4B8);
 
-	unsigned long* _tls_index = reinterpret_cast<unsigned long*>(0x66D94A8);
+	unsigned long* g_dwTlsIndex = reinterpret_cast<unsigned long*>(0x66D94A8);
+
+	bgs_t* level_bgs = reinterpret_cast<bgs_t*>(0x19BD680);
 
 	unsigned int* playerCardUIStringIndex = reinterpret_cast<unsigned int*>(0x62CD7A8);
 	char (*playerCardUIStringBuf)[PLAYER_CARD_UI_STRING_COUNT][38] = reinterpret_cast<char(*)[PLAYER_CARD_UI_STRING_COUNT][38]>(0x62CB4F8);
@@ -401,6 +392,8 @@ namespace Game
 	int* ui_arenaBufPos = reinterpret_cast<int*>(0x62D278C);
 
 	punctuation_s* default_punctuations = reinterpret_cast<punctuation_s*>(0x797F80);
+
+	bool* s_havePlaylists = reinterpret_cast<bool*>(0x1AD3680);
 
 	const char* TableLookup(StringTable* stringtable, int row, int column)
 	{

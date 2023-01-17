@@ -1,4 +1,6 @@
 #include <STDInclude.hpp>
+#include "Gamepad.hpp"
+#include "RawMouse.hpp"
 
 namespace Components
 {
@@ -749,7 +751,7 @@ namespace Components
 					-yawRight
 				};
 
-				Game::cgArray[0].selectedLocationAngle = Game::AngleNormalize360(Game::vectoyaw(&vec));
+				Game::cgArray[0].selectedLocationAngle = Game::AngleNormalize360(Game::vectoryaw(&vec));
 				Game::cgArray[0].selectedAngleLocation[0] = Game::cgArray[0].selectedLocation[0];
 				Game::cgArray[0].selectedAngleLocation[1] = Game::cgArray[0].selectedLocation[1];
 			}
@@ -1991,7 +1993,9 @@ namespace Components
 		Command::Add("togglescores", Scores_Toggle_f);
 
 		if (Dedicated::IsEnabled())
+		{
 			return;
+		}
 
 		// Gamepad on frame hook
 		Utils::Hook(0x475E9E, IN_Frame_Hk, HOOK_CALL).install()->quick();

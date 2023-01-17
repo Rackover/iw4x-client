@@ -21,7 +21,6 @@
 | `--copy-to=PATH`            | Optional, copy the DLL to a custom folder after build, define the path here if wanted. |
 | `--copy-pdb`                | Copy debug information for binaries as well to the path given via --copy-to. |
 | `--force-unit-tests`        | Always compile unit tests.                     |
-| `--force-exception-handler` | Install custom unhandled exception handler even for Debug builds. |
 | `--disable-binary-check`    | Do not perform integrity checks on the exe. |
 
 ## Command line arguments
@@ -40,7 +39,7 @@
 | `-version`              | Print IW4x build info on startup.              |
 | `-zonebuilder`          | Start the interactive zonebuilder tool console instead of starting the game. |
 | `-nosteam`              | Disable friends feature and do not update Steam about the game's current status just like an invisible mode. |
-| `-protect-saved-dvars`  | Block the server from modifying saved/archive dvars. |
+| `-unprotect-dvars`      | Allow the server to modify saved/archive dvars. |
 
 
 ## Disclaimer

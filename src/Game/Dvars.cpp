@@ -22,6 +22,16 @@ namespace Game
 	Dvar_DisplayableValue_t Dvar_DisplayableValue = Dvar_DisplayableValue_t(0x4B5530);
 	Dvar_Reset_t Dvar_Reset = Dvar_Reset_t(0x4FEFD0);
 
+	Dvar_SetFromStringByName_t Dvar_SetFromStringByName = Dvar_SetFromStringByName_t(0x4F52E0);
+	Dvar_SetFromStringByNameFromSource_t Dvar_SetFromStringByNameFromSource = Dvar_SetFromStringByNameFromSource_t(0x4FC770);
+	Dvar_SetStringByName_t Dvar_SetStringByName = Dvar_SetStringByName_t(0x44F060);
+	Dvar_SetString_t Dvar_SetString = Dvar_SetString_t(0x4A9580);
+	Dvar_SetBool_t Dvar_SetBool = Dvar_SetBool_t(0x4A9510);
+	Dvar_SetBoolByName_t Dvar_SetBoolByName = Dvar_SetBoolByName_t(0x45C4D0);
+	Dvar_SetFloat_t Dvar_SetFloat = Dvar_SetFloat_t(0x40BB20);
+	Dvar_SetFloatByName_t Dvar_SetFloatByName = Dvar_SetFloatByName_t(0x466320);
+	Dvar_SetInt_t Dvar_SetInt = Dvar_SetInt_t(0x421DA0);
+
 	const dvar_t** com_developer = reinterpret_cast<const dvar_t**>(0x1AD78E8);
 	const dvar_t** com_developer_script = reinterpret_cast<const dvar_t**>(0x1AD8F10);
 	const dvar_t** com_timescale = reinterpret_cast<const dvar_t**>(0x1AD7920);
@@ -31,7 +41,10 @@ namespace Game
 
 	const dvar_t** dvar_cheats = reinterpret_cast<const dvar_t**>(0x63F3348);
 
+	const dvar_t** fs_cdpath = reinterpret_cast<const dvar_t**>(0x63D0BB0);
+	const dvar_t** fs_basepath = reinterpret_cast<const dvar_t**>(0x63D0CD4);
 	const dvar_t** fs_gameDirVar = reinterpret_cast<const dvar_t**>(0x63D0CC0);
+	const dvar_t** fs_homepath = reinterpret_cast<const dvar_t**>(0x63D4FD8);
 
 	const dvar_t** sv_hostname = reinterpret_cast<const dvar_t**>(0x2098D98);
 	const dvar_t** sv_gametype = reinterpret_cast<const dvar_t**>(0x2098DD4);
@@ -52,6 +65,10 @@ namespace Game
 	const dvar_t** g_allowVote = reinterpret_cast<const dvar_t**>(0x19BD644);
 	const dvar_t** g_oldVoting = reinterpret_cast<const dvar_t**>(0x1A45DEC);
 	const dvar_t** g_gametype = reinterpret_cast<const dvar_t**>(0x1A45DC8);
+	const dvar_t** g_password = reinterpret_cast<const dvar_t**>(0x18835C0);
+
+	const dvar_t** cg_chatHeight = reinterpret_cast<const dvar_t**>(0x7ED398);
+	const dvar_t** cg_chatTime = reinterpret_cast<const dvar_t**>(0x9F5DE8);
 
 	const dvar_t** version = reinterpret_cast<const dvar_t**>(0x1AD7930);
 
@@ -60,10 +77,15 @@ namespace Game
 	const dvar_t** ui_currentMap = reinterpret_cast<const dvar_t**>(0x62E2834);
 	const dvar_t** ui_gametype = reinterpret_cast<const dvar_t**>(0x62E2828);
 	const dvar_t** ui_mapname = reinterpret_cast<const dvar_t**>(0x62E279C);
+	const dvar_t** ui_joinGametype = reinterpret_cast<const dvar_t**>(0x62E2840);
 	const dvar_t** ui_netGameType = reinterpret_cast<const dvar_t**>(0x62E2838);
+	const dvar_t** ui_netSource = reinterpret_cast<const dvar_t**>(0x62E27E8);
 
 	const dvar_t** loc_warnings = reinterpret_cast<const dvar_t**>(0x62C8700);
 	const dvar_t** loc_warningsAsErrors = reinterpret_cast<const dvar_t**>(0x62C86FC);
+
+	const dvar_t** party_minplayers = reinterpret_cast<const dvar_t**>(0x1081BFC);
+	const dvar_t** party_maxplayers = reinterpret_cast<const dvar_t**>(0x1080998);
 
 	__declspec(naked) void Dvar_SetVariant(dvar_t*, DvarValue, DvarSetSource)
 	{

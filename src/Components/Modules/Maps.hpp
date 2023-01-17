@@ -43,7 +43,7 @@ namespace Components
 			bool wasFreed;
 			unsigned int hash;
 			std::string mapname;
-			Game::searchpath_t searchPath;
+			Game::searchpath_s searchPath;
 		};
 
 		Maps();
@@ -54,7 +54,7 @@ namespace Components
 		static std::string CurrentMainZone;
 		static const char* UserMapFiles[4];
 
-		static bool CheckMapInstalled(const char* mapname, bool error = false, bool dlcIsTrue = false);
+		static bool CheckMapInstalled(const std::string& mapname, bool error = false, bool dlcIsTrue = false);
 
 		static UserMapContainer* GetUserMap();
 		static unsigned int GetUsermapHash(const std::string& map);
@@ -119,12 +119,6 @@ namespace Components
 		static void HideModel();
 		static void HideModelStub();
 
-		static Game::dvar_t* GetDistortionDvar();
-		static void SetDistortionStub();
-
-		static Game::dvar_t* GetSpecularDvar();
-		static void SetSpecularStub1();
-		static void SetSpecularStub2();
 		static void G_SpawnTurretHook(Game::gentity_s* ent, int unk, int unk2);
 		static bool SV_SetTriggerModelHook(Game::gentity_s* ent);
 		static int16 CM_TriggerModelBounds(int brushModelPointer, Game::Bounds* bounds);

@@ -2,7 +2,9 @@
 #include "IFont_s.hpp"
 
 #define STB_TRUETYPE_IMPLEMENTATION
-#include <stb_truetype.h>
+#include <stb_truetype.hpp>
+
+#include <json.hpp>
 
 namespace Assets
 {

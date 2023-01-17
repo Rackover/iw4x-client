@@ -1,4 +1,6 @@
 #include <STDInclude.hpp>
+#include "ClientCommand.hpp"
+
 #include "GSC/Script.hpp"
 
 using namespace Utils::String;
@@ -64,12 +66,12 @@ namespace Components
 			if (!CheatsOk(ent))
 				return;
 
-			ent->client->flags ^= Game::PLAYER_FLAG_NOCLIP;
+			ent->client->flags ^= Game::PF_NOCLIP;
 
 			const auto entNum = ent->s.number;
 			Logger::Debug("Noclip toggled for entity {}", entNum);
 
-			Game::SV_GameSendServerCommand(entNum, Game::SV_CMD_CAN_IGNORE, VA("%c \"%s\"", 0x65, (ent->client->flags & Game::PLAYER_FLAG_NOCLIP) ? "GAME_NOCLIPON" : "GAME_NOCLIPOFF"));
+			Game::SV_GameSendServerCommand(entNum, Game::SV_CMD_CAN_IGNORE, VA("%c \"%s\"", 0x65, (ent->client->flags & Game::PF_NOCLIP) ? "GAME_NOCLIPON" : "GAME_NOCLIPOFF"));
 		});
 
 		Add("ufo", [](Game::gentity_s* ent, [[maybe_unused]] const Command::ServerParams* params)
@@ -77,12 +79,12 @@ namespace Components
 			if (!CheatsOk(ent))
 				return;
 
-			ent->client->flags ^= Game::PLAYER_FLAG_UFO;
+			ent->client->flags ^= Game::PF_UFO;
 
 			const auto entNum = ent->s.number;
 			Logger::Debug("UFO toggled for entity {}", entNum);
 
-			Game::SV_GameSendServerCommand(entNum, Game::SV_CMD_CAN_IGNORE, VA("%c \"%s\"", 0x65, (ent->client->flags & Game::PLAYER_FLAG_UFO) ? "GAME_UFOON" : "GAME_UFOOFF"));
+			Game::SV_GameSendServerCommand(entNum, Game::SV_CMD_CAN_IGNORE, VA("%c \"%s\"", 0x65, (ent->client->flags & Game::PF_UFO) ? "GAME_UFOON" : "GAME_UFOOFF"));
 		});
 
 		Add("god", [](Game::gentity_s* ent, [[maybe_unused]] const Command::ServerParams* params)
@@ -246,13 +248,20 @@ namespace Components
 			if (ent->client->sess.sessionState != Game::SESS_STATE_PLAYING || !CheatsOk(ent))
 				return;
 
-			Scheduler::Once([ent]
-			{
-				ent->flags &= ~(Game::FL_GODMODE | Game::FL_DEMI_GODMODE);
-				ent->health = 0;
-				ent->client->ps.stats[0] = 0;
-				Game::player_die(ent, ent, ent, 100000, Game::MOD_SUICIDE, 0, nullptr, Game::HITLOC_NONE, 0);
-			}, Scheduler::Pipeline::SERVER);
+			auto** bgs = Game::Sys::GetTls<Game::bgs_t*>(Game::Sys::TLS_OFFSET::LEVEL_BGS);
+
+			assert(*bgs == nullptr);
+
+			*bgs = Game::level_bgs;
+
+			ent->flags &= ~(Game::FL_GODMODE | Game::FL_DEMI_GODMODE);
+			ent->health = 0;
+			ent->client->ps.stats[0] = 0;
+			Game::player_die(ent, ent, ent, 100000, Game::MOD_SUICIDE, 0, nullptr, Game::HITLOC_NONE, 0);
+
+			assert(*bgs == Game::level_bgs);
+
+			*bgs = nullptr;
 		});
 	}
 

@@ -1,4 +1,7 @@
 #include <STDInclude.hpp>
+#include "StructuredData.hpp"
+
+#include <json.hpp>
 
 namespace Components
 {

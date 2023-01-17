@@ -1,4 +1,10 @@
 #include <STDInclude.hpp>
+#include <Utils/Compression.hpp>
+
+#include "Console.hpp"
+#include "FastFiles.hpp"
+
+#include <json.hpp>
 
 #include <version.hpp>
 
@@ -11,10 +17,11 @@ namespace Components
 
 	bool ZoneBuilder::MainThreadInterrupted;
 	DWORD ZoneBuilder::InterruptingThreadId;
-	volatile bool ZoneBuilder::Terminate = false;
+
+	volatile bool ZoneBuilder::CommandThreadTerminate = false;
 	std::thread ZoneBuilder::CommandThread;
 
-	Dvar::Var ZoneBuilder::PreferDiskAssetsDvar;
+	Dvar::Var ZoneBuilder::ZBPreferDiskAssets;
 
 	ZoneBuilder::Zone::Zone(const std::string& name) : indexStart(0), externalSize(0),
 		// Reserve 100MB by default.
@@ -120,7 +127,7 @@ namespace Components
 		this->writeZone();
 	}
 
-	void ZoneBuilder::Zone::loadFastFiles()
+	void ZoneBuilder::Zone::loadFastFiles() const
 	{
 		Logger::Print("Loading required FastFiles...\n");
 
@@ -793,7 +800,8 @@ namespace Components
 		return GetCurrentThreadId() == Utils::Hook::Get<DWORD>(0x1CDE7FC);
 	}
 
-	static Game::XZoneInfo baseZones_old[] = {
+	static Game::XZoneInfo baseZones_old[] =
+	{
 		{ "code_pre_gfx_mp", Game::DB_ZONE_CODE, 0 },
 		{ "localized_code_pre_gfx_mp", Game::DB_ZONE_CODE_LOC, 0 },
 		{ "code_post_gfx_mp", Game::DB_ZONE_CODE, 0 },
@@ -805,7 +813,8 @@ namespace Components
 	};
 
 
-	static Game::XZoneInfo baseZones[] = {
+	static Game::XZoneInfo baseZones[] =
+	{
 		{ "defaults", Game::DB_ZONE_CODE, 0 },
 		{ "techsets",  Game::DB_ZONE_CODE, 0 },
 		{ "common_mp",  Game::DB_ZONE_COMMON, 0 },
@@ -819,50 +828,55 @@ namespace Components
 		ExitProcess(0);
 	}
 
-	int APIENTRY ZoneBuilder::EntryPoint(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, LPSTR /*lpCmdLine*/, int /*nShowCmd*/)
+	void ZoneBuilder::CommandThreadCallback()
 	{
-		Utils::Hook::Call<void()>(0x42F0A0)();	// Com_InitCriticalSections
-		Utils::Hook::Call<void()>(0x4301B0)();  // Com_InitMainThread
-		Utils::Hook::Call<void(int)>(0x406D10)(0);  // Win_InitLocalization
-		Utils::Hook::Call<void()>(0x4FF220)();  // Com_InitParse
-		Utils::Hook::Call<void()>(0x4D8220)();  // Dvar_Init
-		Utils::Hook::Call<void()>(0x4D2280)();  // SL_Init
-		Utils::Hook::Call<void()>(0x48F660)();  // Cmd_Init
-		Utils::Hook::Call<void()>(0x4D9210)();  // Cbuf_Init
-		Utils::Hook::Call<void()>(0x47F390)();  // Swap_Init
-		Utils::Hook::Call<void()>(0x60AD10)();  // Com_InitDvars
-		Utils::Hook::Call<void()>(0x420830)();  // Com_InitHunkMemory
-		Utils::Hook::Call<void()>(0x4A62A0)();  // LargeLocalInit
-		Utils::Hook::Call<void()>(0x4DCC10)();  // Sys_InitCmdEvents
-		Utils::Hook::Call<void()>(0x64A020)();  // PMem_Init
+		Com_InitThreadData();
+
+		while (!ZoneBuilder::CommandThreadTerminate)
+		{
+			ZoneBuilder::AssumeMainThreadRole();
+			Utils::Hook::Call<void(int, int)>(0x4E2C80)(0, 0); // Cbuf_Execute
+			ZoneBuilder::ResetThreadRole();
+			std::this_thread::sleep_for(1ms);
+		}
+	}
+
+	BOOL APIENTRY ZoneBuilder::EntryPoint(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, LPSTR /*lpCmdLine*/, int /*nShowCmd*/)
+	{
+		Utils::Hook::Call<void()>(0x42F0A0)(); // Com_InitCriticalSections
+		Utils::Hook::Call<void()>(0x4301B0)(); // Com_InitMainThread
+		Utils::Hook::Call<void(int)>(0x406D10)(0); // Win_InitLocalization
+		Utils::Hook::Call<void()>(0x4FF220)(); // Com_InitParse
+		Utils::Hook::Call<void()>(0x4D8220)(); // Dvar_Init
+		Utils::Hook::Call<void()>(0x4D2280)(); // SL_Init
+		Utils::Hook::Call<void()>(0x48F660)(); // Cmd_Init
+		Utils::Hook::Call<void()>(0x4D9210)(); // Cbuf_Init
+		Utils::Hook::Call<void()>(0x47F390)(); // Swap_Init
+		Utils::Hook::Call<void()>(0x60AD10)(); // Com_InitDvars
+		Utils::Hook::Call<void()>(0x420830)(); // Com_InitHunkMemory
+		Utils::Hook::Call<void()>(0x4A62A0)(); // LargeLocalInit
+		Utils::Hook::Call<void()>(0x4DCC10)(); // Sys_InitCmdEvents
+		Utils::Hook::Call<void()>(0x64A020)(); // PMem_Init
+
 		if (!Flags::HasFlag("stdout"))
 		{
 			Console::ShowAsyncConsole();
 			Utils::Hook::Call<void()>(0x43D140)(); // Com_EventLoop
 		}
+		
+
 		Utils::Hook::Call<void(unsigned int)>(0x502580)(static_cast<unsigned int>(__rdtsc())); // Netchan_Init
-		Utils::Hook::Call<void()>(0x429080)();  // FS_InitFileSystem
-		Utils::Hook::Call<void()>(0x4BFBE0)();  // Con_InitChannels
-		Utils::Hook::Call<void()>(0x4E0FB0)();  // DB_InitThread
-		Utils::Hook::Call<void()>(0x5196C0)();  // R_RegisterDvars
+		Utils::Hook::Call<void()>(0x429080)(); // FS_InitFileSystem
+		Utils::Hook::Call<void()>(0x4BFBE0)(); // Con_InitChannels
+		Utils::Hook::Call<void()>(0x4E0FB0)(); // DB_InitThread
+		Utils::Hook::Call<void()>(0x5196C0)(); // R_RegisterDvars
 		Game::NET_Init();
-		Utils::Hook::Call<void()>(0x4F5090)();  // SND_InitDriver
-		Utils::Hook::Call<void()>(0x46A630)();  // SND_Init
-		//Utils::Hook::Call<void()>(0x4D3660)();  // SV_Init
-		//Utils::Hook::Call<void()>(0x4121E0)();  // SV_InitServerThread
-		//Utils::Hook::Call<void()>(0x464A90)();  // Com_ParseCommandLine
+		Utils::Hook::Call<void()>(0x4F5090)(); // SND_InitDriver
+		Utils::Hook::Call<void()>(0x46A630)(); // SND_Init
 		Utils::Hook::Call<void()>(0x43D140)(); // Com_EventLoop
 
-		ZoneBuilder::CommandThread = std::thread([]
-		{
-			while (!ZoneBuilder::Terminate)
-			{
-				ZoneBuilder::AssumeMainThreadRole();
-				Utils::Hook::Call<void(int, int)>(0x4E2C80)(0, 0); // Cbuf_Execute
-				ZoneBuilder::ResetThreadRole();
-				std::this_thread::sleep_for(1ms);
-			}
-		});
+		ZoneBuilder::CommandThread = Utils::Thread::CreateNamedThread("Command Thread", ZoneBuilder::CommandThreadCallback);
+		ZoneBuilder::CommandThread.detach();
 
 		Command::Add("quit", ZoneBuilder::Com_Quitf_t);
 
@@ -873,8 +887,7 @@ namespace Components
 		}
 		else
 		{
-			Logger::Warning(Game::CON_CHANNEL_DONT_FILTER,
-				"Missing new init zones (defaults.ff & techsets.ff). You will need to load fastfiles to manually obtain techsets.\n");
+			Logger::Warning(Game::CON_CHANNEL_DONT_FILTER, "Missing new init zones (defaults.ff & techsets.ff). You will need to load fastfiles to manually obtain techsets.\n");
 			Game::DB_LoadXAssets(baseZones_old, ARRAYSIZE(baseZones_old), 0);
 		}
 
@@ -908,7 +921,7 @@ namespace Components
 		}
 
 		Logger::Print(" --------------------------------------------------------------------------------\n");
-		Logger::Print(" IW4x ZoneBuilder (" VERSION ")\n");
+		Logger::Print(" IW4x ZoneBuilder ({})\n", VERSION);
 		Logger::Print(" Commands:\n");
 		Logger::Print("\t-buildzone [zone]: builds a zone from a csv located in zone_source\n");
 		Logger::Print("\t-buildall: builds all zones in zone_source\n");
@@ -1006,13 +1019,25 @@ namespace Components
 	{
 		assert(data);
 		auto* sound = Utils::Hook::Get<Game::MssSound*>(0x112AE04);
-		auto length = sound->info.data_len;
-		auto allocatedSpace = Game::Z_Malloc(length);
+		const auto length = sound->info.data_len;
+		const auto allocatedSpace = Game::Z_Malloc(static_cast<int>(length));
 		memcpy_s(allocatedSpace, length, data, length);
 
 		data = allocatedSpace;
 		sound->data = static_cast<char*>(allocatedSpace);
 		sound->info.data_ptr = allocatedSpace;
+	}
+
+	Game::Sys_File ZoneBuilder::Sys_CreateFile_Stub(const char* dir, const char* filename)
+	{
+		auto file = Game::Sys_CreateFile(dir, filename);
+
+		if (file.handle == INVALID_HANDLE_VALUE)
+		{
+			file = Game::Sys_CreateFile("zone\\zonebuilder\\", filename);
+		}
+	
+		return file;
 	}
 
 	ZoneBuilder::ZoneBuilder()
@@ -1022,12 +1047,12 @@ namespace Components
 		AssertSize(Game::XFile, 40);
 		static_assert(Game::MAX_XFILE_COUNT == 8, "XFile block enum is invalid!");
 
-		ZoneBuilder::EndAssetTrace();
-
 		if (ZoneBuilder::IsEnabled())
 		{
 			// Prevent loading textures (preserves loaddef)
 			//Utils::Hook::Set<BYTE>(Game::Load_Texture, 0xC3);
+
+			Utils::Hook(0x5BC832, Sys_CreateFile_Stub, HOOK_CALL).install()->quick();
 
 			// Store the loaddef
 			Utils::Hook(Game::Load_Texture, StoreTexture, HOOK_JUMP).install()->quick();
@@ -1035,10 +1060,10 @@ namespace Components
 			// Release the loaddef
 			Game::DB_ReleaseXAssetHandlers[Game::XAssetType::ASSET_TYPE_IMAGE] = ZoneBuilder::ReleaseTexture;
 
-			//r_loadForrenderer = 0
+			// r_loadForrenderer = 0
 			Utils::Hook::Set<BYTE>(0x519DDF, 0);
 
-			//r_delayloadimage retn
+			// r_delayloadimage ret
 			Utils::Hook::Set<BYTE>(0x51F450, 0xC3);
 
 			// r_registerDvars hack
@@ -1056,7 +1081,7 @@ namespace Components
 			// Don't mark assets
 			//Utils::Hook::Nop(0x5BB632, 5);
 
-			// Don't load sounds
+			// Load sounds
 			Utils::Hook(0x492EFC, ReallocateLoadedSounds, HOOK_CALL).install()->quick();
 
 			// Don't display errors when assets are missing (we might manually build those)
@@ -1076,30 +1101,18 @@ namespace Components
 			Utils::Hook::Set<int*>(0x5BC759, g_copyInfo_new);
 			Utils::Hook::Set<int>(0x5BB9AD, newLimit); // limit check
 
-			// this one lets us keep loading zones and it will ignore assets when the pool is filled
-			/*
-			AssetHandler::OnLoad([](Game::XAssetType type, Game::XAssetHeader, const std::string&, bool* restrict)
-			{
-				//if (*static_cast<int*>(Game::DB_XAssetPool[type].data) == 0)
-				if (Game::g_poolSize[type] == 0)
-				{
-					*restrict = true;
-				}
-			});
-			*/
-
 			// hunk size (was 300 MiB)
 			Utils::Hook::Set<DWORD>(0x64A029, 0x38400000); // 900 MiB
 			Utils::Hook::Set<DWORD>(0x64A057, 0x38400000);
 
-			// change fs_game domain func
+			// change FS_GameDirDomainFunc
 			Utils::Hook::Set<int(*)(Game::dvar_t*, Game::DvarValue)>(0x643203, [](Game::dvar_t* dvar, Game::DvarValue value)
 			{
 				int result = Utils::Hook::Call<int(Game::dvar_t*, Game::DvarValue)>(0x642FC0)(dvar, value);
 
 				if (result)
 				{
-					if (std::string(value.string) != dvar->current.string)
+					if (std::strcmp(value.string, dvar->current.string) != 0)
 					{
 						dvar->current.string = value.string;
 						Game::FS_Restart(0, 0);
@@ -1118,7 +1131,7 @@ namespace Components
 			// handle Com_error Calls
 			Utils::Hook(Game::Com_Error, ZoneBuilder::HandleError, HOOK_JUMP).install()->quick();
 
-			// thread fuckery hooks
+			// Sys_IsMainThread hook
 			Utils::Hook(0x4C37D0, ZoneBuilder::IsThreadMainThreadHook, HOOK_JUMP).install()->quick();
 
 			// Don't exec startup config in fs_restart
@@ -1134,31 +1147,16 @@ namespace Components
 			{
 				if (!ZoneBuilder::TraceZone.empty() && ZoneBuilder::TraceZone == FastFiles::Current())
 				{
-					ZoneBuilder::TraceAssets.push_back({ type, name });
-					OutputDebugStringA((name + "\n").data());
+					ZoneBuilder::TraceAssets.emplace_back(std::make_pair(type, name));
+#ifdef _DEBUG
+					OutputDebugStringA(Utils::String::Format("%s\n", name));
+#endif
 				}
 			});
 
 			Command::Add("verifyzone", [](Command::Params* params)
 			{
 				if (params->size() < 2) return;
-				/*
-				Utils::Hook(0x4AE9C2, []
-				{
-					Game::WeaponCompleteDef** varPtr = (Game::WeaponCompleteDef**)0x112A9F4;
-					Game::WeaponCompleteDef* var = *varPtr;
-					OutputDebugStringA("");
-					Utils::Hook::Call<void()>(0x4D1D60)(); // DB_PopStreamPos
-				}, HOOK_JUMP).install()->quick();
-
-				Utils::Hook(0x4AE9B4, []
-				{
-					Game::WeaponCompleteDef** varPtr = (Game::WeaponCompleteDef**)0x112A9F4;
-					Game::WeaponCompleteDef* var = *varPtr;
-					OutputDebugStringA("");
-					Utils::Hook::Call<void()>(0x4D1D60)(); // DB_PopStreamPos
-				}, HOOK_JUMP).install()->quick();
-				*/
 
 				std::string zone = params->get(1);
 
@@ -1207,7 +1205,7 @@ namespace Components
 
 			Command::Add("buildall", []([[maybe_unused]] Command::Params* params)
 			{
-				auto path = std::format("{}\\zone_source", Dvar::Var("fs_basepath").get<std::string>());
+				auto path = std::format("{}\\zone_source", (*Game::fs_basepath)->current.string);
 				auto zoneSources = FileSystem::GetSysFileList(path, "csv", false);
 
 				for (auto source : zoneSources)
@@ -1279,7 +1277,8 @@ namespace Components
 
 				std::string csvStr;
 
-				auto fileList = Utils::IO::ListFiles(Utils::String::VA("zone/%s", Game::Win_GetLanguage()));
+				const auto dir = std::format("zone/{}", Game::Win_GetLanguage());
+				auto fileList = Utils::IO::ListFiles(dir, false);
 				for (auto zone : fileList)
 				{
 					Utils::String::Replace(zone, Utils::String::VA("zone/%s/", Game::Win_GetLanguage()), "");
@@ -1315,7 +1314,7 @@ namespace Components
 
 					while (!Game::Sys_IsDatabaseReady()) std::this_thread::sleep_for(100ms); // wait till its fully loaded
 
-					if (curTechsets_list.size() == 0)
+					if (curTechsets_list.empty())
 					{
 						Logger::Print("Skipping empty zone {}\n", zone);
 						// unload zone
@@ -1342,7 +1341,7 @@ namespace Components
 					}
 
 					// save csv
-					Utils::IO::WriteFile("zone_source/techsets/" + zone + "_techsets.csv", csvStr.data());
+					Utils::IO::WriteFile("zone_source/techsets/" + zone + "_techsets.csv", csvStr);
 
 					// build the techset zone
 					std::string zoneName = "techsets/" + zone + "_techsets";
@@ -1372,7 +1371,7 @@ namespace Components
 				Utils::Hook::Set<const char*>(0x649E740, "techsets");
 
 				// load generated techset fastfiles
-				auto list = Utils::IO::ListFiles("zone/techsets");
+				auto list = Utils::IO::ListFiles("zone/techsets", false);
 				int i = 0;
 				int subCount = 0;
 				for (auto it : list)
@@ -1417,7 +1416,7 @@ namespace Components
 						std::string tempZoneFile = Utils::String::VA("zone_source/techsets/techsets%d.csv", subCount);
 						std::string tempZone = Utils::String::VA("techsets/techsets%d", subCount);
 
-						Utils::IO::WriteFile(tempZoneFile, csvStr.data());
+						Utils::IO::WriteFile(tempZoneFile, csvStr);
 
 						Logger::Print("Building zone '{}'...\n", tempZone);
 						Zone(tempZone).build();
@@ -1462,7 +1461,7 @@ namespace Components
 					std::string tempZoneFile = Utils::String::VA("zone_source/techsets/techsets%d.csv", subCount);
 					std::string tempZone = Utils::String::VA("techsets/techsets%d", subCount);
 
-					Utils::IO::WriteFile(tempZoneFile, csvStr.data());
+					Utils::IO::WriteFile(tempZoneFile, csvStr);
 
 					Logger::Print("Building zone '{}'...\n", tempZone);
 					Zone(tempZone).build();
@@ -1501,7 +1500,7 @@ namespace Components
 				csvStr.clear();
 				for (auto tech : curTechsets_list)
 				{
-					std::string mat = ZoneBuilder::FindMaterialByTechnique(tech);
+					auto mat = ZoneBuilder::FindMaterialByTechnique(tech);
 					if (mat.length() == 0)
 					{
 						csvStr.append("techset," + tech + "\n");
@@ -1512,7 +1511,7 @@ namespace Components
 					}
 				}
 
-				Utils::IO::WriteFile("zone_source/techsets/techsets.csv", csvStr.data());
+				Utils::IO::WriteFile("zone_source/techsets/techsets.csv", csvStr);
 
 				// set language back
 				Utils::Hook::Set<const char*>(0x649E740, language);
@@ -1573,7 +1572,7 @@ namespace Components
 			{
 				if (params->size() < 2) return;
 
-				auto path = std::format("{}\\mods\\{}\\images", Dvar::Var("fs_basepath").get<std::string>(), params->get(1));
+				auto path = std::format("{}\\mods\\{}\\images", (*Game::fs_basepath)->current.string, params->get(1));
 				auto images = FileSystem::GetSysFileList(path, "iwi", false);
 
 				for (auto i = images.begin(); i != images.end();)
@@ -1595,13 +1594,13 @@ namespace Components
 			});
 
 			// True by default, but can be put to zero for backward compatibility if needed
-			ZoneBuilder::PreferDiskAssetsDvar = Dvar::Register<bool>("zb_prefer_disk_assets", true, Game::DVAR_NONE, "Should zonebuilder prefer in-memory assets (requirements) or disk assets, when both are present?");
+			ZoneBuilder::ZBPreferDiskAssets = Dvar::Register<bool>("zb_prefer_disk_assets", true, Game::DVAR_NONE, "Should ZoneBuilder prefer in-memory assets (requirements) or disk assets when both are present?");
 		}
 	}
 
 	ZoneBuilder::~ZoneBuilder()
 	{
-		ZoneBuilder::Terminate = true;
+		ZoneBuilder::CommandThreadTerminate = true;
 		if (ZoneBuilder::CommandThread.joinable())
 		{
 			ZoneBuilder::CommandThread.join();

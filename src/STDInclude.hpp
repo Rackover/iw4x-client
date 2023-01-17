@@ -46,7 +46,10 @@
 #include <sstream>
 #include <thread>
 #include <type_traits>
+#include <map>
+#include <set>
 #include <unordered_map>
+#include <unordered_set>
 
 #pragma warning(pop)
 
@@ -80,8 +83,6 @@
 
 #include <gsl/gsl>
 #include <tomcrypt.h>
-#include <udis86.h>
-#include <zlib.h>
 
 // Enable additional literals
 using namespace std::literals;
@@ -94,11 +95,9 @@ using namespace std::literals;
 	#undef min
 #endif
 
-// Needs to be included after the nominmax above ^
-#ifdef snprintf
-	#undef snprintf
+#ifdef GetObject
+	#undef GetObject
 #endif
-#include <json.hpp>
 
 #define AssertSize(x, size) \
 	static_assert(sizeof(x) == (size), \
@@ -112,30 +111,18 @@ using namespace std::literals;
 
 #define AssertUnreachable assert(0 && "unreachable")
 
-// Protobuf
-#include "proto/session.pb.h"
-#include "proto/party.pb.h"
-#include "proto/auth.pb.h"
-#include "proto/node.pb.h"
-#include "proto/rcon.pb.h"
-#include "proto/ipc.pb.h"
-#include "proto/friends.pb.h"
-
 #pragma warning(pop)
 
 #include "Utils/Memory.hpp" // Breaks order on purpose
 
 #include "Utils/Cache.hpp"
 #include "Utils/Chain.hpp"
-#include "Utils/Compression.hpp"
 #include "Utils/Concurrency.hpp"
 #include "Utils/Cryptography.hpp"
 #include "Utils/CSV.hpp"
 #include "Utils/Entities.hpp"
 #include "Utils/Hooking.hpp"
-#include "Utils/InfoString.hpp"
 #include "Utils/IO.hpp"
-#include "Utils/Json.hpp"
 #include "Utils/Library.hpp"
 #include "Utils/Maths.hpp"
 #include "Utils/NamedMutex.hpp"

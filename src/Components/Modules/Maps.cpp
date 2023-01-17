@@ -1,5 +1,12 @@
 #include <STDInclude.hpp>
 
+#include <json.hpp>
+
+#include "FastFiles.hpp"
+#include "RawFiles.hpp"
+#include "StartupMessages.hpp"
+#include "Theatre.hpp"
+
 namespace Components
 {
 	Maps::UserMapContainer Maps::UserMap;
@@ -30,7 +37,7 @@ namespace Components
 		if (this->isValid() && !this->searchPath.iwd)
 		{
 			auto iwdName = std::format("{}.iwd", this->mapname);
-			auto path = std::format("{}\\usermaps\\{}\\{}", Dvar::Var("fs_basepath").get<std::string>(), this->mapname, iwdName);
+			auto path = std::format("{}\\usermaps\\{}\\{}", (*Game::fs_basepath)->current.string, this->mapname, iwdName);
 
 			if (Utils::IO::FileExists(path))
 			{
@@ -75,7 +82,7 @@ namespace Components
 			this->wasFreed = true;
 
 			// Unchain our searchpath
-			for (Game::searchpath_t** pathPtr = Game::fs_searchpaths; *pathPtr; pathPtr = &(*pathPtr)->next)
+			for (auto** pathPtr = Game::fs_searchpaths; *pathPtr; pathPtr = &(*pathPtr)->next)
 			{
 				if (*pathPtr == &this->searchPath)
 				{
@@ -579,7 +586,7 @@ namespace Components
 	}
 
 	// dlcIsTrue serves as a check if the map is a custom map and if it's missing
-	bool Maps::CheckMapInstalled(const char* mapname, bool error, bool dlcIsTrue)
+	bool Maps::CheckMapInstalled(const std::string& mapname, bool error, bool dlcIsTrue)
 	{
 		if (FastFiles::Exists(mapname)) return true;
 
@@ -587,12 +594,12 @@ namespace Components
 		{
 			for (auto map : pack.maps)
 			{
-				if (map == std::string(mapname))
+				if (map == mapname)
 				{
 					if (error)
 					{
 						Logger::Error(Game::ERR_DISCONNECT, "Missing DLC pack {} ({}) containing map {} ({}).\nPlease download it to play this map.",
-							pack.name, pack.index, Game::UI_LocalizeMapName(mapname), mapname);
+							pack.name, pack.index, Game::UI_LocalizeMapName(mapname.data()), mapname);
 					}
 
 					return dlcIsTrue;
@@ -684,7 +691,7 @@ namespace Components
 			Maps::AddDlc({ 6, "Freighter", {"mp_cargoship_sh"} });
 			Maps::AddDlc({ 7, "Resurrection Pack", {"mp_shipment_long", "mp_rust_long", "mp_firingrange"} });
 			Maps::AddDlc({ 8, "Recycled Pack", {"mp_bloc_sh", "mp_crash_tropical", "mp_estate_tropical", "mp_fav_tropical", "mp_storm_spring"} });
-			Maps::AddDlc({ 9, "Classics Pack #3", {"mp_farm", "mp_backlot", "mp_pipeline", "mp_countdown", "mp_crash_snow", "mp_carentan"}});
+			Maps::AddDlc({ 9, "Classics Pack #3", {"mp_farm", "mp_backlot", "mp_pipeline", "mp_countdown", "mp_crash_snow", "mp_carentan", "mp_broadcast", "mp_showdown", "mp_convoy"} });
 
 			Maps::UpdateDlcStatus();
 

@@ -1,10 +1,18 @@
 #include <STDInclude.hpp>
+#include <Utils/InfoString.hpp>
+
+#include "Download.hpp"
+#include "Party.hpp"
+#include "ServerInfo.hpp"
 
 #include <mongoose.h>
 
 namespace Components
 {
 	static mg_mgr Mgr;
+
+	Dvar::Var Download::SV_wwwDownload;
+	Dvar::Var Download::SV_wwwBaseUrl;
 
 	Download::ClientDownload Download::CLDownload;
 
@@ -136,7 +144,7 @@ namespace Components
 		}
 
 		auto host = "http://" + download->target.getString();
-		auto fastHost = Dvar::Var("sv_wwwBaseUrl").get<std::string>();
+		auto fastHost = SV_wwwBaseUrl.get<std::string>();
 		if (Utils::String::StartsWith(fastHost, "https://"))
 		{
 			download->thread.detach();
@@ -171,7 +179,7 @@ namespace Components
 		//    -mod.ff
 		//  /-mod2
 		//     ...
-		if (Dvar::Var("sv_wwwDownload").get<bool>())
+		if (SV_wwwDownload.get<bool>())
 		{
 			if (!Utils::String::EndsWith(fastHost, "/")) fastHost.append("/");
 			url = fastHost + path;
@@ -232,11 +240,11 @@ namespace Components
 	{
 		if (!download) download = &CLDownload;
 
-		auto host = "http://" + download->target.getString();
+		const auto host = "http://" + download->target.getString();
 
-		auto listUrl = host + (download->isMap ? "/map" : "/list") + (download->isPrivate ? ("?password=" + download->hashedPassword) : "");
+		const auto listUrl = host + (download->isMap ? "/map" : "/list") + (download->isPrivate ? ("?password=" + download->hashedPassword) : "");
 
-		auto list = Utils::WebIO("IW4x", listUrl).setTimeout(5000)->get();
+		const auto list = Utils::WebIO("IW4x", listUrl).setTimeout(5000)->get();
 		if (list.empty())
 		{
 			if (download->terminateThread) return;
@@ -276,7 +284,7 @@ namespace Components
 		static std::string mod;
 		mod = download->mod;
 
-		for (unsigned int i = 0; i < download->files.size(); ++i)
+		for (std::size_t i = 0; i < download->files.size(); ++i)
 		{
 			if (download->terminateThread) return;
 
@@ -319,7 +327,7 @@ namespace Components
 			Scheduler::Once([]
 			{
 				Game::Dvar_SetString(*Game::fs_gameDirVar, mod.data());
-				const_cast<Game::dvar_t*>(*Game::fs_gameDirVar)->modified = true;
+				const_cast<Game::dvar_t*>((*Game::fs_gameDirVar))->modified = true;
 
 				mod.clear();
 
@@ -448,35 +456,36 @@ namespace Components
 	static std::string ListHandler()
 	{
 		static nlohmann::json jsonList;
-		static auto handled = false;
+		static std::filesystem::path fsGamePre;
 
-		const std::filesystem::path fs_gameDirVar((*Game::fs_gameDirVar)->current.string);
+		const std::filesystem::path fsGame = (*Game::fs_gameDirVar)->current.string;
 
-		if (!fs_gameDirVar.empty() && !handled)
+		if (!fsGame.empty() && (fsGamePre != fsGame))
 		{
-			handled = true;
+			fsGamePre = fsGame;
 
 			std::vector<nlohmann::json> fileList;
 
-			const auto path = Dvar::Var("fs_basepath").get<std::string>() / fs_gameDirVar;
+			const auto path = (*Game::fs_basepath)->current.string / fsGame;
 			auto list = FileSystem::GetSysFileList(path.generic_string(), "iwd", false);
 			list.emplace_back("mod.ff");
 
 			for (const auto& file : list)
 			{
 				auto filename = path / file;
-				if (file.find("_svr_") != std::string::npos)
+
+				if (file.find("_svr_") != std::string::npos) // Files that are 'server only' are skipped
 				{
 					continue;
 				}
 
-				std::unordered_map<std::string, nlohmann::json> jsonFileList;
 				auto fileBuffer = Utils::IO::ReadFile(filename.generic_string());
 				if (fileBuffer.empty())
 				{
 					continue;
 				}
 
+				std::unordered_map<std::string, nlohmann::json> jsonFileList;
 				jsonFileList["name"] = file;
 				jsonFileList["size"] = fileBuffer.size();
 				jsonFileList["hash"] = Utils::Cryptography::SHA256::Compute(fileBuffer, true);
@@ -507,7 +516,7 @@ namespace Components
 
 			mapNamePre = mapName;
 
-			const std::filesystem::path basePath(Dvar::Var("fs_basepath").get<std::string>());
+			const std::filesystem::path basePath = (*Game::fs_basepath)->current.string;
 			const auto path = basePath / "usermaps" / mapName;
 
 			for (std::size_t i = 0; i < ARRAYSIZE(Maps::UserMapFiles); ++i)
@@ -579,9 +588,8 @@ namespace Components
 		}
 
 		std::string file;
-		const auto fsGame = Dvar::Var("fs_game").get<std::string>();
-		const auto path = Dvar::Var("fs_basepath").get<std::string>() + "\\" + (isMap ? "" : fsGame + "\\") + url;
-
+		const std::string fsGame = (*Game::fs_gameDirVar)->current.string;
+		const auto path = std::format("{}\\{}{}", (*Game::fs_basepath)->current.string, isMap ? ""s : (fsGame + "\\"s), url);
 		if ((!isMap && fsGame.empty()) || !Utils::IO::ReadFile(path, &file))
 		{
 			mg_http_reply(c, 404, "Content-Type: text/html\r\n", "404 - Not Found %s", path.data());
@@ -597,44 +605,7 @@ namespace Components
 		}
 	}
 
-	static void HTMLHandler(mg_connection* c, mg_http_message* hm)
-	{
-		auto url = "html" + std::string(hm->uri.ptr, hm->uri.len);
-		FileSystem::File file;
-
-		if (url.ends_with("/"))
-		{
-			url.append("index.html");
-			file = FileSystem::File(url);
-		}
-		else
-		{
-			file = FileSystem::File(url);
-			if (!file.exists())
-			{
-				url.append("/index.html");
-				file = FileSystem::File(url);
-			}
-		}
-
-		const auto mimeType = Utils::GetMimeType(url);
-
-		if (file.exists())
-		{
-			mg_printf(c, "%s", "HTTP/1.1 200 OK\r\n");
-			mg_printf(c, "Content-Type: %s\r\n", mimeType.data());
-			mg_printf(c, "Content-Length: %d\r\n", static_cast<int>(file.getBuffer().size()));
-			mg_printf(c, "%s", "Connection: close\r\n");
-			mg_printf(c, "%s", "\r\n");
-			mg_send(c, file.getBuffer().data(), file.getBuffer().size());
-		}
-		else
-		{
-			mg_http_reply(c, 404, "Content-Type: text/html\r\n", "404 - Not Found");
-		}
-	}
-
-	static void EventHandler(mg_connection* c, int ev, void* ev_data, [[maybe_unused]] void* fn_data)
+	static void EventHandler(mg_connection* c, const int ev, void* ev_data, [[maybe_unused]] void* fn_data)
 	{
 		if (ev != MG_EV_HTTP_MSG)
 		{
@@ -642,7 +613,7 @@ namespace Components
 		}
 
 		auto* hm = static_cast<mg_http_message*>(ev_data);
-		std::string url(hm->uri.ptr, hm->uri.len);
+		const std::string url(hm->uri.ptr, hm->uri.len);
 
 		if (url.starts_with("/info"))
 		{
@@ -665,14 +636,22 @@ namespace Components
 		}
 		else
 		{
-			HTMLHandler(c, hm);
+			mg_http_serve_opts opts = { .root_dir = "iw4x/html" }; // Serve local dir
+			mg_http_serve_dir(c, hm, &opts);
 		}
+
+		c->is_resp = FALSE; // This is important, the lack of this line of code will make the server die (in-game)
+		c->is_draining = TRUE;
 	}
 
 #pragma endregion
 
 	Download::Download()
 	{
+		AssertSize(Game::va_info_t, 0x804);
+		AssertSize(jmp_buf, 0x40);
+		AssertSize(Game::TraceThreadInfo, 0x8);
+
 		if (Dedicated::IsEnabled())
 		{
 			mg_mgr_init(&Mgr);
@@ -683,6 +662,7 @@ namespace Components
 				if (!nc)
 				{
 					Logger::PrintError(Game::CON_CHANNEL_ERROR, "Failed to bind TCP socket, mod download won't work!\n");
+					Terminate = true;
 				}
 			});
 
@@ -690,9 +670,11 @@ namespace Components
 			Terminate = false;
 			ServerThread = Utils::Thread::CreateNamedThread("Mongoose", []
 			{
+				Com_InitThreadData();
+
 				while (!Terminate)
 				{
-					mg_mgr_poll(&Mgr, 100);
+					mg_mgr_poll(&Mgr, 1000);
 				}
 			});
 		}
@@ -713,8 +695,8 @@ namespace Components
 
 		Scheduler::Once([]
 		{
-			Dvar::Register<bool>("sv_wwwDownload", false, Game::DVAR_NONE, "Set to true to enable downloading maps/mods from an external server.");
-			Dvar::Register<const char*>("sv_wwwBaseUrl", "", Game::DVAR_NONE, "Set to the base url for the external map download.");
+			SV_wwwDownload = Dvar::Register<bool>("sv_wwwDownload", false, Game::DVAR_NONE, "Set to true to enable downloading maps/mods from an external server.");
+			SV_wwwBaseUrl = Dvar::Register<const char*>("sv_wwwBaseUrl", "", Game::DVAR_NONE, "Set to the base url for the external map download.");
 		}, Scheduler::Pipeline::MAIN);
 	}
 

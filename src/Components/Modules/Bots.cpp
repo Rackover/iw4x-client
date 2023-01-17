@@ -1,9 +1,17 @@
 #include <STDInclude.hpp>
+#include "Bots.hpp"
+
 #include "GSC/Script.hpp"
+
+// From Quake-III
+#define	ANGLE2SHORT(x) ((int)((x) * (USHRT_MAX + 1) / 360.0f) & USHRT_MAX)
+#define	SHORT2ANGLE(x) ((x)* (360.0f / (USHRT_MAX + 1)))
 
 namespace Components
 {
 	std::vector<Bots::botData> Bots::BotNames;
+
+	Dvar::Var Bots::SVRandomBotNames;
 
 	struct BotMovementInfo
 	{
@@ -56,6 +64,13 @@ namespace Components
 			if (bots.exists())
 			{
 				auto data = Utils::String::Split(bots.getBuffer(), '\n');
+
+				if (SVRandomBotNames.get<bool>())
+				{
+					std::random_device rd;
+					std::mt19937 gen(rd());
+					std::ranges::shuffle(data, gen);
+				}
 
 				for (auto& entry : data)
 				{
@@ -269,10 +284,13 @@ namespace Components
 		userCmd.rightmove = g_botai[entnum].right;
 		userCmd.weapon = g_botai[entnum].weapon;
 
+		userCmd.angles[0] = ANGLE2SHORT((cl->gentity->client->ps.viewangles[0] - cl->gentity->client->ps.delta_angles[0]));
+		userCmd.angles[1] = ANGLE2SHORT((cl->gentity->client->ps.viewangles[1] - cl->gentity->client->ps.delta_angles[1]));
+		userCmd.angles[2] = ANGLE2SHORT((cl->gentity->client->ps.viewangles[2] - cl->gentity->client->ps.delta_angles[2]));
+
 		Game::SV_ClientThink(cl, &userCmd);
 	}
 
-	constexpr auto SV_BotUserMove = 0x626E50;
 	__declspec(naked) void Bots::SV_BotUserMove_Hk()
 	{
 		__asm
@@ -333,6 +351,8 @@ namespace Components
 		Utils::Hook(0x627241, SV_BotUserMove_Hk, HOOK_CALL).install()->quick();
 
 		Utils::Hook(0x441B80, G_SelectWeaponIndex_Hk, HOOK_JUMP).install()->quick();
+
+		SVRandomBotNames = Dvar::Register<bool>("sv_randomBotNames", false, Game::DVAR_NONE, "Randomize the bots' names");
 
 		// Reset BotMovementInfo.active when client is dropped
 		Events::OnClientDisconnect([](const int clientNum)
