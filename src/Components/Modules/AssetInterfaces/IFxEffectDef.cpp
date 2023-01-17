@@ -1,7 +1,7 @@
 #include <STDInclude.hpp>
 #include "IFxEffectDef.hpp"
 
-#define IW4X_FX_VERSION 1
+#define IW4X_FX_VERSION 2
 
 namespace Assets
 {
@@ -77,7 +77,7 @@ namespace Assets
 			}
 
 			int version = buffer.read<int>();
-			if (version != IW4X_FX_VERSION)
+			if (version > IW4X_FX_VERSION)
 			{
 				Components::Logger::Error(Game::ERR_FATAL, "Reading fx '{}' failed, expected version is {}, but it was {}!", name, IW4X_FX_VERSION, version);
 			}
@@ -142,7 +142,7 @@ namespace Assets
 								}
 							}
 						}
-						else
+						else if (elemDef->visualCount == 1)
 						{
 							this->loadFxElemVisuals(&elemDef->visuals.instance, elemDef->elemType, builder, &buffer);
 						}
@@ -187,9 +187,15 @@ namespace Assets
 								}
 							}
 						}
-						else if (elemDef->extended.trailDef)
+						else if (version >= 2)
 						{
-							Components::Logger::Error(Game::ERR_FATAL, "Fx element of type {} has traildef, that's impossible?\n", elemDef->elemType);
+							if (elemDef->elemType == Game::FX_ELEM_TYPE_SPARK_FOUNTAIN)
+							{
+								if (elemDef->extended.sparkFountainDef)
+								{
+									elemDef->extended.sparkFountainDef = buffer.readObject<Game::FxSparkFountainDef>();
+								}
+							}
 						}
 					}
 				}

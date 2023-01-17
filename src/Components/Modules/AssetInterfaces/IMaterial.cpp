@@ -212,6 +212,12 @@ namespace Assets
 								textureJson["image"].get<std::string>(),
 								builder
 							).image;
+
+							assert(textureDef->u.image);
+						}
+						else
+						{
+							assert(false);
 						}
 					}
 				}

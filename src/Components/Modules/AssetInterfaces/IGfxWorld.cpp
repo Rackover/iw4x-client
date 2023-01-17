@@ -3,27 +3,6 @@
 
 #define IW4X_GFXMAP_VERSION 1
 
-//	The xmodel vehicle_small_hatch_green_destructible_mp causes EXTREME lag
-//	when placed in the world, for reasons unknown.
-//
-//	Something happens with the SModelSurfIterator which makes it load garbage
-//	as an XSurface in the middle of otherwise valid surfaces. This bug is very
-//	easy to reproduce with an empty map and just this car in the middle
-//
-//	As of know we do not know why the iterator corruption occurs or what causes
-//	it. It doesn't seem linked to the SModel, nor to the materials or techsets,
-//	nor to the sortkeys, nor to the tilemode, boneinfo, and so on. So for now
-//	and to make it work for majority of users, we just swap the car. (no, using
-//	the identical car from iw4's favela_escape doesn't work either!)
-//
-//	Two other models have this problem: ch_apartment_9story_noentry_02 and 
-//	ch_apartment_5story_noentry_01
-//	But these exist in mp_vacant in slightly different versions, and can be
-//	swapped safely by deleting the two .iw4XModel files and requiring mp_vacant
-//	or a minimal zone containing just these two models.
-//
-#define SWAP_GREEN_VEHICLE_XMODEL 1
-
 namespace Assets
 {
 	void IGfxWorld::loadGfxWorldDpvsStatic(Game::GfxWorld* world, Game::GfxWorldDpvsStatic* asset, Components::ZoneBuilder::Zone* builder, Utils::Stream::Reader* reader)
@@ -69,6 +48,16 @@ namespace Assets
 				if (model->model)
 				{
 					auto name = reader->readString();
+
+					while (name.ends_with("."))
+					{
+						// Happens with some flowers in mp_paris
+						// I'm not confident this will work on every map
+						// But regardless Game FS does not support having a file terminated with "."
+						// Probably an artist made a typo in MW3...
+						// "foliage_gardenflowers_red_bright..iw4xModel"
+						name = name.substr(0, name.size() - 1);
+					}
 					
 					model->model = Components::AssetHandler::FindAssetForZone(Game::XAssetType::ASSET_TYPE_XMODEL, name.data(), builder).model;
 
