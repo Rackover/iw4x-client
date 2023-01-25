@@ -222,7 +222,10 @@ namespace Assets
 			{
 
 				alias->soundFile->exists = true;
-				alias->aliasName = builder->getAllocator()->duplicateString(aliasName.get<std::string>());
+
+				// These must be THE SAME POINTER !!
+				// Wanna know why ? Check out 0x685646
+				alias->aliasName = aliasList->aliasName;
 
 				if (subtitle.is_string())
 				{
@@ -244,7 +247,7 @@ namespace Assets
 				alias->pitchMax = pitchMax.get<float>();
 				alias->distMin = distMin.get<float>();
 				alias->distMax = distMax.get<float>();
-				alias->flags = flags.get<int>();
+				alias->flags.intValue = flags.get<int>();
 				alias->___u15.slavePercentage = slavePercentage.get<float>();
 				alias->probability = probability.get<float>();
 				alias->lfePercentage = lfePercentage.get<float>();
@@ -308,6 +311,8 @@ namespace Assets
 					}
 
 					auto curve = Components::AssetHandler::FindAssetForZone(Game::XAssetType::ASSET_TYPE_SOUND_CURVE, fallOffCurve, builder).sndCurve;
+					
+					assert(curve);
 					alias->volumeFalloffCurve = curve;
 				}
 
@@ -392,8 +397,15 @@ namespace Assets
 
 		if (asset->aliasName)
 		{
-			buffer->saveString(builder->getAssetName(this->getType(), asset->aliasName));
-			Utils::Stream::ClearPointer(&dest->aliasName);
+			if (builder->hasPointer(asset->aliasName))
+			{
+				dest->aliasName = builder->getPointer(asset->aliasName);
+			}
+			else {
+				builder->storePointer(asset->aliasName);
+				buffer->saveString(asset->aliasName);
+				Utils::Stream::ClearPointer(&dest->aliasName);
+			}
 		}
 
 		if (asset->head)
@@ -419,8 +431,15 @@ namespace Assets
 
 					if (alias->aliasName)
 					{
-						buffer->saveString(alias->aliasName);
-						Utils::Stream::ClearPointer(&destAlias->aliasName);
+						if (builder->hasPointer(alias->aliasName))
+						{
+							destAlias->aliasName = builder->getPointer(alias->aliasName);
+						}
+						else {
+							builder->storePointer(alias->aliasName);
+							buffer->saveString(alias->aliasName);
+							Utils::Stream::ClearPointer(&destAlias->aliasName);
+						}
 					}
 
 					if (alias->subtitle)

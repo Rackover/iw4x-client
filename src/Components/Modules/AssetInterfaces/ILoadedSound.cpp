@@ -62,7 +62,10 @@ namespace Assets
 
 					sound->sound.info.channels = reader.read<short>();
 					sound->sound.info.rate = reader.read<int>();
-					sound->sound.info.samples = reader.read<int>();
+
+					// We read samples later, this is byterate we don't need it
+					reader.read<int>();
+
 					sound->sound.info.block_size = reader.read<short>();
 					sound->sound.info.bits = reader.read<short>();
 
@@ -76,6 +79,7 @@ namespace Assets
 
 			case 0x61746164: // data
 				sound->sound.info.data_len = chunkSize;
+				sound->sound.info.samples = chunkSize / (sound->sound.info.bits/8);
 				sound->sound.data = reader.readArray<char>(chunkSize);
 				break;
 

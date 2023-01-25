@@ -1,5 +1,6 @@
 #include <STDInclude.hpp>
 #include "IPhysPreset.hpp"
+#include <json.hpp>
 
 namespace Assets
 {
