@@ -1,7 +1,7 @@
 #include <STDInclude.hpp>
 #include "IXAnimParts.hpp"
 
-#define IW4X_ANIM_VERSION 1
+#define IW4X_ANIM_VERSION 2
 
 namespace Assets
 {
@@ -20,7 +20,7 @@ namespace Assets
 			}
 
 			int version = reader.read<int>();
-			if (version != IW4X_ANIM_VERSION)
+			if (version > IW4X_ANIM_VERSION)
 			{
 				Components::Logger::Error(Game::ERR_FATAL, "Reading animation '{}' failed, expected version is {}, but it was {}!", name, IW4X_ANIM_VERSION, version);
 			}
@@ -93,6 +93,51 @@ namespace Assets
 					{
 						xanim->indices._2 = reader.readArray<unsigned short>(xanim->indexCount);
 					}
+				}
+
+				if (version > 1)
+				{
+					if (xanim->deltaPart)
+					{
+						xanim->deltaPart = reader.readObject<Game::XAnimDeltaPart>();
+						auto delta = xanim->deltaPart;
+						if (delta->trans)
+						{
+							delta->trans = reader.readObject<Game::XAnimPartTrans>();
+							if (delta->trans->size)
+							{
+								delta->trans->u.frames = reader.read<Game::XAnimPartTransFrames>();
+
+								if (xanim->numframes > 0xFF)
+								{
+									auto indices2 = reader.readArray<unsigned short>(delta->trans->size + 1);
+									memcpy(delta->trans->u.frames.indices._2, indices2, delta->trans->size + 1);
+								}
+								else
+								{
+									auto indices1 = reader.readArray<char>(delta->trans->size + 1);
+									memcpy(delta->trans->u.frames.indices._1, indices1, delta->trans->size + 1);
+								}
+
+								if (delta->trans->u.frames.frames._1)
+								{
+									if (delta->trans->smallTrans)
+									{
+										delta->trans->u.frames.frames._1 = reinterpret_cast<char(*)[3]>(3, (delta->trans->size + 1));
+									}
+									else
+									{
+										delta->trans->u.frames.frames._2 = reinterpret_cast<unsigned short(*)[3]>(6, (delta->trans->size + 1));
+									}
+								}
+							}
+							else {
+								auto frames = reader.readArray<float>(3);
+								memcpy(delta->trans->u.frame0, frames, 3);
+							}
+						}
+					}
+
 				}
 
 				if (!reader.end())

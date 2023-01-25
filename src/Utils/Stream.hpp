@@ -123,6 +123,8 @@ namespace Utils
 		Stream(size_t size);
 		~Stream();
 
+		std::unordered_map<void*, size_t> dataPointers;
+
 		[[nodiscard]] std::size_t length() const;
 		[[nodiscard]] std::size_t capacity() const;
 
@@ -133,6 +135,44 @@ namespace Utils
 		template <typename T> char* save(T* object)
 		{
 			return saveArray<T>(object, 1);
+		}
+
+		template <typename T> inline char* saveObject(T value)
+		{
+			return saveArray(&value, 1);
+		}
+
+		template <typename T> inline void saveArrayIfNotExisting(T* data, size_t count)
+		{
+
+#define POINTER 255
+#define FOLLOWING 254
+
+			if (dataPointers.contains(data))
+			{
+				size_t filePosition = dataPointers.at(data);
+				saveByte(POINTER);
+				saveObject(filePosition);
+			}
+			else
+			{
+				saveByte(FOLLOWING);
+				dataPointers.insert_or_assign(reinterpret_cast<void*>(data), length());
+				saveArray(data, count);
+			}
+		}
+
+
+		char* save(int value, size_t count = 1)
+		{
+			auto ret = this->length();
+
+			for (size_t i = 0; i < count; ++i)
+			{
+				this->save(&value, 4, 1);
+			}
+
+			return this->data() + ret;
 		}
 
 		template <typename T> char* saveArray(T* array, std::size_t count)

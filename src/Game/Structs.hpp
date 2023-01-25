@@ -900,7 +900,7 @@ namespace Game
 		unsigned short glassPieceIndex;
 		cbrushside_t* sides;
 		unsigned char* baseAdjacentSide;
-		short axialMaterialNum[2][3];
+		unsigned short axialMaterialNum[2][3];
 		unsigned char firstAdjacentSideOffsets[2][3];
 		unsigned char edgeCount[2][3];
 	};
@@ -2537,6 +2537,26 @@ namespace Game
 		MSSChannelMap channelMaps[2][2];
 	};
 
+	union SoundAliasFlags
+	{
+#pragma warning(push)
+#pragma warning(disable: 4201)
+		struct
+		{
+			unsigned int looping : 1;		// & 1	/ 0x1			/ 0000 0000 0000 0001
+			unsigned int isMaster : 1;		// & 2	/ 0x2			/ 0000 0000 0000 0010
+			unsigned int isSlave : 1;		// & 4	/ 0x4			/ 0000 0000 0000 0100
+			unsigned int fullDryLevel : 1;	//	& 8	/ 0x8			/ 0000 0000 0000 1000
+			unsigned int noWetLevel : 1;	// & 16	/ 0x10			/ 0000 0000 0001 0000
+			unsigned int unknown : 1;		// & 32	/ 0x20			/ 0000 0000 0010 0000
+			unsigned int unk_is3D : 1;		// & 64	/ 0x40			/ 0000 0000 0100 0000		// CONFIRMED IW4 IW5
+			unsigned int type : 2;			// & 384	/ 0x180		/ 0000 0001 1000 0000		// CONFIRMED IW4 IW5
+			unsigned int channel : 6;		// & 32256	/ 0x7E00	/ 0111 1110 0000 0000		// CONFIRMED IW4 IW5
+		};
+#pragma warning(pop)
+		unsigned int intValue;
+	};
+
 	const struct snd_alias_t
 	{
 		const char* aliasName;
@@ -2553,7 +2573,7 @@ namespace Game
 		float distMin;
 		float distMax;
 		float velocityMin;
-		int flags;
+		SoundAliasFlags flags;
 		$C8D87EB0090687D323381DFB7A82089C ___u15;
 		float probability;
 		float lfePercentage;
@@ -2993,7 +3013,7 @@ namespace Game
 	{
 		const char* name;
 		int isInUse;
-		int planeCount;
+		unsigned int planeCount;
 		cplane_s* planes;
 		unsigned int numStaticModels;
 		cStaticModel_s* staticModelList;
@@ -3015,14 +3035,14 @@ namespace Game
 		unsigned int* leafsurfaces;
 		unsigned int vertCount;
 		float(*verts)[3];
-		int triCount;
+		unsigned int triCount;
 		unsigned __int16* triIndices;
 		unsigned char* triEdgeIsWalkable;
-		int borderCount;
+		unsigned int borderCount;
 		CollisionBorder* borders;
 		int partitionCount;
 		CollisionPartition* partitions;
-		int aabbTreeCount;
+		unsigned int aabbTreeCount;
 		CollisionAabbTree* aabbTrees;
 		unsigned int numSubModels;
 		cmodel_t* cmodels;
