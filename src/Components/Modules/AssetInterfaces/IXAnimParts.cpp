@@ -111,7 +111,7 @@ namespace Assets
 								if (xanim->numframes > 0xFF)
 								{
 									auto indices2 = reader.readArray<unsigned short>(delta->trans->size + 1);
-									memcpy(delta->trans->u.frames.indices._2, indices2, delta->trans->size + 1);
+									memcpy(delta->trans->u.frames.indices._2, indices2, sizeof(short) * (delta->trans->size + 1));
 								}
 								else
 								{
@@ -132,8 +132,8 @@ namespace Assets
 								}
 							}
 							else {
-								auto frames = reader.readArray<float>(3);
-								memcpy(delta->trans->u.frame0, frames, 3);
+								auto frames = reader.readObject<Game::vec3_t>();
+								memcpy(delta->trans->u.frame0, frames, 3 * sizeof(float));
 							}
 						}
 					}

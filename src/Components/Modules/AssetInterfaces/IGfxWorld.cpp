@@ -198,17 +198,23 @@ namespace Assets
 			{
 				if (asset->dpvsPlanes.planes)
 				{
-					void* oldPtr = asset->dpvsPlanes.planes;
 					asset->dpvsPlanes.planes = reader.readArray<Game::cplane_s>(asset->planeCount);
 
-					if (builder->getAllocator()->isPointerMapped(oldPtr))
+					auto clip = Components::AssetHandler::FindAssetForZone(Game::XAssetType::ASSET_TYPE_CLIPMAP_MP, asset->name, builder).clipMap;
+
+					if (clip)
 					{
-						asset->dpvsPlanes.planes = builder->getAllocator()->getPointer<Game::cplane_s>(oldPtr);
+						assert(clip->planeCount == asset->planeCount);
+						for (size_t i = 0; i < clip->planeCount; i++)
+						{
+							assert(0 == memcmp(&clip->planes[i], &asset->dpvsPlanes.planes[i], sizeof Game::cplane_s));
+						}
+
+						asset->dpvsPlanes.planes = clip->planes;
 					}
 					else
 					{
-						builder->getAllocator()->mapPointer(oldPtr, asset->dpvsPlanes.planes);
-						Components::Logger::Print("GfxWorld dpvs planes not mapped. This shouldn't happen. Make sure to load the ClipMap first!\n");
+						Components::Logger::Error(Game::ERR_FATAL, "GfxWorld dpvs planes not mapped. This shouldn't happen. Make sure to load the ClipMap first!\n");
 					}
 				}
 
