@@ -27,7 +27,9 @@ namespace Assets
 
 				if (surface->material)
 				{
-					world->dpvs.surfaces[i].material = Components::AssetHandler::FindAssetForZone(Game::XAssetType::ASSET_TYPE_MATERIAL, reader->readString().data(), builder).material;
+					auto materialName = reader->readString();
+					world->dpvs.surfaces[i].material = Components::AssetHandler::FindAssetForZone(Game::XAssetType::ASSET_TYPE_MATERIAL, materialName.data(), builder).material;
+					assert(world->dpvs.surfaces[i].material);
 				}
 			}
 		}
@@ -343,24 +345,32 @@ namespace Assets
 
 					if (materialMemory->material)
 					{
-						materialMemory->material = Components::AssetHandler::FindAssetForZone(Game::XAssetType::ASSET_TYPE_MATERIAL, reader.readString().data(), builder).material;
+						auto materialName = reader.readString();
+						materialMemory->material = Components::AssetHandler::FindAssetForZone(Game::XAssetType::ASSET_TYPE_MATERIAL, materialName.data(), builder).material;
+						assert(materialMemory->material);
 					}
 				}
 			}
 
 			if (asset->sun.spriteMaterial)
 			{
-				asset->sun.spriteMaterial = Components::AssetHandler::FindAssetForZone(Game::XAssetType::ASSET_TYPE_MATERIAL, reader.readString().data(), builder).material;
+				auto materialName = reader.readString();
+				asset->sun.spriteMaterial = Components::AssetHandler::FindAssetForZone(Game::XAssetType::ASSET_TYPE_MATERIAL, materialName.data(), builder).material;
+				assert(asset->sun.spriteMaterial);
 			}
 
 			if (asset->sun.flareMaterial)
 			{
-				asset->sun.flareMaterial = Components::AssetHandler::FindAssetForZone(Game::XAssetType::ASSET_TYPE_MATERIAL, reader.readString().data(), builder).material;
+				auto materialName = reader.readString();
+				asset->sun.flareMaterial = Components::AssetHandler::FindAssetForZone(Game::XAssetType::ASSET_TYPE_MATERIAL, materialName.data(), builder).material;
+				assert(asset->sun.flareMaterial);
 			}
 
 			if (asset->outdoorImage)
 			{
-				asset->outdoorImage = Components::AssetHandler::FindAssetForZone(Game::XAssetType::ASSET_TYPE_IMAGE, reader.readString().data(), builder).image;
+				auto materialName = reader.readString();
+				asset->outdoorImage = Components::AssetHandler::FindAssetForZone(Game::XAssetType::ASSET_TYPE_IMAGE, materialName.data(), builder).image;
+				assert(asset->outdoorImage);
 			}
 
 			if (asset->primaryLightCount > 0)

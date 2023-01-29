@@ -40,6 +40,8 @@ namespace Assets
 		if (!header->data) this->loadJson(header, name, builder);   // Check if we want to load a material from disk
 		if (!header->data) this->loadBinary(header, name, builder); // Check if we want to load a material from disk (binary format)
 		if (!header->data) this->loadNative(header, name, builder); // Check if there is a native one
+
+		assert(header->data);
 	}
 
 
