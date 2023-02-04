@@ -1,6 +1,7 @@
 #include <STDInclude.hpp>
-#include "ISndCurve.hpp"
 #include <json.hpp>
+
+#include "ISndCurve.hpp"
 
 namespace Assets
 {
@@ -8,9 +9,9 @@ namespace Assets
 	{
 		AssertSize(Game::SndCurve, 136);
 
-		Utils::Stream* buffer = builder->getBuffer();
-		Game::SndCurve* asset = header.sndCurve;
-		Game::SndCurve* dest = buffer->dest<Game::SndCurve>();
+		auto* buffer = builder->getBuffer();
+		auto* asset = header.sndCurve;
+		auto* dest = buffer->dest<Game::SndCurve>();
 		buffer->save(asset);
 
 		buffer->pushBlock(Game::XFILE_BLOCK_VIRTUAL);
@@ -35,7 +36,6 @@ namespace Assets
 		}
 
 		nlohmann::json sndCurveJson;
-
 		try
 		{
 			sndCurveJson = nlohmann::json::parse(sndCurveFile.getBuffer());
@@ -46,8 +46,7 @@ namespace Assets
 			return;
 		}
 
-		auto sndCurve = builder->getAllocator()->allocate<Game::SndCurve>();
-
+		auto* sndCurve = builder->getAllocator()->allocate<Game::SndCurve>();
 		try
 		{
 			sndCurve->filename = builder->getAllocator()->duplicateString(sndCurveJson["filename"].get<std::string>());

@@ -2497,16 +2497,6 @@ namespace Game
 		SAT_COUNT = 0x4,
 	};
 
-
-	/* 1333 */
-	struct __declspec(align(4)) $65FDF49F43A878FE5C159469C4C3C60F
-	{
-		char buffer[16384];
-		volatile int size;
-		bool compress;
-	};
-
-	/* 1334 */
 	struct snd_volume_info_t
 	{
 		float volume;
@@ -2514,22 +2504,19 @@ namespace Game
 		float goalrate;
 	};
 
-	/* 1335 */
-	struct __declspec(align(4)) snd_channelvolgroup
+	struct snd_channelvolgroup
 	{
 		snd_volume_info_t channelvol[64];
 		bool active;
 	};
 
-	/* 1336 */
 	struct snd_background_info_t
 	{
 		float goalvolume;
 		float goalrate;
 	};
 
-	/* 1337 */
-	struct __declspec(align(4)) snd_enveffect
+	struct snd_enveffect
 	{
 		int roomtype;
 		float drylevel;
@@ -2541,15 +2528,13 @@ namespace Game
 		bool active;
 	};
 
-	/* 1338 */
 	struct orientation_t
 	{
 		float origin[3];
 		float axis[3][3];
 	};
 
-	/* 1339 */
-	struct __declspec(align(4)) snd_listener
+	struct snd_listener
 	{
 		orientation_t orient;
 		float velocity;
@@ -2557,7 +2542,6 @@ namespace Game
 		bool active;
 	};
 
-	/* 1340 */
 	struct snd_amplifier
 	{
 		snd_listener* listener;
@@ -2568,7 +2552,6 @@ namespace Game
 		float maxVol;
 	};
 
-	/* 1341 */
 	struct snd_entchannel_info_t
 	{
 		char name[64];
@@ -2580,14 +2563,12 @@ namespace Game
 		int voiceCount;
 	};
 
-	/* 1342 */
 	struct snd_entchan_overrides_t
 	{
 		unsigned int isPausable[2];
 		float timescaleLerp[64];
 	};
 
-	/* 669 */
 	enum SndFileLoadingState
 	{
 		SFLS_UNLOADED = 0x0,
@@ -2595,7 +2576,6 @@ namespace Game
 		SFLS_LOADED = 0x2,
 	};
 
-	/* 1343 */
 	struct SndFileSpecificChannelInfo
 	{
 		SndFileLoadingState loadingState;
@@ -2603,20 +2583,15 @@ namespace Game
 		int baserate;
 	};
 
-	/* 1344 */
-	struct $3D0F408E3DEECDDF5A7B6AF876E6F88B
-	{
-		unsigned int entIndex;
-	};
-
-	/* 1345 */
 	union SndEntHandle
 	{
-		$3D0F408E3DEECDDF5A7B6AF876E6F88B field;
+		struct
+		{
+			unsigned int entIndex;
+		} field;
 		int handle;
 	};
 
-	/* 670 */
 	enum SndLengthId
 	{
 		SndLengthNotify_Subtitle = 0x0,
@@ -2624,7 +2599,6 @@ namespace Game
 		SndLengthNotifyCount = 0x2,
 	};
 
-	/* 1346 */
 	struct sndLengthNotifyInfo
 	{
 		SndLengthId id[4];
@@ -2632,7 +2606,6 @@ namespace Game
 		int count;
 	};
 
-	/* 671 */
 	enum snd_alias_system_t
 	{
 		SASYS_UI = 0x0,
@@ -2641,7 +2614,6 @@ namespace Game
 		SASYS_COUNT = 0x3,
 	};
 
-	/* 1347 */
 	struct snd_channel_info_t
 	{
 		SndFileSpecificChannelInfo soundFileInfo;
@@ -2667,7 +2639,6 @@ namespace Game
 		snd_alias_system_t system;
 	};
 
-	/* 1348 */
 	struct snd_local_t
 	{
 		bool Initialized2d;
@@ -2679,7 +2650,12 @@ namespace Game
 		float timescale;
 		int pausetime;
 		int cpu;
-		$65FDF49F43A878FE5C159469C4C3C60F restore;
+		struct
+		{
+			char buffer[16384];
+			volatile int size;
+			bool compress;
+		} restore;
 		float volume;
 		snd_volume_info_t mastervol;
 		snd_channelvolgroup channelVolGroups[4];
@@ -2709,12 +2685,6 @@ namespace Game
 		char type;
 		char exists;
 		SoundFileRef u;
-	};
-
-	union $C8D87EB0090687D323381DFB7A82089C
-	{
-		float slavePercentage;
-		float masterPercentage;
 	};
 
 	struct SndCurve
@@ -2781,7 +2751,11 @@ namespace Game
 		float distMax;
 		float velocityMin;
 		SoundAliasFlags flags;
-		$C8D87EB0090687D323381DFB7A82089C ___u15;
+		union
+		{
+			float slavePercentage;
+			float masterPercentage;
+		} ___u15;
 		float probability;
 		float lfePercentage;
 		float centerPercentage;
@@ -10944,20 +10918,7 @@ namespace Game
 		unsigned int pad[3];
 	};
 
-	union $BEE35B72E4B6D2B912CC97FF2640574A
-	{
-		unsigned __int16 lightingHandle;
-		unsigned __int16 sparkCloudHandle;
-		unsigned __int16 sparkFountainHandle;
-	};
-
-	union $A58BA6DA60295001BBA5E9F807131CF1
-	{
-		int physObjId;
-		float origin[3];
-	};
-
-	struct __declspec(align(4)) FxElem
+	struct FxElem
 	{
 		char defIndex;
 		char sequence;
@@ -10967,8 +10928,17 @@ namespace Game
 		unsigned __int16 prevElemHandleInEffect;
 		int msecBegin;
 		float baseVel[3];
-		$A58BA6DA60295001BBA5E9F807131CF1 ___u8;
-		$BEE35B72E4B6D2B912CC97FF2640574A u;
+		union
+		{
+			int physObjId;
+			float origin[3];
+		} ___u8;
+		union
+		{
+			unsigned __int16 lightingHandle;
+			unsigned __int16 sparkCloudHandle;
+			unsigned __int16 sparkFountainHandle;
+		} u;
 	};
 
 	struct FxSystem

@@ -784,6 +784,7 @@ namespace Assets
 					assert(vIndex >= 0);
 					assert(vIndex != clipMap->triIndices[i * 3 + ((x + 1) % 3)]);
 					assert(vIndex != clipMap->triIndices[i * 3 + ((x + 2) % 3)]);
+					(void)vIndex;
 				}
 			}
 		}
@@ -850,6 +851,7 @@ namespace Assets
 					assert(index >= 0);
 					assert(index < clipMap->aabbTreeCount);
 					assert(cmodel.leaf.brushContents);
+					(void)index;
 				}
 			}
 		}
@@ -1031,17 +1033,17 @@ namespace Assets
 				assert(trigger->hulls[i].firstSlab < trigger->slabCount);
 			}
 #endif
-			//
 		}
-		// This code is wrong but we keep it for BC with old versions of iw3xport
-		else if (version == 2) {
+		// This code is wrong but we keep it for backwards compatability with old versions of iw3xport
+		else if (version == 2)
+		{
 			if (clipMap->numSubModels > 0)
 			{
 				clipMap->mapEnts->trigger.count = clipMap->numSubModels;
 				clipMap->mapEnts->trigger.hullCount = clipMap->numSubModels;
 
-				Game::TriggerHull* hulls = builder->getAllocator()->allocateArray<Game::TriggerHull>(clipMap->mapEnts->trigger.hullCount);
-				Game::TriggerModel* models = builder->getAllocator()->allocateArray<Game::TriggerModel>(clipMap->mapEnts->trigger.count);
+				auto* hulls = builder->getAllocator()->allocateArray<Game::TriggerHull>(clipMap->mapEnts->trigger.hullCount);
+				auto* models = builder->getAllocator()->allocateArray<Game::TriggerModel>(clipMap->mapEnts->trigger.count);
 
 				for (unsigned int i = 0; i < clipMap->numSubModels; ++i)
 				{
@@ -1049,13 +1051,13 @@ namespace Assets
 					hulls[i] = reader.read<Game::TriggerHull>();
 				}
 
-				size_t slabCount = reader.read<size_t>();
+				auto slabCount = reader.read<size_t>();
 				clipMap->mapEnts->trigger.slabCount = slabCount;
-				Game::TriggerSlab* slabs = builder->getAllocator()->allocateArray<Game::TriggerSlab>(clipMap->mapEnts->trigger.slabCount);
-				for (unsigned int i = 0; i < clipMap->mapEnts->trigger.slabCount; i++) {
+				auto* slabs = builder->getAllocator()->allocateArray<Game::TriggerSlab>(clipMap->mapEnts->trigger.slabCount);
+				for (unsigned int i = 0; i < clipMap->mapEnts->trigger.slabCount; i++)
+				{
 					slabs[i] = reader.read<Game::TriggerSlab>();
 				}
-
 
 				clipMap->mapEnts->trigger.models = &models[0];
 				clipMap->mapEnts->trigger.hulls = &hulls[0];
@@ -1105,7 +1107,6 @@ namespace Assets
 
 
 		nlohmann::json clipMapJson;
-
 		try
 		{
 			clipMapJson = nlohmann::json::parse(clipMapFile.getBuffer());
@@ -1118,9 +1119,7 @@ namespace Assets
 
 		auto clipMap = builder->getAllocator()->allocate<Game::clipMap_t>();
 
-#if !DEBUG
 		try
-#endif
 		{
 			assert(clipMapJson["version"].get<int>() <= IW4X_CLIPMAP_VERSION);
 
@@ -1178,7 +1177,7 @@ namespace Assets
 
 			for (size_t i = 0; i < clipMap->numBrushSides; i++)
 			{
-				auto brushside = &clipMap->brushsides[i];
+				auto* brushside = &clipMap->brushsides[i];
 				auto json_brushside = clipMapJson["brushsides"][i];
 
 				assert(clipMap->planes);
@@ -1246,7 +1245,7 @@ namespace Assets
 
 			for (size_t i = 0; i < clipMap->leafbrushNodesCount; i++)
 			{
-				auto lbn = &clipMap->leafbrushNodes[i];
+				auto* lbn = &clipMap->leafbrushNodes[i];
 				auto jsonLbn = clipMapJson["leafbrushNodes"][i];
 
 				lbn->axis = jsonLbn["axis"];
@@ -1306,7 +1305,7 @@ namespace Assets
 			// Collision partitions
 			clipMap->partitionCount = clipMapJson["partitions"].size();
 			clipMap->partitions = clipMap->partitionCount == 0 ? nullptr : builder->getAllocator()->allocateArray<Game::CollisionPartition>(clipMap->partitionCount);
-			for (size_t i = 0; i < clipMap->partitionCount; i++)
+			for (auto i = 0; i < clipMap->partitionCount; i++)
 			{
 				auto partition = &clipMap->partitions[i];
 				auto json_partition = clipMapJson["partitions"][i];
@@ -1318,7 +1317,7 @@ namespace Assets
 
 				if (partition->borderCount > 0)
 				{
-					// They're always consecutive (i checked)
+					// They're always consecutive (I checked)
 					auto index = std::stoi(json_partition["firstBorder"].get<std::string>().substr(1));
 					assert(clipMap->borders);
 					partition->borders = &clipMap->borders[index];
@@ -1364,7 +1363,7 @@ namespace Assets
 			}
 
 			// Brushes
-			clipMap->numBrushes = clipMapJson["brushes"].size();
+			clipMap->numBrushes = static_cast<unsigned short>(clipMapJson["brushes"].size());
 			clipMap->brushes = clipMap->numBrushes == 0 ? nullptr : builder->getAllocator()->allocateArray < Game::cbrush_t >(clipMap->numBrushes);
 			for (size_t i = 0; i < clipMap->numBrushes; i++)
 			{
@@ -1447,9 +1446,9 @@ namespace Assets
 				}
 
 				// Stages
-				clipMap->mapEnts->stageCount = json_ents["stages"].size();
+				clipMap->mapEnts->stageCount = static_cast<char>(json_ents["stages"].size());
 				clipMap->mapEnts->stages = builder->getAllocator()->allocateArray <Game::Stage>(clipMap->mapEnts->stageCount);
-				for (size_t i = 0; i < clipMap->mapEnts->stageCount; i++)
+				for (auto i = 0; i < clipMap->mapEnts->stageCount; i++)
 				{
 					auto stage = &clipMap->mapEnts->stages[i];
 					auto json_stage = json_ents["stages"][i];
@@ -1462,8 +1461,7 @@ namespace Assets
 			}
 
 			// SmodelNodes
-
-			clipMap->smodelNodeCount = clipMapJson["smodelNodes"].size();
+			clipMap->smodelNodeCount = static_cast<unsigned short>(clipMapJson["smodelNodes"].size());
 			clipMap->smodelNodes = clipMap->smodelNodeCount == 0 ? nullptr : builder->getAllocator()->allocateArray<Game::SModelAabbNode>(clipMap->smodelNodeCount);
 			for (size_t i = 0; i < clipMap->smodelNodeCount; i++)
 			{
@@ -1477,7 +1475,7 @@ namespace Assets
 
 			for (size_t i = 0; i < 2; i++)
 			{
-				clipMap->dynEntCount[i] = clipMapJson["dynEntities"][i].size();
+				clipMap->dynEntCount[i] = static_cast<unsigned short>(clipMapJson["dynEntities"][i].size());
 
 				auto json_entities = clipMapJson["dynEntities"][i];
 				clipMap->dynEntClientList[i] = clipMap->dynEntCount[i] == 0 ? nullptr : builder->getAllocator()->allocateArray<Game::DynEntityClient>(clipMap->dynEntCount[i]);
@@ -1511,13 +1509,11 @@ namespace Assets
 
 			clipMap->checksum = clipMapJson["checksum"];
 		}
-#if !DEBUG
 		catch (const std::exception& e)
 		{
 			Components::Logger::PrintError(Game::CON_CHANNEL_ERROR, "Malformed JSON for clipmap {}! {}", name, e.what());
 			return;
 		}
-#endif
 
 		header->clipMap = clipMap;
 	}
@@ -1543,20 +1539,19 @@ namespace Assets
 
 		if (!clipMap) return;
 
-		std::unordered_map<Game::cplane_s*, int> planes{}; // +++
-		std::unordered_map<Game::cbrushside_t*, int> brush_sides{}; // +
-		std::unordered_map<unsigned char*, int> brush_edges{}; // +
-		std::unordered_map<unsigned short*, int> leaf_brushes{}; // ++
-		std::unordered_map<Game::CollisionBorder*, int> borders{}; // +
+		std::unordered_map<Game::cplane_s*, int> planes;
+		std::unordered_map<Game::cbrushside_t*, int> brush_sides;
+		std::unordered_map<unsigned char*, int> brush_edges;
+		std::unordered_map<unsigned short*, int> leaf_brushes;
+		std::unordered_map<Game::CollisionBorder*, int> borders;
 
-		Utils::Memory::Allocator str_duplicator;
+		Utils::Memory::Allocator strDuplicator;
 		nlohmann::json output;
 
 		auto float_array_to_json = [](const float* array, int size)
 		{
 			auto arr = nlohmann::json::array();
-
-			for (size_t i = 0; i < size; i++)
+			for (auto i = 0; i < size; ++i)
 			{
 				arr.push_back(array[i]);
 			}
@@ -1567,8 +1562,7 @@ namespace Assets
 		auto ushort_to_array = [](const unsigned short* array, int size)
 		{
 			auto arr = nlohmann::json::array();
-
-			for (size_t i = 0; i < size; i++)
+			for (auto i = 0; i < size; ++i)
 			{
 				arr.push_back(array[i]);
 			}
@@ -1579,10 +1573,9 @@ namespace Assets
 		auto uchar_to_array = [](const unsigned char* array, int size)
 		{
 			auto arr = nlohmann::json::array();
-
-			for (size_t i = 0; i < size; i++)
+			for (auto i = 0; i < size; ++i)
 			{
-				arr.push_back(static_cast<uint8_t>(array[i]));
+				arr.push_back(array[i]);
 			}
 
 			return arr;
@@ -1714,7 +1707,7 @@ namespace Assets
 			auto plane_index = std::format("#{}", index);
 			json_brush_side.emplace(
 				"plane",
-				(str_duplicator.duplicateString(plane_index))
+				(strDuplicator.duplicateString(plane_index))
 			);
 
 			json_brush_side.emplace("materialNum", brush_side->materialNum);
@@ -1748,7 +1741,7 @@ namespace Assets
 
 			auto index = planes[node->plane];
 			auto plane_index = std::format("#{}", index);
-			json_node.emplace("plane", (str_duplicator.duplicateString(plane_index)));
+			json_node.emplace("plane", (strDuplicator.duplicateString(plane_index)));
 
 			auto children = nlohmann::json::array();
 			for (size_t j = 0; j < ARRAYSIZE(node->children); j++)
@@ -1800,7 +1793,7 @@ namespace Assets
 			{
 				assert(leaf_brushes.contains(leaf_brush_node->data.leaf.brushes));
 				auto index_str = std::format("#{}", leaf_brushes[leaf_brush_node->data.leaf.brushes]);
-				json_leaf_brush_node.emplace("data", str_duplicator.duplicateString(index_str));
+				json_leaf_brush_node.emplace("data", strDuplicator.duplicateString(index_str));
 			}
 			else
 			{
@@ -1885,7 +1878,7 @@ namespace Assets
 
 		// Collision partitions
 		auto json_collision_partitions = nlohmann::json::array();
-		for (size_t i = 0; i < clipMap->partitionCount; i++)
+		for (auto i = 0; i < clipMap->partitionCount; i++)
 		{
 			auto collision_partition = &clipMap->partitions[i];
 
@@ -1898,7 +1891,7 @@ namespace Assets
 
 			if (collision_partition->borderCount)
 			{
-				auto index_str = str_duplicator.duplicateString(std::format("#{}", borders[&collision_partition->borders[0]]));
+				auto index_str = strDuplicator.duplicateString(std::format("#{}", borders[&collision_partition->borders[0]]));
 				json_collision_partition.emplace("firstBorder", (index_str));
 			}
 
@@ -1957,13 +1950,13 @@ namespace Assets
 			// Sides
 			if (brush->numsides > 0)
 			{
-				auto index_str = str_duplicator.duplicateString(std::format("#{}", brush_sides[brush->sides]));
+				auto index_str = strDuplicator.duplicateString(std::format("#{}", brush_sides[brush->sides]));
 				json_brush.emplace("firstSide", (index_str));
 			}
 
 			if (brush->baseAdjacentSide)
 			{
-				auto index_str = str_duplicator.duplicateString(std::format("#{}", brush_edges[brush->baseAdjacentSide]));
+				auto index_str = strDuplicator.duplicateString(std::format("#{}", brush_edges[brush->baseAdjacentSide]));
 				json_brush.emplace("baseAdjacentSide", (index_str));
 			}
 			else
@@ -2071,7 +2064,7 @@ namespace Assets
 			json_map_ents.emplace("trigger", json_trigger);
 
 			auto json_stages = nlohmann::json::array();
-			for (size_t i = 0; i < ents->stageCount; i++)
+			for (auto i = 0; i < ents->stageCount; i++)
 			{
 				auto stage = &ents->stages[i];
 				auto json_stage= nlohmann::json::object();
@@ -2098,7 +2091,7 @@ namespace Assets
 		{
 			auto smodelNode = &clipMap->smodelNodes[i];
 
-			auto json_smodelnode= nlohmann::json::object();
+			auto json_smodelnode = nlohmann::json::object();
 
 			json_smodelnode.emplace("bounds", bounds_to_json(smodelNode->bounds));
 			json_smodelnode.emplace("firstChild", smodelNode->firstChild);

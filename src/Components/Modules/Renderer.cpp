@@ -124,7 +124,8 @@ namespace Components
 		Logger::Error(
 			Game::ERR_FATAL, 
 			"Tried to use sampler #{} ('{}') at the wrong timing! Additional info:\nMaterial: '{}'\nTechnique {}\nTechnique slot: {}\nTechnique flags:{}\nPass: {}\nPixel shader: {}\n",
-			samplerCode, sampler, state->material->info.name, state->technique->name, (int)state->techType, state->technique->flags, state->passIndex, state->pixelShader->name);
+			samplerCode, sampler, state->material->info.name, state->technique->name, (int)state->techType, state->technique->flags, state->passIndex, state->pixelShader->name
+		);
 	}
 
 	__declspec(naked) void Renderer::StoreGfxBufContextPtrStub1()
@@ -365,7 +366,7 @@ namespace Components
 					if (staticModel->model)
 					{
 
- 						Game::R_AddDebugBounds(staticModelsColor, b);
+						Game::R_AddDebugBounds(staticModelsColor, b);
 					}
 				}
 			}
@@ -471,28 +472,28 @@ namespace Components
 		
 		if (r_drawRunners.get<bool>())
 		{
-			auto fxSystem = reinterpret_cast<Game::FxSystem*>(0x173F200);
+			auto* fxSystem = reinterpret_cast<Game::FxSystem*>(0x173F200);
 
 			if (fxSystem)
 			{
 				for (auto i = 0; i < fxSystem->activeElemCount; i++)
 				{
-					auto elem = &fxSystem->effects[i];
+					auto* elem = &fxSystem->effects[i];
 					if (elem->def)
 					{
-						Game::R_AddDebugString(sceneModelsColor, elem->frameNow.origin, 1.0, elem->def->name);
+						Game::R_AddDebugString(sceneModelsColor, elem->frameNow.origin, 1.0f, elem->def->name);
 					}
 				}
 			}
 
 			auto soundCount = *reinterpret_cast<int*>(0x7C5C90);
-			auto sounds = reinterpret_cast<Game::ClientEntSound*>(0x7C5CA0);
+			auto* sounds = reinterpret_cast<Game::ClientEntSound*>(0x7C5CA0);
 
-			for (size_t i = 0; i < soundCount; i++)
+			for (auto i = 0; i < soundCount; i++)
 			{
 				if (sounds[i].aliasList)
 				{
-					Game::R_AddDebugString(staticModelsColor, sounds[i].origin, 1.0, sounds[i].aliasList->aliasName);
+					Game::R_AddDebugString(staticModelsColor, sounds[i].origin, 1.0f, sounds[i].aliasList->aliasName);
 				}
 			}
 		}

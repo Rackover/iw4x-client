@@ -208,9 +208,8 @@ namespace Assets
 						textureDef->u.image = nullptr;
 						if (textureJson["image"].is_string())
 						{
-							textureDef->u.image = Components::AssetHandler::FindAssetForZone
-							(
-								Game::XAssetType::ASSET_TYPE_IMAGE,
+							textureDef->u.image = Components::AssetHandler::FindAssetForZone(
+								Game::ASSET_TYPE_IMAGE,
 								textureJson["image"].get<std::string>(),
 								builder
 							).image;
@@ -219,7 +218,7 @@ namespace Assets
 						}
 						else
 						{
-							assert(false);
+							AssertUnreachable;
 						}
 					}
 				}

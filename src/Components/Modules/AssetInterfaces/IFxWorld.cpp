@@ -1,12 +1,13 @@
 #include <STDInclude.hpp>
 
 #include <json.hpp>
+
 #include "IFxWorld.hpp"
+
+#define IW4X_FXWORLD_VERSION 1
 
 namespace Assets
 {
-#define IW4X_FXWORLD_VERSION 1
-
 	void IFxWorld::save(Game::XAssetHeader header, Components::ZoneBuilder::Zone* builder)
 	{
 		AssertSize(Game::FxWorld, 116);
@@ -205,27 +206,25 @@ namespace Assets
 		Utils::String::Replace(name, ".d3dbsp", "");
 
 		Components::FileSystem::File fxWorldFile(std::format("fxworld/{}.iw4x.json", name));
-
 		if (!fxWorldFile.exists())
 		{
 			return;
 		}
 
 		nlohmann::json fxWorldJson;
-
 		try
 		{
 			fxWorldJson = nlohmann::json::parse(fxWorldFile.getBuffer());
 		}
 		catch (const std::exception& e)
 		{
-			Components::Logger::PrintError(Game::CON_CHANNEL_ERROR, "Invalid JSON for gameworld {}! {}", name, e.what());
+			Components::Logger::PrintError(Game::CON_CHANNEL_ERROR, "Invalid JSON for gameworld {}! Error message: {}", name, e.what());
 			return;
 		}
 
 		if (!fxWorldJson.is_object())
 		{
-			Components::Logger::PrintError(Game::CON_CHANNEL_ERROR, "Invalid FXWORLD json for {}\n", name);
+			Components::Logger::PrintError(Game::CON_CHANNEL_ERROR, "Invalid FXWORLD JSON for {}\n", name);
 			return;
 		}
 
@@ -287,7 +286,7 @@ namespace Assets
 				assert(def->material);
 				assert(def->materialShattered);
 				assert(def->physPreset);
-				i++;
+				++i;
 			}
 
 			i = 0;
@@ -314,7 +313,7 @@ namespace Assets
 				initial->defIndex = member["defIndex"].get<char>();
 				initial->vertCount = member["vertCount"].get<char>();
 				initial->fanDataCount = member["fanDataCount"].get<char>();
-				i++;
+				++i;
 			}
 
 			i = 0;
@@ -324,12 +323,12 @@ namespace Assets
 				auto data = &glassSys->initGeoData[i];
 				data->anonymous[0] = member[0];
 				data->anonymous[1] = member[1];
-				i++;
+				++i;
 			}
 		}
 		catch (const nlohmann::json::exception& e)
 		{
-			Components::Logger::PrintError(Game::CON_CHANNEL_ERROR, "Malformed FXWORLD json for {} ({})\n", name, e.what());
+			Components::Logger::PrintError(Game::CON_CHANNEL_ERROR, "Malformed FXWORLD JSON for {}! Error message: {}\n", name, e.what());
 			return;
 		}
 

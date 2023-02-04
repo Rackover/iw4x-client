@@ -1,6 +1,7 @@
 #include <STDInclude.hpp>
-#include "IPhysPreset.hpp"
 #include <json.hpp>
+
+#include "IPhysPreset.hpp"
 
 namespace Assets
 {
@@ -8,9 +9,9 @@ namespace Assets
 	{
 		AssertSize(Game::PhysPreset, 44);
 
-		Utils::Stream* buffer = builder->getBuffer();
-		Game::PhysPreset* asset = header.physPreset;
-		Game::PhysPreset* dest = buffer->dest<Game::PhysPreset>();
+		auto* buffer = builder->getBuffer();
+		auto* asset = header.physPreset;
+		auto* dest = buffer->dest<Game::PhysPreset>();
 		buffer->save(asset);
 
 		buffer->pushBlock(Game::XFILE_BLOCK_VIRTUAL);
@@ -30,7 +31,6 @@ namespace Assets
 		buffer->popBlock();
 	}
 
-
 	void IPhysPreset::load(Game::XAssetHeader* header, const std::string& name, Components::ZoneBuilder::Zone* builder)
 	{
 		loadFromDisk(header, name, builder);
@@ -39,12 +39,11 @@ namespace Assets
 	void IPhysPreset::loadFromDisk(Game::XAssetHeader* header, const std::string& name, Components::ZoneBuilder::Zone* builder)
 	{
 		Components::FileSystem::File physPresetFile(std::format("physpreset/{}.iw4x.json", name));
-		auto asset = builder->getAllocator()->allocate<Game::PhysPreset>();
+		auto* asset = builder->getAllocator()->allocate<Game::PhysPreset>();
 
 		if (physPresetFile.exists())
 		{
 			nlohmann::json physPresetJson;
-
 			try
 			{
 				physPresetJson = nlohmann::json::parse(physPresetFile.getBuffer());
@@ -70,7 +69,7 @@ namespace Assets
 				asset->tempDefaultToCylinder = physPresetJson["tempDefaultToCylinder"].get<bool>();
 				asset->perSurfaceSndAlias = physPresetJson["perSurfaceSndAlias"].get<bool>();
 
-				assert(asset->mass > FLT_EPSILON);
+				assert(asset->mass > std::numeric_limits<float>::epsilon());
 			}
 			catch (const std::exception& e)
 			{
@@ -78,9 +77,6 @@ namespace Assets
 				return;
 			}
 		}
-
-
-
 
 		header->physPreset = asset;
 	}

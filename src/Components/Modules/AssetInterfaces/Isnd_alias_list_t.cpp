@@ -313,6 +313,7 @@ namespace Assets
 					auto curve = Components::AssetHandler::FindAssetForZone(Game::XAssetType::ASSET_TYPE_SOUND_CURVE, fallOffCurve, builder).sndCurve;
 					
 					assert(curve);
+
 					alias->volumeFalloffCurve = curve;
 				}
 
@@ -325,11 +326,10 @@ namespace Assets
 				{
 					alias->soundFile->type = Game::SAT_STREAMED;
 
-					std::string streamedFile = soundFile.get<std::string>();
-					std::string directory = ""s;
-					int split = streamedFile.find_last_of('/');
-
-					if (split >= 0)
+					auto streamedFile = soundFile.get<std::string>();
+					std::string directory;
+					auto split = streamedFile.find_last_of('/');
+					if (split != std::string::npos)
 					{
 						directory = streamedFile.substr(0, split);
 						streamedFile = streamedFile.substr(split+1);
@@ -414,13 +414,13 @@ namespace Assets
 						speaker.emplace("levels1", iw4Speaker.numLevels > 1 ? iw4Speaker.levels[1] : 0);
 						speaker.emplace("numLevels", iw4Speaker.numLevels);
 						speaker.emplace("speaker", iw4Speaker.speaker);
-						speakers.push_back(speaker);
+						speakers.emplace_back(speaker);
 					}
 
 					auto channelMap = nlohmann::json::object_t();
 					channelMap.emplace("entryCount", iw3ChannelMap.speakerCount);
 					channelMap.emplace("speakers", speakers);
-					channelMaps.push_back(channelMap);
+					channelMaps.emplace_back(channelMap);
 				}
 			}
 
@@ -429,7 +429,7 @@ namespace Assets
 			speakerMap.emplace("isDefault", alias.speakerMap->isDefault);
 			speakerMap.emplace("name", (alias.speakerMap->name));
 
-			std::string soundFile("");
+			std::string soundFile;
 			if (alias.soundFile)
 			{
 				switch (alias.soundFile->type)
@@ -494,15 +494,14 @@ namespace Assets
 			json_alias.emplace("volMin", alias.volMin);
 			json_alias.emplace("volumeFalloffCurve", (alias.volumeFalloffCurve->filename));
 
-			head.push_back(json_alias);
+			head.emplace_back(json_alias);
 		}
 
 		output.emplace("aliasName", (ents->aliasName));
 		output.emplace("count", ents->count);
 		output.emplace("head", head);
 
-		const auto& dump = output.dump(4);
-
+		const auto dump = output.dump(4);
 		Utils::IO::WriteFile(std::format("raw/sounds/{}.json", ents->aliasName), dump);
 	}
 
@@ -523,7 +522,8 @@ namespace Assets
 			{
 				dest->aliasName = builder->getPointer(asset->aliasName);
 			}
-			else {
+			else
+			{
 				builder->storePointer(asset->aliasName);
 				buffer->saveString(asset->aliasName);
 				Utils::Stream::ClearPointer(&dest->aliasName);
@@ -557,7 +557,8 @@ namespace Assets
 						{
 							destAlias->aliasName = builder->getPointer(alias->aliasName);
 						}
-						else {
+						else
+						{
 							builder->storePointer(alias->aliasName);
 							buffer->saveString(alias->aliasName);
 							Utils::Stream::ClearPointer(&destAlias->aliasName);
@@ -608,7 +609,7 @@ namespace Assets
 							{
 								if (alias->soundFile->type == Game::snd_alias_type_t::SAT_LOADED)
 								{
-									destSoundFile->u.loadSnd = builder->saveSubAsset(Game::XAssetType::ASSET_TYPE_LOADED_SOUND, alias->soundFile->u.loadSnd).loadSnd;
+									destSoundFile->u.loadSnd = builder->saveSubAsset(Game::ASSET_TYPE_LOADED_SOUND, alias->soundFile->u.loadSnd).loadSnd;
 								}
 								else
 								{
@@ -635,7 +636,7 @@ namespace Assets
 
 					if (alias->volumeFalloffCurve)
 					{
-						destAlias->volumeFalloffCurve = builder->saveSubAsset(Game::XAssetType::ASSET_TYPE_SOUND_CURVE, alias->volumeFalloffCurve).sndCurve;
+						destAlias->volumeFalloffCurve = builder->saveSubAsset(Game::ASSET_TYPE_SOUND_CURVE, alias->volumeFalloffCurve).sndCurve;
 					}
 
 					if (alias->speakerMap)
