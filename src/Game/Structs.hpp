@@ -2497,6 +2497,213 @@ namespace Game
 		SAT_COUNT = 0x4,
 	};
 
+
+	/* 1333 */
+	struct __declspec(align(4)) $65FDF49F43A878FE5C159469C4C3C60F
+	{
+		char buffer[16384];
+		volatile int size;
+		bool compress;
+	};
+
+	/* 1334 */
+	struct snd_volume_info_t
+	{
+		float volume;
+		float goalvolume;
+		float goalrate;
+	};
+
+	/* 1335 */
+	struct __declspec(align(4)) snd_channelvolgroup
+	{
+		snd_volume_info_t channelvol[64];
+		bool active;
+	};
+
+	/* 1336 */
+	struct snd_background_info_t
+	{
+		float goalvolume;
+		float goalrate;
+	};
+
+	/* 1337 */
+	struct __declspec(align(4)) snd_enveffect
+	{
+		int roomtype;
+		float drylevel;
+		float drygoal;
+		float dryrate;
+		float wetlevel;
+		float wetgoal;
+		float wetrate;
+		bool active;
+	};
+
+	/* 1338 */
+	struct orientation_t
+	{
+		float origin[3];
+		float axis[3][3];
+	};
+
+	/* 1339 */
+	struct __declspec(align(4)) snd_listener
+	{
+		orientation_t orient;
+		float velocity;
+		int clientNum;
+		bool active;
+	};
+
+	/* 1340 */
+	struct snd_amplifier
+	{
+		snd_listener* listener;
+		int minRadius;
+		int maxRadius;
+		float falloffExp;
+		float minVol;
+		float maxVol;
+	};
+
+	/* 1341 */
+	struct snd_entchannel_info_t
+	{
+		char name[64];
+		int priority;
+		bool is3d;
+		bool isRestricted;
+		bool isPausable;
+		int maxVoices;
+		int voiceCount;
+	};
+
+	/* 1342 */
+	struct snd_entchan_overrides_t
+	{
+		unsigned int isPausable[2];
+		float timescaleLerp[64];
+	};
+
+	/* 669 */
+	enum SndFileLoadingState
+	{
+		SFLS_UNLOADED = 0x0,
+		SFLS_LOADING = 0x1,
+		SFLS_LOADED = 0x2,
+	};
+
+	/* 1343 */
+	struct SndFileSpecificChannelInfo
+	{
+		SndFileLoadingState loadingState;
+		int srcChannelCount;
+		int baserate;
+	};
+
+	/* 1344 */
+	struct $3D0F408E3DEECDDF5A7B6AF876E6F88B
+	{
+		unsigned int entIndex;
+	};
+
+	/* 1345 */
+	union SndEntHandle
+	{
+		$3D0F408E3DEECDDF5A7B6AF876E6F88B field;
+		int handle;
+	};
+
+	/* 670 */
+	enum SndLengthId
+	{
+		SndLengthNotify_Subtitle = 0x0,
+		SndLengthNotify_EntityCustom = 0x1,
+		SndLengthNotifyCount = 0x2,
+	};
+
+	/* 1346 */
+	struct sndLengthNotifyInfo
+	{
+		SndLengthId id[4];
+		void* data[4];
+		int count;
+	};
+
+	/* 671 */
+	enum snd_alias_system_t
+	{
+		SASYS_UI = 0x0,
+		SASYS_CGAME = 0x1,
+		SASYS_GAME = 0x2,
+		SASYS_COUNT = 0x3,
+	};
+
+	/* 1347 */
+	struct snd_channel_info_t
+	{
+		SndFileSpecificChannelInfo soundFileInfo;
+		SndEntHandle sndEnt;
+		int entchannel;
+		int startDelay;
+		int looptime;
+		int totalMsec;
+		int playbackId;
+		sndLengthNotifyInfo lengthNotifyInfo;
+		float basevolume;
+		float pitch;
+		struct snd_alias_t* alias0;
+		struct snd_alias_t* alias1;
+		int saveIndex0;
+		int saveIndex1;
+		float lerp;
+		float org[3];
+		float offset[3];
+		bool paused;
+		bool master;
+		float timescaleLerp;
+		snd_alias_system_t system;
+	};
+
+	/* 1348 */
+	struct snd_local_t
+	{
+		bool Initialized2d;
+		bool Initialized3d;
+		bool paused;
+		int playbackIdCounter;
+		unsigned int playback_rate;
+		int playback_channels;
+		float timescale;
+		int pausetime;
+		int cpu;
+		$65FDF49F43A878FE5C159469C4C3C60F restore;
+		float volume;
+		snd_volume_info_t mastervol;
+		snd_channelvolgroup channelVolGroups[4];
+		snd_channelvolgroup* channelvol;
+		snd_background_info_t background[4];
+		int ambient_track;
+		float slaveLerp;
+		float masterPercentage;
+		snd_enveffect envEffects[5];
+		snd_enveffect* effect;
+		snd_listener listeners[2];
+		int time;
+		int looptime;
+		snd_amplifier amplifier;
+		snd_entchannel_info_t entchaninfo[64];
+		snd_entchan_overrides_t entchanOverrides;
+		int entchannel_count;
+		snd_channel_info_t chaninfo[52];
+		int max_2D_channels;
+		int max_3D_channels;
+		int max_stream_channels;
+	};
+
+
 	struct SoundFile
 	{
 		char type;
@@ -3034,7 +3241,7 @@ namespace Game
 		unsigned int numLeafSurfaces;
 		unsigned int* leafsurfaces;
 		unsigned int vertCount;
-		float(*verts)[3];
+		vec3_t* verts;
 		unsigned int triCount;
 		unsigned __int16* triIndices;
 		unsigned char* triEdgeIsWalkable;
