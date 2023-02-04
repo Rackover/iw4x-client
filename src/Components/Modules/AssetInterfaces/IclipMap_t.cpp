@@ -1628,7 +1628,7 @@ namespace Assets
 
 			json_plane.emplace(
 				"normal",
-				float_array_to_json(plane->normal, ARRAYSIZE(plane->normal))
+				float_array_to_json(plane->normal, 3)
 			);
 
 			json_plane.emplace("dist", plane->dist);
@@ -1651,16 +1651,17 @@ namespace Assets
 			json_static_model.emplace(
 				"xmodel", (static_model->xmodel->name)
 			);
+
 			json_static_model.emplace(
 				"origin",
-				float_array_to_json(static_model->origin, ARRAYSIZE(static_model->origin))
+				float_array_to_json(static_model->origin, 3)
 			);
 
 			auto inv_scaled_axis = nlohmann::json::array();
 			for (size_t j = 0; j < ARRAYSIZE(static_model->invScaledAxis); j++)
 			{
 				inv_scaled_axis.push_back(
-					float_array_to_json(static_model->invScaledAxis[j], ARRAYSIZE(static_model->invScaledAxis[j]))
+					float_array_to_json(static_model->invScaledAxis[j], 3)
 				);
 			}
 
@@ -2177,13 +2178,9 @@ namespace Assets
 		output.emplace("checksum", clipMap->checksum);
 
 		// Write to disk
-
-		constexpr auto prefix = "maps/mp/";
-		constexpr auto suffix = ".d3dbsp";
-
-		std::string basename(header.clipMap->name);
-		basename = basename.substr(strlen(prefix), basename.size() - strlen(suffix) - strlen(prefix));
-		Utils::IO::WriteFile(std::format("raw/clipmap/{}.iw4x.json", basename), output.dump(4));
+		constexpr auto* prefix = "maps/mp/";
+		constexpr auto* suffix = ".d3dbsp";
+		Utils::IO::WriteFile(std::format("raw/clipmap/{}{}{}.iw4x.json", prefix, header.clipMap->name, suffix), output.dump(4));
 
 	}
 }

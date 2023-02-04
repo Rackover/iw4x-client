@@ -121,7 +121,7 @@ namespace Assets
 						else
 						{
 							auto indices1 = reader.readArray<char>(delta->trans->size + 1);
-							memcpy(delta->trans->u.frames.indices._1, indices1, delta->trans->size + 1);
+							std::memcpy(delta->trans->u.frames.indices._1, indices1, delta->trans->size + 1);
 						}
 
 						if (delta->trans->u.frames.frames._1)

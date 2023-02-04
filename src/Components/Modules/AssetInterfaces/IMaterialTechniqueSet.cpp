@@ -30,7 +30,7 @@ namespace Assets
 			*tech = nullptr;
 
 			Components::Logger::Warning(Game::CON_CHANNEL_DONT_FILTER, "Missing technique '{}'\n", name);
-			assert(false);
+			AssertUnreachable;
 			return;
 		}
 
