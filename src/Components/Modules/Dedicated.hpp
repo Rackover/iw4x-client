@@ -23,10 +23,11 @@ namespace Components
 		static void PostInitialization();
 		static void PostInitializationStub();
 
+		static void Com_ClampMsec(int msec);
+		static void Com_ClampMsec_Stub();
+
 		static void TransmitGuids();
 
 		static void TimeWrapStub(Game::errorParm_t code, const char* message);
-
-		static Game::dvar_t* Dvar_RegisterSVNetworkFps(const char* dvarName, int value, int min, int max, int flags, const char* description);
 	};
 }

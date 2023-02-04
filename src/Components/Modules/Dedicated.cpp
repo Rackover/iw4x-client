@@ -3,6 +3,7 @@
 
 #include "CardTitles.hpp"
 #include "ClanTags.hpp"
+#include "Party.hpp"
 #include "ServerCommands.hpp"
 
 namespace Components
@@ -88,6 +89,36 @@ namespace Components
 		}
 	}
 
+	void Dedicated::Com_ClampMsec(const int msec)
+	{
+		if (msec > 500 && msec < 500000)
+		{
+			Game::Com_PrintWarning(Game::CON_CHANNEL_SYSTEM, "Hitch warning: %i msec frame time\n", msec);
+		}
+	}
+
+	__declspec(naked) void Dedicated::Com_ClampMsec_Stub()
+	{
+		using namespace Game;
+
+		__asm
+		{
+			pushad
+
+			push ecx
+			call Com_ClampMsec
+			add esp, 0x4
+
+			popad
+
+			// Game's code
+			mov edx, dword ptr com_sv_running
+
+			push 0x47DDB8
+			ret
+		}
+	}
+
 	void Dedicated::TransmitGuids()
 	{
 		std::string list = Utils::String::VA("%c", 20);
@@ -114,10 +145,9 @@ namespace Components
 	{
 		Scheduler::Once([]
 		{
-			const auto partyEnable = Dvar::Var("party_enable").get<bool>();
 			std::string mapname = (*Game::sv_mapname)->current.string;
 
-			if (!partyEnable) // Time wrapping should not occur in party servers, but yeah...
+			if (!Party::IsEnabled()) // Time wrapping should not occur in party servers, but yeah...
 			{
 				if (mapname.empty()) mapname = "mp_rust";
 				Command::Execute(std::format("map {}", mapname), true);
@@ -142,11 +172,6 @@ namespace Components
 
 		Logger::Print(Game::CON_CHANNEL_SERVER, "Sending heartbeat to master: {}:{}\n", masterServerName, masterPort);
 		Network::SendCommand(master, "heartbeat", "IW4");
-	}
-
-	Game::dvar_t* Dedicated::Dvar_RegisterSVNetworkFps(const char* dvarName, int, int min, int, int, const char* description)
-	{
-		return Game::Dvar_RegisterInt(dvarName, 1000, min, 1000, Game::DVAR_NONE, description);
 	}
 
 	Dedicated::Dedicated()
@@ -200,9 +225,6 @@ namespace Components
 			// isHost script call return 0
 			Utils::Hook::Set<DWORD>(0x5DEC04, 0);
 
-			// Manually register sv_network_fps
-			Utils::Hook(0x4D3C7B, Dvar_RegisterSVNetworkFps, HOOK_CALL).install()->quick();
-
 			// r_loadForRenderer default to 0
 			Utils::Hook::Set<BYTE>(0x519DDF, 0);
 
@@ -224,13 +246,16 @@ namespace Components
 
 			if (!ZoneBuilder::IsEnabled())
 			{
-				Scheduler::Once([]
+				Events::OnDvarInit([]
 				{
 					SVMOTD = Dvar::Register<const char*>("sv_motd", "", Game::DVAR_NONE, "A custom message of the day for servers");
-				}, Scheduler::Pipeline::MAIN);
+				});
 
 				// Post initialization point
 				Utils::Hook(0x60BFBF, PostInitializationStub, HOOK_JUMP).install()->quick();
+
+				Utils::Hook(0x47DDB2, Com_ClampMsec_Stub, HOOK_JUMP).install()->quick(); // Com_Frame_Try_Block_Function
+				Utils::Hook::Nop(0x47DDB2 + 5, 1);
 
 				// Transmit custom data
 				Scheduler::Loop([]

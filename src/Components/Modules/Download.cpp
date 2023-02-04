@@ -1,5 +1,6 @@
 #include <STDInclude.hpp>
 #include <Utils/InfoString.hpp>
+#include <Utils/WebIO.hpp>
 
 #include "Download.hpp"
 #include "Party.hpp"
@@ -13,6 +14,10 @@ namespace Components
 
 	Dvar::Var Download::SV_wwwDownload;
 	Dvar::Var Download::SV_wwwBaseUrl;
+
+	Dvar::Var Download::UIDlTimeLeft;
+	Dvar::Var Download::UIDlProgress;
+	Dvar::Var Download::UIDlTransRate;
 
 	Download::ClientDownload Download::CLDownload;
 
@@ -33,9 +38,9 @@ namespace Components
 
 		Scheduler::Once([]
 		{
-			Dvar::Var("ui_dl_timeLeft").set(Utils::String::FormatTimeSpan(0));
-			Dvar::Var("ui_dl_progress").set("(0/0) %");
-			Dvar::Var("ui_dl_transRate").set("0.0 MB/s");
+			UIDlTimeLeft.set(Utils::String::FormatTimeSpan(0));
+			UIDlProgress.set("(0/0) %");
+			UIDlTransRate.set("0.0 MB/s");
 		}, Scheduler::Pipeline::MAIN);
 
 		Command::Execute("openmenu mod_download_popmenu", false);
@@ -372,8 +377,8 @@ namespace Components
 			Scheduler::Once([]
 			{
 				framePushed = false;
-				Dvar::Var("ui_dl_progress").set(Utils::String::VA("(%d/%d) %d%%", dlIndex, dlSize, dlProgress));
-			}, Scheduler::Pipeline::CLIENT);
+				UIDlProgress.set(std::format("({}/{}) {}%", dlIndex, dlSize, dlProgress));
+			}, Scheduler::Pipeline::MAIN);
 		}
 
 		auto delta = Game::Sys_Milliseconds() - fDownload->download->lastTimeStamp;
@@ -401,8 +406,8 @@ namespace Components
 
 				Scheduler::Once([]
 				{
-					Dvar::Var("ui_dl_timeLeft").set(Utils::String::FormatTimeSpan(dlTimeLeft));
-					Dvar::Var("ui_dl_transRate").set(Utils::String::FormatBandwidth(dlTsBytes, dlDelta));
+					UIDlTimeLeft.set(Utils::String::FormatTimeSpan(dlTimeLeft));
+					UIDlTransRate.set(Utils::String::FormatBandwidth(dlTsBytes, dlDelta));
 				}, Scheduler::Pipeline::MAIN);
 			}
 
@@ -654,38 +659,41 @@ namespace Components
 
 		if (Dedicated::IsEnabled())
 		{
-			mg_mgr_init(&Mgr);
-
-			Network::OnStart([]
+			if (!Flags::HasFlag("disable-mongoose"))
 			{
-				const auto* nc = mg_http_listen(&Mgr, Utils::String::VA(":%hu", Network::GetPort()), &EventHandler, &Mgr);
-				if (!nc)
-				{
-					Logger::PrintError(Game::CON_CHANNEL_ERROR, "Failed to bind TCP socket, mod download won't work!\n");
-					Terminate = true;
-				}
-			});
+				mg_mgr_init(&Mgr);
 
-			ServerRunning = true;
-			Terminate = false;
-			ServerThread = Utils::Thread::CreateNamedThread("Mongoose", []
-			{
-				Com_InitThreadData();
-
-				while (!Terminate)
+				Network::OnStart([]
 				{
-					mg_mgr_poll(&Mgr, 1000);
-				}
-			});
+					const auto* nc = mg_http_listen(&Mgr, Utils::String::VA(":%hu", Network::GetPort()), &EventHandler, &Mgr);
+					if (!nc)
+					{
+						Logger::PrintError(Game::CON_CHANNEL_ERROR, "Failed to bind TCP socket, mod download won't work!\n");
+						Terminate = true;
+					}
+				});
+
+				ServerRunning = true;
+				Terminate = false;
+				ServerThread = Utils::Thread::CreateNamedThread("Mongoose", []
+				{
+					Com_InitThreadData();
+
+					while (!Terminate)
+					{
+						mg_mgr_poll(&Mgr, 1000);
+					}
+				});
+			}
 		}
 		else
 		{
-			Scheduler::Once([]
+			Events::OnDvarInit([]
 			{
-				Dvar::Register<const char*>("ui_dl_timeLeft", "", Game::DVAR_NONE, "");
-				Dvar::Register<const char*>("ui_dl_progress", "", Game::DVAR_NONE, "");
-				Dvar::Register<const char*>("ui_dl_transRate", "", Game::DVAR_NONE, "");
-			}, Scheduler::Pipeline::MAIN);
+				UIDlTimeLeft = Dvar::Register<const char*>("ui_dl_timeLeft", "", Game::DVAR_NONE, "");
+				UIDlProgress = Dvar::Register<const char*>("ui_dl_progress", "", Game::DVAR_NONE, "");
+				UIDlTransRate = Dvar::Register<const char*>("ui_dl_transRate", "", Game::DVAR_NONE, "");
+			});
 
 			UIScript::Add("mod_download_cancel", []([[maybe_unused]] const UIScript::Token& token, [[maybe_unused]] const Game::uiInfo_s* info)
 			{
@@ -693,11 +701,11 @@ namespace Components
 			});
 		}
 
-		Scheduler::Once([]
+		Events::OnDvarInit([]
 		{
 			SV_wwwDownload = Dvar::Register<bool>("sv_wwwDownload", false, Game::DVAR_NONE, "Set to true to enable downloading maps/mods from an external server.");
 			SV_wwwBaseUrl = Dvar::Register<const char*>("sv_wwwBaseUrl", "", Game::DVAR_NONE, "Set to the base url for the external map download.");
-		}, Scheduler::Pipeline::MAIN);
+		});
 	}
 
 	Download::~Download()

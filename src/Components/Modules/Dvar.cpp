@@ -8,7 +8,7 @@ namespace Components
 		: dvar_(Game::Dvar_FindVar(dvarName.data()))
 	{
 		// If the dvar can't be found it will be registered as an empty string dvar
-		if (this->dvar_ == nullptr)
+		if (!this->dvar_)
 		{
 			this->dvar_ = const_cast<Game::dvar_t*>(Game::Dvar_SetFromStringByNameFromSource(dvarName.data(), "", Game::DVAR_SOURCE_INTERNAL));
 		}
@@ -21,13 +21,17 @@ namespace Components
 
 	template <> const char* Dvar::Var::get()
 	{
-		if (this->dvar_ == nullptr)
+		if (!this->dvar_)
+		{
 			return "";
+		}
 
 		if (this->dvar_->type == Game::DVAR_TYPE_STRING || this->dvar_->type == Game::DVAR_TYPE_ENUM)
 		{
-			if (this->dvar_->current.string != nullptr)
+			if (this->dvar_->current.string)
+			{
 				return this->dvar_->current.string;
+			}
 		}
 
 		return "";
@@ -35,8 +39,10 @@ namespace Components
 
 	template <> int Dvar::Var::get()
 	{
-		if (this->dvar_ == nullptr)
+		if (!this->dvar_)
+		{
 			return 0;
+		}
 
 		if (this->dvar_->type == Game::DVAR_TYPE_INT || this->dvar_->type == Game::DVAR_TYPE_ENUM)
 		{
@@ -48,8 +54,10 @@ namespace Components
 
 	template <> unsigned int Dvar::Var::get()
 	{
-		if (this->dvar_ == nullptr)
+		if (!this->dvar_)
+		{
 			return 0;
+		}
 
 		if (this->dvar_->type == Game::DVAR_TYPE_INT)
 		{
@@ -61,8 +69,10 @@ namespace Components
 
 	template <> float Dvar::Var::get()
 	{
-		if (this->dvar_ == nullptr)
+		if (!this->dvar_)
+		{
 			return 0.f;
+		}
 
 		if (this->dvar_->type == Game::DVAR_TYPE_FLOAT)
 		{
@@ -72,26 +82,12 @@ namespace Components
 		return 0.f;
 	}
 
-	template <> float* Dvar::Var::get()
-	{
-		static Game::vec4_t vector{0.f, 0.f, 0.f, 0.f};
-
-		if (this->dvar_ == nullptr)
-			return vector;
-
-		if (this->dvar_->type == Game::DVAR_TYPE_FLOAT_2 || this->dvar_->type == Game::DVAR_TYPE_FLOAT_3 ||
-			this->dvar_->type == Game::DVAR_TYPE_FLOAT_4)
-		{
-			return this->dvar_->current.vector;
-		}
-
-		return vector;
-	}
-
 	template <> bool Dvar::Var::get()
 	{
-		if (this->dvar_ == nullptr)
+		if (!this->dvar_)
+		{
 			return false;
+		}
 
 		if (this->dvar_->type == Game::DVAR_TYPE_BOOL)
 		{
@@ -108,7 +104,9 @@ namespace Components
 
 	void Dvar::Var::set(const char* string)
 	{
+		assert(string);
 		assert(this->dvar_->type == Game::DVAR_TYPE_STRING);
+
 		if (this->dvar_)
 		{
 			Game::Dvar_SetString(this->dvar_, string);
@@ -203,7 +201,7 @@ namespace Components
 		return Game::Dvar_RegisterFloat(dvarName, value, min, max, flag, description);
 	}
 
-	Game::dvar_t* Dvar::Dvar_RegisterName(const char* name, const char* /*default*/, std::uint16_t flags, const char* description)
+	const Game::dvar_t* Dvar::Dvar_RegisterName(const char* dvarName, const char* /*value*/, std::uint16_t flags, const char* description)
 	{
 		// Name watcher
 		if (!Dedicated::IsEnabled() && !ZoneBuilder::IsEnabled())
@@ -237,14 +235,19 @@ namespace Components
 		{
 			const char* steamName = Steam::Proxy::SteamFriends->GetPersonaName();
 
-			if (steamName && *steamName != '\0')
+			if (steamName && *steamName)
 			{
 				username = steamName;
 			}
 		}
 
-		Name = Register<const char*>(name, username.data(), flags | Game::DVAR_ARCHIVE, description);
+		Name = Register<const char*>(dvarName, username.data(), flags | Game::DVAR_ARCHIVE, description);
 		return Name.get<Game::dvar_t*>();
+	}
+
+	const Game::dvar_t* Dvar::Dvar_RegisterSVNetworkFps(const char* dvarName, int /*value*/, int min, int /*max*/, std::uint16_t /*flags*/, const char* description)
+	{
+		return Game::Dvar_RegisterInt(dvarName, 1000, min, 1000, Game::DVAR_NONE, description);
 	}
 
 	void Dvar::SetFromStringByNameSafeExternal(const char* dvarName, const char* string)
@@ -294,7 +297,7 @@ namespace Components
 	{
 		// Save the dvar original value if it has the archive flag
 		const auto* dvar = Game::Dvar_FindVar(dvarName);
-		if (dvar != nullptr && dvar->flags & Game::DVAR_ARCHIVE)
+		if (dvar && dvar->flags & Game::DVAR_ARCHIVE)
 		{
 			if (!AreArchiveDvarsUnprotected())
 			{
@@ -305,7 +308,7 @@ namespace Components
 			Logger::Print(Game::CON_CHANNEL_CONSOLEONLY, "Server is overriding saved dvar '{}'\n", dvarName);
 		}
 
-		if (dvar != nullptr && std::strcmp(dvar->name, "com_errorResolveCommand") == 0)
+		if (dvar && std::strcmp(dvar->name, "com_errorResolveCommand") == 0)
 		{
 			Logger::Print(Game::CON_CHANNEL_CONSOLEONLY, "Not allowing server to set '{}'\n", dvar->name);
 			return;
@@ -408,6 +411,9 @@ namespace Components
 
 		// Hook dvar 'name' registration
 		Utils::Hook(0x40531C, Dvar_RegisterName, HOOK_CALL).install()->quick();
+
+		// Hook dvar 'sv_network_fps' registration
+		Utils::Hook(0x4D3C7B, Dvar_RegisterSVNetworkFps, HOOK_CALL).install()->quick();
 
 		// un-cheat safeArea_* and add archive flags
 		Utils::Hook::Xor<std::uint32_t>(0x42E3F5, Game::DVAR_ROM | Game::DVAR_ARCHIVE); //safeArea_adjusted_horizontal

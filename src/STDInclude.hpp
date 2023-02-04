@@ -81,9 +81,6 @@
 #pragma warning(disable: 6387)
 #pragma warning(disable: 26812)
 
-#include <gsl/gsl>
-#include <tomcrypt.h>
-
 // Enable additional literals
 using namespace std::literals;
 
@@ -111,6 +108,9 @@ using namespace std::literals;
 
 #define AssertUnreachable assert(0 && "unreachable")
 
+#include <gsl/gsl>
+#include <tomcrypt.h>
+
 #pragma warning(pop)
 
 #include "Utils/Memory.hpp" // Breaks order on purpose
@@ -130,7 +130,6 @@ using namespace std::literals;
 #include "Utils/Thread.hpp"
 #include "Utils/Time.hpp"
 #include "Utils/Utils.hpp"
-#include "Utils/WebIO.hpp"
 
 #include "Steam/Steam.hpp" // Some definitions are used in functions and structs
 

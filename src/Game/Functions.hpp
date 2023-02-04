@@ -311,6 +311,9 @@ namespace Game
 	typedef const char*(*Live_GetLocalClientName_t)(int controllerIndex);
 	extern Live_GetLocalClientName_t Live_GetLocalClientName;
 
+	typedef bool(*Live_IsSystemUiActive_t)();
+	extern Live_IsSystemUiActive_t Live_IsSystemUiActive;
+
 	typedef int(*LiveStorage_GetStat_t)(int controllerIndex, int index);
 	extern LiveStorage_GetStat_t LiveStorage_GetStat;
 
@@ -319,15 +322,6 @@ namespace Game
 
 	typedef char*(*Scr_AddSourceBuffer_t)(const char* filename, const char* extFilename, const char* codePos, bool archive);
 	extern Scr_AddSourceBuffer_t Scr_AddSourceBuffer;
-
-	typedef int(*PC_ReadToken_t)(source_t*, token_t*);
-	extern PC_ReadToken_t PC_ReadToken;
-
-	typedef int(*PC_ReadTokenHandle_t)(int handle, pc_token_s *pc_token);
-	extern PC_ReadTokenHandle_t PC_ReadTokenHandle;
-
-	typedef void(*PC_SourceError_t)(int, const char*, ...);
-	extern PC_SourceError_t PC_SourceError;
 
 	typedef int(*Party_GetMaxPlayers_t)(PartyData* party);
 	extern Party_GetMaxPlayers_t Party_GetMaxPlayers;
@@ -608,7 +602,7 @@ namespace Game
 
 	extern float* cgameFOVSensitivityScale;
 
-	extern source_t** sourceFiles;
+	extern source_s** sourceFiles;
 
 	extern UiContext* uiContext;
 
@@ -736,6 +730,7 @@ namespace Game
 	extern int* ui_arenaBufPos;
 
 	extern punctuation_s* default_punctuations;
+	extern int* numtokens;
 
 	extern bool* s_havePlaylists;
 

@@ -373,12 +373,14 @@ namespace Components
 		{
 			std::thread([]
 			{
+				Com_InitThreadData();
+
 				// check natpmpstate
 				// state 4 is no more devices to query
 				while (Utils::Hook::Get<int>(0x66CE200) < 4)
 				{
 					Utils::Hook::Call<void()>(0x4D7030)();
-					std::this_thread::sleep_for(500ms);
+					Game::Sys_Sleep(500);
 				}
 			}).detach();
 		}, HOOK_JUMP).install()->quick();
@@ -667,7 +669,7 @@ namespace Components
 			}
 		});
 
-#ifdef DEBUG
+#ifdef DEBUG_MAT_LOG
 		AssetHandler::OnLoad([](Game::XAssetType type, Game::XAssetHeader asset, const std::string& /*name*/, bool* /*restrict*/)
 		{
 			if (type == Game::XAssetType::ASSET_TYPE_GFXWORLD)
