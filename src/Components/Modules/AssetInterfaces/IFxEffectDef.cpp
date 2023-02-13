@@ -8,7 +8,7 @@ namespace Assets
 	void IFxEffectDef::load(Game::XAssetHeader* header, const std::string& name, Components::ZoneBuilder::Zone* builder)
 	{
 		if (!header->data)                                   this->loadEfx(header, name, builder);    // Check if we have an editor fx
-		if (!header->data)                                   this->loadBinary(header, name, builder); // Check if we need to import a new one into the game
+		if (!header->data)                                   this->loadFromIW4OF(header, name, builder); // Check if we need to import a new one into the game
 		if (!header->data /*&& !builder->isPrimaryAsset()*/) this->loadNative(header, name, builder); // Check if there is a native one
 	}
 
@@ -62,146 +62,9 @@ namespace Assets
 		}
 	}
 
-	void IFxEffectDef::loadBinary(Game::XAssetHeader* header, const std::string& name, Components::ZoneBuilder::Zone* builder)
+	void IFxEffectDef::loadFromIW4OF(Game::XAssetHeader* header, const std::string& name, Components::ZoneBuilder::Zone* builder)
 	{
-		Components::FileSystem::File fxFile(std::format("fx/{}.iw4xFx", name));
-		if (!fxFile.exists())
-		{
-			return;
-		}
-
-		Utils::Stream::Reader buffer(builder->getAllocator(), fxFile.getBuffer());
-
-		auto magic = buffer.read<std::int64_t>();
-		if (std::memcmp(&magic, "IW4xFx  ", 8) != 0)
-		{
-			Components::Logger::Error(Game::ERR_FATAL, "Reading fx '{}' failed, header is invalid!", name);
-		}
-
-		int version = buffer.read<int>();
-		if (version > IW4X_FX_VERSION)
-		{
-			Components::Logger::Error(Game::ERR_FATAL, "Reading fx '{}' failed, expected version is {}, but it was {}!", name, IW4X_FX_VERSION, version);
-		}
-
-		auto* asset = buffer.readObject<Game::FxEffectDef>();
-		header->fx = asset;
-
-		if (asset->name)
-		{
-			asset->name = buffer.readCString();
-		}
-
-		if (asset->elemDefs)
-		{
-			asset->elemDefs = buffer.readArray<Game::FxElemDef>(asset->elemDefCountEmission + asset->elemDefCountLooping + asset->elemDefCountOneShot);
-
-			for (auto i = 0; i < (asset->elemDefCountEmission + asset->elemDefCountLooping + asset->elemDefCountOneShot); ++i)
-			{
-				auto* elemDef = &asset->elemDefs[i];
-
-				if (elemDef->velSamples)
-				{
-					elemDef->velSamples = buffer.readArray<Game::FxElemVelStateSample>(elemDef->velIntervalCount + 1);
-				}
-
-				if (elemDef->visSamples)
-				{
-					elemDef->visSamples = buffer.readArray<Game::FxElemVisStateSample>(elemDef->visStateIntervalCount + 1);
-				}
-
-				// Save_FxElemDefVisuals
-				{
-					if (elemDef->elemType == Game::FX_ELEM_TYPE_DECAL)
-					{
-						if (elemDef->visuals.markArray)
-						{
-							elemDef->visuals.markArray = buffer.readArray<Game::FxElemMarkVisuals>(elemDef->visualCount);
-
-							for (char j = 0; j < elemDef->visualCount; ++j)
-							{
-								if (elemDef->visuals.markArray[j].materials[0])
-								{
-									elemDef->visuals.markArray[j].materials[0] = Components::AssetHandler::FindAssetForZone(Game::ASSET_TYPE_MATERIAL, buffer.readString(), builder).material;
-								}
-
-								if (elemDef->visuals.markArray[j].materials[1])
-								{
-									elemDef->visuals.markArray[j].materials[1] = Components::AssetHandler::FindAssetForZone(Game::ASSET_TYPE_MATERIAL, buffer.readString(), builder).material;
-								}
-							}
-						}
-					}
-					else if (elemDef->visualCount > 1)
-					{
-						if (elemDef->visuals.array)
-						{
-							elemDef->visuals.array = buffer.readArray<Game::FxElemVisuals>(elemDef->visualCount);
-
-							for (char j = 0; j < elemDef->visualCount; ++j)
-							{
-								this->loadFxElemVisuals(&elemDef->visuals.array[j], elemDef->elemType, builder, &buffer);
-							}
-						}
-					}
-					else if (elemDef->visualCount == 1)
-					{
-						this->loadFxElemVisuals(&elemDef->visuals.instance, elemDef->elemType, builder, &buffer);
-					}
-				}
-
-				if (elemDef->effectOnImpact.handle)
-				{
-					elemDef->effectOnImpact.handle = Components::AssetHandler::FindAssetForZone(Game::ASSET_TYPE_FX, buffer.readString(), builder).fx;
-				}
-
-				if (elemDef->effectOnDeath.handle)
-				{
-					elemDef->effectOnDeath.handle = Components::AssetHandler::FindAssetForZone(Game::ASSET_TYPE_FX, buffer.readString(), builder).fx;
-				}
-
-				if (elemDef->effectEmitted.handle)
-				{
-					elemDef->effectEmitted.handle = Components::AssetHandler::FindAssetForZone(Game::ASSET_TYPE_FX, buffer.readString(), builder).fx;
-				}
-
-				// Save_FxElemExtendedDefPtr
-				{
-
-					if (elemDef->elemType == Game::FX_ELEM_TYPE_TRAIL)
-					{
-						// Save_FxTrailDef
-						{
-							if (elemDef->extended.trailDef)
-							{
-								auto* trailDef = buffer.readObject<Game::FxTrailDef>();
-								elemDef->extended.trailDef = trailDef;
-
-								if (trailDef->verts)
-								{
-									trailDef->verts = buffer.readArray<Game::FxTrailVertex>(trailDef->vertCount);
-								}
-
-								if (trailDef->inds)
-								{
-									trailDef->inds = buffer.readArray<unsigned short>(trailDef->indCount);
-								}
-							}
-						}
-					}
-					else if (version >= 2)
-					{
-						if (elemDef->elemType == Game::FX_ELEM_TYPE_SPARK_FOUNTAIN)
-						{
-							if (elemDef->extended.sparkFountainDef)
-							{
-								elemDef->extended.sparkFountainDef = buffer.readObject<Game::FxSparkFountainDef>();
-							}
-						}
-					}
-				}
-			}
-		}
+		header->fx = builder->getIW4OfApi()->read<Game::FxEffectDef>(Game::XAssetType::ASSET_TYPE_FX, name);
 	}
 
 	void IFxEffectDef::loadEfx(Game::XAssetHeader* /*header*/, const std::string& name, Components::ZoneBuilder::Zone* /*builder*/)

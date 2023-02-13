@@ -91,8 +91,5 @@ namespace Assets
 			float halfX, halfY, halfZ;
 		};
 		
-		void loadBinary(Game::XAssetHeader* header, const std::string& name, Components::ZoneBuilder::Zone* builder);
-		void loadFromJSON(Game::XAssetHeader* header, const std::string& name, Components::ZoneBuilder::Zone* builder);
-		
 	};
 }
