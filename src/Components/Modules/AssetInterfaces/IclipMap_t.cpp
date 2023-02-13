@@ -1628,7 +1628,7 @@ namespace Assets
 
 			json_plane.emplace(
 				"normal",
-				float_array_to_json(plane->normal, 3)
+				float_array_to_json(plane->normal, ARRAYSIZE(plane->normal))
 			);
 
 			json_plane.emplace("dist", plane->dist);
@@ -1651,17 +1651,16 @@ namespace Assets
 			json_static_model.emplace(
 				"xmodel", (static_model->xmodel->name)
 			);
-
 			json_static_model.emplace(
 				"origin",
-				float_array_to_json(static_model->origin, 3)
+				float_array_to_json(static_model->origin, ARRAYSIZE(static_model->origin))
 			);
 
 			auto inv_scaled_axis = nlohmann::json::array();
 			for (size_t j = 0; j < ARRAYSIZE(static_model->invScaledAxis); j++)
 			{
 				inv_scaled_axis.push_back(
-					float_array_to_json(static_model->invScaledAxis[j], 3)
+					float_array_to_json(static_model->invScaledAxis[j], ARRAYSIZE(static_model->invScaledAxis[j]))
 				);
 			}
 
