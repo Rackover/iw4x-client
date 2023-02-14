@@ -25,7 +25,7 @@ function iw4_open_formats.project()
 		iw4_open_formats.includes()
 
 		pchheader "std_include.hpp"
-		pchsource path.join(iw4_open_formats.source, "iw4-of/std_include.cpp")
+		pchsource (path.join(iw4_open_formats.source, "iw4-of/std_include.cpp"))
 
 		files {
 			path.join(iw4_open_formats.source, "iw4-of/**.hpp"),
