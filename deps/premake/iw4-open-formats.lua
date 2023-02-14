@@ -2,6 +2,10 @@ iw4of = {
 	source = path.join(dependencies.basePath, "iw4-open-formats", "src"),
 	dependenciesPath = path.join(dependencies.basePath, "iw4-open-formats", "deps")
 }
+
+iw4of_dependencies = {
+	basePath = iw4of.dependenciesPath
+}
 	
 
 
@@ -10,10 +14,6 @@ function iw4of.import()
 	
 	dir = path.join(dependencies.basePath, "iw4-open-formats", "deps", "premake/*.lua")
 	deps = os.matchfiles(dir)
-	
-	-- holy shit
-	backup = dependencies.basePath
-	dependencies.basePath = iw4of.dependenciesPath
 	
 	for i, dep in pairs(deps) do
 		dep = dep:gsub(".lua", "")
@@ -27,8 +27,6 @@ function iw4of.import()
 	zstd.import()
 	
 	
-	dependencies.basePath = backup
-			
 	iw4of.includes()
 end
 
@@ -57,9 +55,6 @@ function iw4of.project()
 			path.join(iw4of.source, "iw4-of"),
 			path.join(dependencies.basePath, "iw4-open-formats", "include")
 		}
-			
-		backup = dependencies.basePath
-		dependencies.basePath = iw4of.dependenciesPath
 		
 		libtomcrypt.includes()
 		libtommath.includes()
@@ -67,7 +62,8 @@ function iw4of.project()
 		zlib.includes()
 		zstd.includes()
 		
-		dependencies.basePath = backup
+		print(zstd)
+		
 end
 
 table.insert(dependencies, iw4of)
