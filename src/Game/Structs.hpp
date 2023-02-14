@@ -30,13 +30,6 @@ namespace Game
 		unsigned __int16 classnum;
 	};
 
-	struct SndCurve
-	{
-		const char* filename;
-		unsigned __int16 knotCount;
-		float knots[16][2];
-	};
-
 	typedef void(*BuiltinFunction)();
 	typedef void(*BuiltinMethod)(scr_entref_t);
 
@@ -2621,31 +2614,6 @@ namespace Game
 		SASYS_COUNT = 0x3,
 	};
 
-	struct snd_channel_info_t
-	{
-		SndFileSpecificChannelInfo soundFileInfo;
-		SndEntHandle sndEnt;
-		int entchannel;
-		int startDelay;
-		int looptime;
-		int totalMsec;
-		int playbackId;
-		sndLengthNotifyInfo lengthNotifyInfo;
-		float basevolume;
-		float pitch;
-		struct snd_alias_t* alias0;
-		struct snd_alias_t* alias1;
-		int saveIndex0;
-		int saveIndex1;
-		float lerp;
-		float org[3];
-		float offset[3];
-		bool paused;
-		bool master;
-		float timescaleLerp;
-		snd_alias_system_t system;
-	};
-
 	struct snd_local_t
 	{
 		bool Initialized2d;
@@ -2685,7 +2653,6 @@ namespace Game
 		int max_3D_channels;
 		int max_stream_channels;
 	};
-
 
 	struct SoundFile
 	{
@@ -2734,6 +2701,13 @@ namespace Game
 		unsigned int intValue;
 	};
 
+	struct SndCurve
+	{
+		const char* filename;
+		unsigned __int16 knotCount;
+		float knots[16][2];
+	};
+
 	const struct snd_alias_t
 	{
 		const char* aliasName;
@@ -2765,6 +2739,31 @@ namespace Game
 		float envelopMax;
 		float envelopPercentage;
 		SpeakerMap* speakerMap;
+	};
+
+	struct snd_channel_info_t
+	{
+		SndFileSpecificChannelInfo soundFileInfo;
+		SndEntHandle sndEnt;
+		int entchannel;
+		int startDelay;
+		int looptime;
+		int totalMsec;
+		int playbackId;
+		sndLengthNotifyInfo lengthNotifyInfo;
+		float basevolume;
+		float pitch;
+		snd_alias_t* alias0;
+		snd_alias_t* alias1;
+		int saveIndex0;
+		int saveIndex1;
+		float lerp;
+		float org[3];
+		float offset[3];
+		bool paused;
+		bool master;
+		float timescaleLerp;
+		snd_alias_system_t system;
 	};
 
 	struct Poly
@@ -5749,7 +5748,6 @@ namespace Game
 		int numEntityChars;
 		MapTriggers trigger;
 	};
-
 
 	union XAssetHeader
 	{
@@ -8856,12 +8854,6 @@ namespace Game
 		unsigned __int16 children;
 	};
 
-	struct ClientEntSound
-	{
-		float origin[3];
-		snd_alias_list_t* aliasList;
-	};
-
 	struct FxEffect
 	{
 		const FxEffectDef* def;
@@ -10998,6 +10990,11 @@ namespace Game
 		unsigned int pad1[14];
 	};
 
+	struct ClientEntSound
+	{
+		float origin[3];
+		snd_alias_list_t* aliasList;
+	};
 
 #pragma endregion
 
