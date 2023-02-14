@@ -1,8 +1,6 @@
 #include <STDInclude.hpp>
 #include "IXAnimParts.hpp"
 
-#define IW4X_ANIM_VERSION 2
-
 namespace Assets
 {
 	void IXAnimParts::load(Game::XAssetHeader* header, const std::string& name, Components::ZoneBuilder::Zone* builder)

@@ -1,22 +1,19 @@
 #include <STDInclude.hpp>
 #include "IMaterial.hpp"
 
-#include <Utils/Json.hpp>
-
 namespace Assets
 {
 	void IMaterial::load(Game::XAssetHeader* header, const std::string& name, Components::ZoneBuilder::Zone* builder)
 	{
 		if (!header->data) this->loadFromDisk(header, name, builder);   // Check if we want to load a material from disk
 		if (!header->data) this->loadNative(header, name, builder); // Check if there is a native one
-	assert(header->data);
+		assert(header->data);
 	}
 
 	void IMaterial::loadFromDisk(Game::XAssetHeader* header, const std::string& name, [[maybe_unused]] Components::ZoneBuilder::Zone* builder)
 	{
 		header->material = builder->getIW4OfApi()->read<Game::Material>(Game::XAssetType::ASSET_TYPE_MATERIAL, name);
 	}
-
 
 	void IMaterial::loadNative(Game::XAssetHeader* header, const std::string& name, Components::ZoneBuilder::Zone* /*builder*/)
 	{

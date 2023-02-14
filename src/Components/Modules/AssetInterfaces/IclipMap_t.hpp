@@ -90,6 +90,5 @@ namespace Assets
 			float x, y, z;
 			float halfX, halfY, halfZ;
 		};
-		
 	};
 }

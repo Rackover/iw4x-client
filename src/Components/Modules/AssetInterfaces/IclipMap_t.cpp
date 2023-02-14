@@ -1,8 +1,5 @@
 #include <STDInclude.hpp>
 #include "IclipMap_t.hpp"
-#include "Utils/Json.hpp"
-
-#define IW4X_CLIPMAP_VERSION 3
 
 namespace Assets
 {
@@ -574,6 +571,7 @@ namespace Assets
 				}
 			}
 		}
+
 		builder->loadAsset(Game::XAssetType::ASSET_TYPE_MAP_ENTS, asset);
 	}
 
@@ -582,5 +580,4 @@ namespace Assets
 		header->clipMap = builder->getIW4OfApi()->read<Game::clipMap_t>(Game::XAssetType::ASSET_TYPE_CLIPMAP_MP, _name);
 		assert(header->data);
 	}
-
 }

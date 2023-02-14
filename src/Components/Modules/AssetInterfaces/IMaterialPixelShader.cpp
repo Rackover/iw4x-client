@@ -1,8 +1,6 @@
 #include <STDInclude.hpp>
 #include "IMaterialPixelShader.hpp"
 
-#define GFX_RENDERER_SHADER_SM3 0
-
 namespace Assets
 {
 

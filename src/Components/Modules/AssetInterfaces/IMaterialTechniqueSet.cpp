@@ -19,7 +19,7 @@ namespace Assets
 	{
 		header->techniqueSet = Components::AssetHandler::FindOriginalAsset(this->getType(), name.data()).techniqueSet;
 	}
-	
+
 	void IMaterialTechniqueSet::loadFromDisk(Game::XAssetHeader* header, const std::string& name, Components::ZoneBuilder::Zone* builder)
 	{
 		header->techniqueSet = builder->getIW4OfApi()->read<Game::MaterialTechniqueSet>(Game::XAssetType::ASSET_TYPE_TECHNIQUE_SET, name);

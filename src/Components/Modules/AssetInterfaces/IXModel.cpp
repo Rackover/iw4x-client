@@ -1,8 +1,6 @@
 #include <STDInclude.hpp>
 #include "IXModel.hpp"
 
-#define IW4X_MODEL_VERSION 9
-
 namespace Assets
 {
 	void IXModel::load(Game::XAssetHeader* header, const std::string& name, Components::ZoneBuilder::Zone* builder)
@@ -28,7 +26,6 @@ namespace Assets
 				Components::AssetHandler::StoreTemporaryAsset(Game::XAssetType::ASSET_TYPE_XMODEL_SURFS, { info.modelSurfs });
 			}
 		}
-
 	}
 
 	void IXModel::mark(Game::XAssetHeader header, Components::ZoneBuilder::Zone* builder)

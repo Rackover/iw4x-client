@@ -1,6 +1,4 @@
 #include <STDInclude.hpp>
-#include <json.hpp>
-
 #include "ISndCurve.hpp"
 
 namespace Assets
