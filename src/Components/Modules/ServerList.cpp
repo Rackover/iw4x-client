@@ -299,8 +299,8 @@ namespace Components
 		}
 		else if (IsOnlineList())
 		{
-			const auto masterPort = Dvar::Var("masterPort").get<int>();
-			const auto masterServerName = Dvar::Var("masterServerName").get<const char*>();
+			const auto masterPort = (*Game::com_masterPort)->current.integer;
+			const auto* masterServerName = (*Game::com_masterServerName)->current.string;
 
 			// Check if our dvars can properly convert to a address
 			Game::netadr_t masterServerAddr;
@@ -723,7 +723,7 @@ namespace Components
 				RefreshContainer.awatingList = false;
 
 				Logger::Print("We haven't received a response from the master within {} seconds!\n", (Game::Sys_Milliseconds() - RefreshContainer.awaitTime) / 1000);
-				Toast::Show("cardicon_headshot", "^3Warning", "Failed to reach master server. Using node system instead.", 5000);
+				Toast::Show("net_disconnect", "^2Notice", "Master server could not be reached. Switching to decentralized network", 3000);
 
 				UseMasterServer = false;
 				Node::Synchronize();

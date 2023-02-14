@@ -12,6 +12,7 @@ namespace Components
 	Dvar::Var Renderer::r_drawSceneModelCollisions;
 	Dvar::Var Renderer::r_drawModelBoundingBoxes;
 	Dvar::Var Renderer::r_drawModelNames;
+	Dvar::Var Renderer::r_drawRunners;
 	Dvar::Var Renderer::r_drawAABBTrees;
 	Dvar::Var Renderer::r_playerDrawDebugDistance;
 	Dvar::Var Renderer::r_forceTechnique;
@@ -132,20 +133,23 @@ namespace Components
 	{
 		__asm
 		{
-			// original code
+			// Game's code
 			mov eax, dword ptr [eax * 4 + 0x66E600C]
 
-			// show error
+			// Show error
 			pushad
-			push [esp + 0x24 + 0x20]
+
+			push eax
+			push [esp + 0x20 + 0x24]
 			push eax
 			call R_TextureFromCodeError
-			add esp, 8
+			add esp, 0xC
+
 			popad
 
-			// go back
+			// Jump back in
 			push 0x54CAC1
-			retn
+			ret
 		}
 	}
 
@@ -359,13 +363,12 @@ namespace Components
 			for (size_t i = 0; i < world->dpvs.smodelCount; i++)
 			{
 				auto staticModel = &world->dpvs.smodelDrawInsts[i];
-				Game::Bounds* b = &world->dpvs.smodelInsts[i].bounds;
+				auto* b = &world->dpvs.smodelInsts[i].bounds;
 
 				if (Utils::Maths::Vec3SqrDistance(playerPosition, staticModel->placement.origin) < sqrDist)
 				{
 					if (staticModel->model)
 					{
-
 						Game::R_AddDebugBounds(staticModelsColor, b);
 					}
 				}
@@ -469,35 +472,38 @@ namespace Components
 		{
 			return;
 		}
-		
-		if (r_drawRunners.get<bool>())
+
+		if (!r_drawRunners.get<bool>())
 		{
-			auto* fxSystem = reinterpret_cast<Game::FxSystem*>(0x173F200);
+			return;
+		}
 
-			if (fxSystem)
+		auto* fxSystem = reinterpret_cast<Game::FxSystem*>(0x173F200);
+
+		if (fxSystem)
+		{
+			for (auto i = 0; i < fxSystem->activeElemCount; i++)
 			{
-				for (auto i = 0; i < fxSystem->activeElemCount; i++)
+				auto* elem = &fxSystem->effects[i];
+				if (elem->def)
 				{
-					auto* elem = &fxSystem->effects[i];
-					if (elem->def)
-					{
-						Game::R_AddDebugString(sceneModelsColor, elem->frameNow.origin, 1.0f, elem->def->name);
-					}
-				}
-			}
-
-			auto soundCount = *reinterpret_cast<int*>(0x7C5C90);
-			auto* sounds = reinterpret_cast<Game::ClientEntSound*>(0x7C5CA0);
-
-			for (auto i = 0; i < soundCount; i++)
-			{
-				if (sounds[i].aliasList)
-				{
-					Game::R_AddDebugString(staticModelsColor, sounds[i].origin, 1.0f, sounds[i].aliasList->aliasName);
+					Game::R_AddDebugString(sceneModelsColor, elem->frameNow.origin, 1.0f, elem->def->name);
 				}
 			}
 		}
+
+		auto soundCount = *reinterpret_cast<int*>(0x7C5C90);
+		auto* sounds = reinterpret_cast<Game::ClientEntSound*>(0x7C5CA0);
+
+		for (auto i = 0; i < soundCount; i++)
+		{
+			if (sounds[i].aliasList)
+			{
+				Game::R_AddDebugString(staticModelsColor, sounds[i].origin, 1.0f, sounds[i].aliasList->aliasName);
+			}
+		}
 	}
+
 	void Renderer::DebugDrawAABBTrees()
 	{
 		if (!r_drawAABBTrees.get<bool>()) return;
@@ -607,6 +613,7 @@ namespace Components
 			Renderer::r_drawSceneModelCollisions = Game::Dvar_RegisterBool("r_drawSceneModelCollisions", false, Game::DVAR_CHEAT, "Draw scene model collisions");
 			Renderer::r_drawTriggers = Game::Dvar_RegisterBool("r_drawTriggers", false, Game::DVAR_CHEAT, "Draw triggers");
 			Renderer::r_drawModelNames = Game::Dvar_RegisterEnum("r_drawModelNames", values, 0, Game::DVAR_CHEAT, "Draw all model names");
+			Renderer::r_drawRunners = Game::Dvar_RegisterBool("r_drawRunners", false, Game::DVAR_NONE, "Draw active sound & fx runners");
 			Renderer::r_drawAABBTrees = Game::Dvar_RegisterBool("r_drawAabbTrees", false, Game::DVAR_CHEAT, "Draw aabb trees");
 			Renderer::r_playerDrawDebugDistance = Game::Dvar_RegisterInt("r_drawDebugDistance", 1000, 0, 50000, Game::DVAR_ARCHIVE, "r_draw debug functions draw distance relative to the player");
 			Renderer::r_forceTechnique = Game::Dvar_RegisterInt("r_forceTechnique", 0, 0, 14, Game::DVAR_NONE, "Force a base technique on the renderer");

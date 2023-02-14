@@ -38,3 +38,9 @@
 [submodule "deps/iw4-open-formats"]
 	path = deps/iw4-open-formats
 	url = https://github.com/Rackover/iw4-open-formats
+[submodule "deps/discord-rpc"]
+	path = deps/discord-rpc
+	url = https://github.com/discord/discord-rpc.git
+[submodule "deps/rapidjson"]
+	path = deps/rapidjson
+	url = https://github.com/Tencent/rapidjson.git

@@ -36,7 +36,6 @@ namespace Utils
 		if ((this->position_ + bytes) <= this->buffer_.size())
 		{
 			auto* buffer = this->allocator_->allocate(bytes);
-
 			std::memcpy(buffer, this->buffer_.data() + this->position_, bytes);
 			this->position_ += bytes;
 
@@ -143,12 +142,12 @@ namespace Utils
 		this->ptrList.push_back({ pointer, length });
 	}
 
-	char* Stream::save(const void* _str, std::size_t size, std::size_t count)
+	char* Stream::save(const void* str, std::size_t size, std::size_t count)
 	{
-		return this->save(this->getCurrentBlock(), _str, size, count);
+		return this->save(this->getCurrentBlock(), str, size, count);
 	}
 
-	char* Stream::save(Game::XFILE_BLOCK_TYPES stream, const void * _str, std::size_t size, std::size_t count)
+	char* Stream::save(Game::XFILE_BLOCK_TYPES stream, const void * str, std::size_t size, std::size_t count)
 	{
 		// Only those seem to actually write data.
 		// everything else is allocated at runtime but XFILE_BLOCK_RUNTIME is the only one that actually allocates anything
@@ -167,7 +166,7 @@ namespace Utils
 			__debugbreak();
 		}
 
-		this->buffer_.append(static_cast<const char*>(_str), size * count);
+		this->buffer_.append(static_cast<const char*>(str), size * count);
 
 		if (this->data() != data && this->isCriticalSection())
 		{
@@ -176,7 +175,7 @@ namespace Utils
 		}
 
 		this->increaseBlockSize(stream, size * count);
-		this->assertPointer(_str, size * count);
+		this->assertPointer(str, size * count);
 
 		return this->at() - (size * count);
 	}
@@ -350,9 +349,9 @@ namespace Utils
 
 	std::string Stream::toBuffer()
 	{
-		std::string _buffer;
-		this->toBuffer(_buffer);
-		return _buffer;
+		std::string buffer;
+		this->toBuffer(buffer);
+		return buffer;
 	}
 
 	void Stream::enterCriticalSection()

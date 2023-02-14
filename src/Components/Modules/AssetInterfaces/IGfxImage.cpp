@@ -1,8 +1,6 @@
 #include <STDInclude.hpp>
 #include "IGfxImage.hpp"
 
-#define IW4X_IMG_VERSION "0"
-
 namespace Assets
 {
 	void IGfxImage::load(Game::XAssetHeader* header, const std::string& name, Components::ZoneBuilder::Zone* builder)

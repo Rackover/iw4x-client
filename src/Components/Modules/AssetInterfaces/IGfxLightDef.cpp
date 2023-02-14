@@ -1,8 +1,6 @@
 #include <STDInclude.hpp>
 #include "IGfxLightDef.hpp"
 
-#define IW4X_LIGHT_VERSION "0"
-
 namespace Assets
 {
 	void IGfxLightDef::load(Game::XAssetHeader* header, const std::string& name, Components::ZoneBuilder::Zone* builder)

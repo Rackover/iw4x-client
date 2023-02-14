@@ -143,6 +143,9 @@ namespace Game
 	typedef int(*Scr_GetPointerType_t)(unsigned int index);
 	extern Scr_GetPointerType_t Scr_GetPointerType;
 
+	typedef void(*Scr_ErrorInternal_t)();
+	extern Scr_ErrorInternal_t Scr_ErrorInternal;
+
 	typedef void(*Scr_Error_t)(const char* error);
 	extern Scr_Error_t Scr_Error;
 
@@ -172,6 +175,9 @@ namespace Game
 
 	typedef void(*Scr_FreeHudElemConstStrings_t)(game_hudelem_s* hud);
 	extern Scr_FreeHudElemConstStrings_t Scr_FreeHudElemConstStrings;
+
+	typedef void(*GScr_LoadGameTypeScript_t)();
+	extern GScr_LoadGameTypeScript_t GScr_LoadGameTypeScript;
 
 	typedef gentity_s*(*GetPlayerEntity_t)(scr_entref_t entref);
 	extern GetPlayerEntity_t GetPlayerEntity;

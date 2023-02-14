@@ -1,8 +1,6 @@
 #include <STDInclude.hpp>
 #include "IFxEffectDef.hpp"
 
-#define IW4X_FX_VERSION 2
-
 namespace Assets
 {
 	void IFxEffectDef::load(Game::XAssetHeader* header, const std::string& name, Components::ZoneBuilder::Zone* builder)
@@ -21,7 +19,7 @@ namespace Assets
 		{
 			if (visuals->model)
 			{
-				visuals->model = Components::AssetHandler::FindAssetForZone(Game::XAssetType::ASSET_TYPE_XMODEL, reader->readString().data(), builder).model;
+				visuals->model = Components::AssetHandler::FindAssetForZone(Game::XAssetType::ASSET_TYPE_XMODEL, reader->readString(), builder).model;
 			}
 
 			break;
@@ -44,7 +42,7 @@ namespace Assets
 		{
 			if (visuals->effectDef.handle)
 			{
-				visuals->effectDef.handle = Components::AssetHandler::FindAssetForZone(Game::XAssetType::ASSET_TYPE_FX, reader->readString().data(), builder).fx;
+				visuals->effectDef.handle = Components::AssetHandler::FindAssetForZone(Game::XAssetType::ASSET_TYPE_FX, reader->readString(), builder).fx;
 			}
 
 			break;
@@ -54,7 +52,7 @@ namespace Assets
 		{
 			if (visuals->material)
 			{
-				visuals->material = Components::AssetHandler::FindAssetForZone(Game::XAssetType::ASSET_TYPE_MATERIAL, reader->readString().data(), builder).material;
+				visuals->material = Components::AssetHandler::FindAssetForZone(Game::XAssetType::ASSET_TYPE_MATERIAL, reader->readString(), builder).material;
 			}
 
 			break;

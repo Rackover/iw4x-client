@@ -103,6 +103,17 @@ namespace Components
 		return Container.motd;
 	}
 
+	std::string Party::GetHostName()
+	{
+		return Container.info.get("hostname");
+	}
+
+	int Party::GetMaxClients()
+	{
+		const auto value = Container.info.get("sv_maxclients");
+		return std::strtol(value.data(), nullptr, 10);
+	}
+
 	bool Party::PlaylistAwaiting()
 	{
 		return Container.awaitingPlaylist;
@@ -166,7 +177,7 @@ namespace Components
 
 	bool Party::IsInUserMapLobby()
 	{
-		return (IsInLobby() && Maps::IsUserMap(Dvar::Var("ui_mapname").get<const char*>()));
+		return (IsInLobby() && Maps::IsUserMap((*Game::ui_mapname)->current.string));
 	}
 
 	bool Party::IsEnabled()

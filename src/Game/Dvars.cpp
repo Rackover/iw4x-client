@@ -37,6 +37,8 @@ namespace Game
 	const dvar_t** com_timescale = reinterpret_cast<const dvar_t**>(0x1AD7920);
 	const dvar_t** com_maxFrameTime = reinterpret_cast<const dvar_t**>(0x1AD78F4);
 	const dvar_t** com_sv_running = reinterpret_cast<const dvar_t**>(0x1AD7934);
+	const dvar_t** com_masterServerName = reinterpret_cast<const dvar_t**>(0x1AD8F48);
+	const dvar_t** com_masterPort = reinterpret_cast<const dvar_t**>(0x1AD8F30);
 
 	const dvar_t** dev_timescale = reinterpret_cast<const dvar_t**>(0x1AD8F20);
 
@@ -89,6 +91,9 @@ namespace Game
 
 	const dvar_t** party_minplayers = reinterpret_cast<const dvar_t**>(0x1081BFC);
 	const dvar_t** party_maxplayers = reinterpret_cast<const dvar_t**>(0x1080998);
+
+	const dvar_t** ip = reinterpret_cast<const dvar_t**>(0x64A1DF8);
+	const dvar_t** port = reinterpret_cast<const dvar_t**>(0x64A3004);
 
 	__declspec(naked) void Dvar_SetVariant(dvar_t*, DvarValue, DvarSetSource)
 	{

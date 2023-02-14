@@ -27,7 +27,7 @@ namespace Utils
 		class Reader
 		{
 		public:
-			Reader(Memory::Allocator* allocator, std::string& buffer) : position_(0), buffer_(std::move(buffer)), allocator_(allocator) {}
+			Reader(Memory::Allocator* allocator, std::string buffer) : position_(0), buffer_(std::move(buffer)), allocator_(allocator) {}
 
 			std::string readString();
 			const char* readCString();
@@ -53,18 +53,19 @@ namespace Utils
 					auto ptr = read<int>();
 					auto* voidPtr = reinterpret_cast<void*>(ptr);
 
-					if (this->allocator_->isPointerMapped(voidPtr))
+					if (allocator_->isPointerMapped(voidPtr))
 					{
-						return this->allocator_->getPointer<T>(voidPtr);
+						return allocator_->getPointer<T>(voidPtr);
 					}
 
 					throw std::runtime_error("Bad data: missing ptr");
 				}
 				case FOLLOWING:
 				{
-					auto filePosition = this->position_;
+					auto filePosition = position_;
 					auto data = readArray<T>(count);
-					this->allocator_->mapPointer(reinterpret_cast<void*>(filePosition), data);
+					allocator_->mapPointer(reinterpret_cast<void*>(filePosition), data);
+          
 					return data;
 				}
 				default:

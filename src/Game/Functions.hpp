@@ -84,9 +84,6 @@ namespace Game
 	typedef void(*Svcmd_EntityList_f_t)();
 	extern Svcmd_EntityList_f_t Svcmd_EntityList_f;
 
-	typedef void(*GScr_LoadGameTypeScript_t)();
-	extern GScr_LoadGameTypeScript_t GScr_LoadGameTypeScript;
-
 	typedef int(*Reader_t)(char const*, int *);
 
 	typedef bool(*Image_LoadFromFileWithReader_t)(GfxImage* image, Reader_t reader);
@@ -205,6 +202,9 @@ namespace Game
 
 	typedef int(*UI_ParseInfos_t)(const char* buf, int max, char** infos);
 	extern UI_ParseInfos_t UI_ParseInfos;
+
+	typedef const char*(*UI_GetMapDisplayName_t)(const char* pszMap);
+	extern UI_GetMapDisplayName_t UI_GetMapDisplayName;
 	
 	typedef void(*MSG_Init_t)(msg_t* buf, unsigned char* data, int length);
 	extern MSG_Init_t MSG_Init;
@@ -272,7 +272,7 @@ namespace Game
 	typedef bool(*NET_CompareAdr_t)(netadr_t a, netadr_t b);
 	extern NET_CompareAdr_t NET_CompareAdr;
 
-	typedef void(*NET_DeferPacketToClient_t)(netadr_t *, msg_t *);
+	typedef void(*NET_DeferPacketToClient_t)(netadr_t*, msg_t*);
 	extern NET_DeferPacketToClient_t NET_DeferPacketToClient;
 
 	typedef const char* (*NET_ErrorString_t)();
@@ -284,19 +284,19 @@ namespace Game
 	typedef bool(*NET_IsLocalAddress_t)(netadr_t adr);
 	extern NET_IsLocalAddress_t NET_IsLocalAddress;
 
-	typedef int(*NET_StringToAdr_t)(const char *s, netadr_t *a);
+	typedef int(*NET_StringToAdr_t)(const char* s, netadr_t* a);
 	extern NET_StringToAdr_t NET_StringToAdr;
 
-	typedef void(*NET_OutOfBandPrint_t)(netsrc_t sock, netadr_t adr, const char *data);
+	typedef void(*NET_OutOfBandPrint_t)(netsrc_t sock, netadr_t adr, const char* data);
 	extern NET_OutOfBandPrint_t NET_OutOfBandPrint;
 
-	typedef void(*NET_OutOfBandData_t)(netsrc_t sock, netadr_t adr, const char *format, int len);
+	typedef void(*NET_OutOfBandData_t)(netsrc_t sock, netadr_t adr, const char* format, int len);
 	extern NET_OutOfBandData_t NET_OutOfBandData;
 
 	typedef int(*NET_OutOfBandVoiceData_t)(netsrc_t sock, netadr_t adr, unsigned char* format, int len, bool voiceData);
 	extern NET_OutOfBandVoiceData_t NET_OutOfBandVoiceData;
 
-	typedef void(*Live_MPAcceptInvite_t)(_XSESSION_INFO *hostInfo, const int controllerIndex, bool fromGameInvite);
+	typedef void(*Live_MPAcceptInvite_t)(_XSESSION_INFO *hostInfo, int controllerIndex, bool fromGameInvite);
 	extern Live_MPAcceptInvite_t Live_MPAcceptInvite;
 
 	typedef int(*Live_GetMapIndex_t)(const char* mapname);
@@ -406,15 +406,6 @@ namespace Game
 
 	typedef void(*Steam_JoinLobby_t)(SteamID, char);
 	extern Steam_JoinLobby_t Steam_JoinLobby;
-
-	typedef const char*(*StringTable_Lookup_t)(const StringTable *table, const int comparisonColumn, const char *value, const int valueColumn);
-	extern StringTable_Lookup_t StringTable_Lookup;
-
-	typedef const char* (*StringTable_GetColumnValueForRow_t)(const StringTable* table, int, int column);
-	extern StringTable_GetColumnValueForRow_t StringTable_GetColumnValueForRow;
-
-	typedef int(*StringTable_HashString_t)(const char* string);
-	extern StringTable_HashString_t StringTable_HashString;
 
 	typedef void(*TeleportPlayer_t)(gentity_t* entity, float* pos, float* orientation);
 	extern TeleportPlayer_t TeleportPlayer;
@@ -586,6 +577,24 @@ namespace Game
 
 	typedef void(*LargeLocalReset_t)();
 	extern LargeLocalReset_t LargeLocalReset;
+
+	typedef StructuredDataDef*(*StructuredDataDef_GetAsset_t)(const char* filename, unsigned int maxSize);
+	extern StructuredDataDef_GetAsset_t StructuredDataDef_GetAsset;
+
+	typedef void(*StringTable_GetAsset_FastFile_t)(const char* filename, const StringTable** tablePtr);
+	extern StringTable_GetAsset_FastFile_t StringTable_GetAsset_FastFile;
+
+	typedef const char*(*StringTable_Lookup_t)(const StringTable* table, const int comparisonColumn, const char* value, const int valueColumn);
+	extern StringTable_Lookup_t StringTable_Lookup;
+
+	typedef int(*StringTable_HashString_t)(const char* string);
+	extern StringTable_HashString_t StringTable_HashString;
+
+	typedef int(*StringTable_LookupRowNumForValue_t)(const StringTable* table, int comparisonColumn, const char* value);
+	extern StringTable_LookupRowNumForValue_t StringTable_LookupRowNumForValue;
+
+	typedef const char*(*StringTable_GetColumnValueForRow_t)(const StringTable*, int row, int column);
+	extern StringTable_GetColumnValueForRow_t StringTable_GetColumnValueForRow;
 
 	typedef void(*longjmp_internal_t)(jmp_buf env, int status);
 	extern longjmp_internal_t longjmp_internal;

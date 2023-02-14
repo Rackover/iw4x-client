@@ -3,6 +3,7 @@
 #include <Utils/WebIO.hpp>
 
 #include "Download.hpp"
+#include "MapRotation.hpp"
 #include "Party.hpp"
 #include "ServerInfo.hpp"
 
@@ -348,10 +349,6 @@ namespace Components
 		}
 	}
 
-#pragma endregion
-
-#pragma region Server
-	
 	void Download::DownloadProgress(FileDownload* fDownload, std::size_t bytes)
 	{
 		fDownload->receivedBytes += bytes;
@@ -384,15 +381,15 @@ namespace Components
 		auto delta = Game::Sys_Milliseconds() - fDownload->download->lastTimeStamp;
 		if (delta > 300)
 		{
-			bool doFormat = fDownload->download->lastTimeStamp != 0;
+			const auto doFormat = fDownload->download->lastTimeStamp != 0;
 			fDownload->download->lastTimeStamp = Game::Sys_Milliseconds();
 
-			auto dataLeft = fDownload->download->totalBytes - fDownload->download->downBytes;
+			const auto dataLeft = fDownload->download->totalBytes - fDownload->download->downBytes;
 
 			int timeLeft = 0;
 			if (fDownload->download->timeStampBytes)
 			{
-				double timeLeftD = ((1.0 * dataLeft) / fDownload->download->timeStampBytes) * delta;
+				const double timeLeftD = ((1.0 * dataLeft) / fDownload->download->timeStampBytes) * delta;
 				timeLeft = static_cast<int>(timeLeftD);
 			}
 
@@ -415,6 +412,10 @@ namespace Components
 		}
 	}
 
+#pragma endregion
+
+#pragma region Server
+
 	static std::string InfoHandler()
 	{
 		const auto status = ServerInfo::GetInfo();
@@ -423,6 +424,7 @@ namespace Components
 		std::unordered_map<std::string, nlohmann::json> info;
 		info["status"] = status.to_json();
 		info["host"] = host.to_json();
+		info["map_rotation"] = MapRotation::to_json();
 
 		std::vector<nlohmann::json> players;
 
@@ -509,7 +511,7 @@ namespace Components
 		static std::string mapNamePre;
 		static nlohmann::json jsonList;
 
-		const auto mapName = (Party::IsInUserMapLobby() ? Dvar::Var("ui_mapname").get<std::string>() : Maps::GetUserMap()->getName());
+		const std::string mapName = Party::IsInUserMapLobby() ? (*Game::ui_mapname)->current.string : Maps::GetUserMap()->getName();
 		if (!Maps::GetUserMap()->isValid() && !Party::IsInUserMapLobby())
 		{
 			mapNamePre.clear();
@@ -554,17 +556,16 @@ namespace Components
 
 		Utils::String::Replace(url, "\\", "/");
 
-		// Strip /file
-		url = url.substr(6);
+		url = url.substr(6); // Strip /file
 		Utils::String::Replace(url, "%20", " ");
 
 		auto isMap = false;
 		if (url.starts_with("map/"))
 		{
 			isMap = true;
-			url = url.substr(4);
+			url = url.substr(4); // Strip map/
 
-			auto mapName = (Party::IsInUserMapLobby() ? Dvar::Var("ui_mapname").get<std::string>() : Maps::GetUserMap()->getName());
+			std::string mapName = (Party::IsInUserMapLobby() ? (*Game::ui_mapname)->current.string : Maps::GetUserMap()->getName());
 			auto isValidFile = false;
 			for (std::size_t i = 0; i < ARRAYSIZE(Maps::UserMapFiles); ++i)
 			{
@@ -592,9 +593,10 @@ namespace Components
 			}
 		}
 
-		std::string file;
 		const std::string fsGame = (*Game::fs_gameDirVar)->current.string;
 		const auto path = std::format("{}\\{}{}", (*Game::fs_basepath)->current.string, isMap ? ""s : (fsGame + "\\"s), url);
+
+		std::string file;
 		if ((!isMap && fsGame.empty()) || !Utils::IO::ReadFile(path, &file))
 		{
 			mg_http_reply(c, 404, "Content-Type: text/html\r\n", "404 - Not Found %s", path.data());

@@ -49,6 +49,7 @@ namespace Game
 	Scr_Notify_t Scr_Notify = Scr_Notify_t(0x4A4750);
 	Scr_NotifyLevel_t Scr_NotifyLevel = Scr_NotifyLevel_t(0x4D9C30);
 
+	Scr_ErrorInternal_t Scr_ErrorInternal = Scr_ErrorInternal_t(0x61DB10);
 	Scr_Error_t Scr_Error = Scr_Error_t(0x61E8B0);
 	Scr_ObjectError_t Scr_ObjectError = Scr_ObjectError_t(0x42EF40);
 	Scr_ParamError_t Scr_ParamError = Scr_ParamError_t(0x4FBC70);
@@ -67,6 +68,8 @@ namespace Game
 	Scr_ConstructMessageString_t Scr_ConstructMessageString = Scr_ConstructMessageString_t(0x45F940);
 
 	Scr_FreeHudElemConstStrings_t Scr_FreeHudElemConstStrings = Scr_FreeHudElemConstStrings_t(0x5E1120);
+
+	GScr_LoadGameTypeScript_t GScr_LoadGameTypeScript = GScr_LoadGameTypeScript_t(0x4ED9A0);
 
 	GetEntity_t GetEntity = GetEntity_t(0x4BC270);
 	GetPlayerEntity_t GetPlayerEntity = GetPlayerEntity_t(0x49C4A0);

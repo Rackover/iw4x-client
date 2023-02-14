@@ -1,8 +1,6 @@
 #include <STDInclude.hpp>
 #include "IGfxWorld.hpp"
 
-#define IW4X_GFXMAP_VERSION 1
-
 namespace Assets
 {
 	void IGfxWorld::load(Game::XAssetHeader* header, const std::string& _name, Components::ZoneBuilder::Zone* builder)

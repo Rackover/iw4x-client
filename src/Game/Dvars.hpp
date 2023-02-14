@@ -89,6 +89,8 @@ namespace Game
 	extern const dvar_t** com_timescale;
 	extern const dvar_t** com_maxFrameTime;
 	extern const dvar_t** com_sv_running;
+	extern const dvar_t** com_masterServerName;
+	extern const dvar_t** com_masterPort;
 
 	extern const dvar_t** dev_timescale;
 
@@ -141,6 +143,9 @@ namespace Game
 
 	extern const dvar_t** party_minplayers;
 	extern const dvar_t** party_maxplayers;
+
+	extern const dvar_t** ip;
+	extern const dvar_t** port;
 
 	extern void Dvar_SetVariant(dvar_t* var, DvarValue value, DvarSetSource source);
 	extern void Dvar_SetFromStringFromSource(const dvar_t* dvar, const char* string, DvarSetSource source);

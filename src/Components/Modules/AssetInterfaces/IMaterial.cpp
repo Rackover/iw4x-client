@@ -3,46 +3,14 @@
 
 #include <Utils/Json.hpp>
 
-#define IW4X_MAT_BIN_VERSION "1"
-#define IW4X_MAT_JSON_VERSION 1
-
 namespace Assets
 {
-	const std::unordered_map<std::string, std::string> techSetCorrespondance =
-	{
-		{"effect", "effect_blend"},
-		{"effect", "effect_blend"},
-		{"effect_nofog", "effect_blend_nofog"},
-		{"effect_zfeather", "effect_zfeather_blend"},
-		{"effect_zfeather_falloff", "effect_zfeather_falloff_add"},
-		{"effect_zfeather_nofog", "effect_zfeather_add_nofog"},
-
-		{"wc_unlit_add", "wc_unlit_add_lin"},
-		{"wc_unlit_distfalloff", "wc_unlit_distfalloff_replace"},
-		{"wc_unlit_multiply", "wc_unlit_multiply_lin"},
-		{"wc_unlit_falloff_add", "wc_unlit_falloff_add_lin"},
-		{"wc_unlit", "wc_unlit_replace_lin"},
-		{"wc_unlit_alphatest", "wc_unlit_blend_lin"},
-		{"wc_unlit_blend", "wc_unlit_blend_lin"},
-		{"wc_unlit_replace", "wc_unlit_replace_lin"},
-		{"wc_unlit_nofog", "wc_unlit_replace_lin_nofog_nocast" },
-
-		{"mc_unlit_replace", "mc_unlit_replace_lin"},
-		{"mc_unlit_nofog", "mc_unlit_blend_nofog_ua"},
-		{"mc_unlit", "mc_unlit_replace_lin_nocast"},
-		{"mc_unlit_alphatest", "mc_unlit_blend_lin"},
-		{"mc_effect_nofog", "mc_effect_blend_nofog"},
-		{"mc_effect_falloff_add_nofog", "mc_effect_falloff_add_nofog_eyeoffset"},
-	};
-
 	void IMaterial::load(Game::XAssetHeader* header, const std::string& name, Components::ZoneBuilder::Zone* builder)
 	{
 		if (!header->data) this->loadFromDisk(header, name, builder);   // Check if we want to load a material from disk
 		if (!header->data) this->loadNative(header, name, builder); // Check if there is a native one
-
-		assert(header->data);
+	assert(header->data);
 	}
-
 
 	void IMaterial::loadFromDisk(Game::XAssetHeader* header, const std::string& name, [[maybe_unused]] Components::ZoneBuilder::Zone* builder)
 	{
