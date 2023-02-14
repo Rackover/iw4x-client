@@ -34,7 +34,7 @@ function iw4_open_formats.project()
 		}
 
 		libtomcrypt.import()
-		ibtommath.import()
+		libtommath.import()
 		rapidjson.import()
 		zlib.import()
 
