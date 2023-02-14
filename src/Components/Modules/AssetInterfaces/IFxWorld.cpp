@@ -1,10 +1,5 @@
 #include <STDInclude.hpp>
-
-#include <json.hpp>
-
 #include "IFxWorld.hpp"
-
-#define IW4X_FXWORLD_VERSION 1
 
 namespace Assets
 {

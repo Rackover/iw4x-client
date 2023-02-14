@@ -26,10 +26,12 @@ namespace Components
 		// Side note: if you need a fastfile larger than 100MB, you're doing it wrong-
 		// Well, decompressed maps can get way larger than 100MB, so let's increase that.
 		buffer(0xC800000),
-		zoneName(name), dataMap("zone_source/" + name + ".csv"), branding{nullptr}, assetDepth(0),
-		iw4ofApi(iw4of::params_t()) // Start with an invalid one, we replace it immediatly
+		zoneName(name),
+		dataMap("zone_source/" + name + ".csv"),
+		branding{nullptr},
+		assetDepth(0)
 	{
-		initializeIW4OfApi();
+		this->initializeIW4OfApi();
 	}
 
 	ZoneBuilder::Zone::~Zone()
@@ -755,16 +757,14 @@ namespace Components
 		return header;
 	}
 
-	iw4of::params_t ZoneBuilder::Zone::initializeIW4OfApi()
+	void ZoneBuilder::Zone::initializeIW4OfApi()
 	{
-		iw4of::params_t params{};
-
-		params.find_other_asset = [this](int type, const std::string& name)
+		this->iw4ofApi.params.find_other_asset = [this](int type, const std::string& name)
 		{
 			return Components::AssetHandler::FindAssetForZone(static_cast<Game::XAssetType>(type), name, this).data;
 		};
 
-		params.fs_read_file = [](const std::string& filename)
+		this->iw4ofApi.params.fs_read_file = [](const std::string& filename)
 		{
 			auto file = FileSystem::File(filename);
 
@@ -773,33 +773,28 @@ namespace Components
 				return file.getBuffer();
 			}
 
-			assert(false);
-			return std::string{};
+			return std::string();
 		};
 
-		params.store_in_string_table = [](const std::string& text)
+		this->iw4ofApi.params.store_in_string_table = [](const std::string& text)
 		{
 			return Game::SL_GetString(text.data(), 0);
 		};
 
-		params.print = [](iw4of::params_t::print_type t, const std::string& message)
+		this->iw4ofApi.params.print = [](iw4of::params_t::print_type t, const std::string& message)
 		{
 			switch (t)
 			{
 			case iw4of::params_t::P_ERR:
-				assert(false);
-				Components::Logger::PrintError(Game::conChannel_t::CON_CHANNEL_ERROR, message);
+				Components::Logger::PrintError(Game::CON_CHANNEL_ERROR, "{}", message);
 				break;
-
 			case iw4of::params_t::P_WARN:
-				Components::Logger::Print(message);
+				Components::Logger::Print("{}", message);
 				break;
 			}
 		};
 
-		params.work_directory = (*Game::fs_basepath)->current.string;
-
-		return params;
+		this->iw4ofApi.params.work_directory = (*Game::fs_basepath)->current.string;
 	}
 
 	int ZoneBuilder::StoreTexture(Game::GfxImageLoadDef **loadDef, Game::GfxImage *image)

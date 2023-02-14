@@ -1,6 +1,6 @@
 #pragma once
 
-#include "api.hpp"
+#include <api.hpp>
 
 #define XFILE_MAGIC_UNSIGNED 0x3030317566665749
 #define XFILE_VERSION 276
@@ -89,7 +89,8 @@ namespace Components
 			void storeAlias(Game::XAsset asset);
 
 			void addBranding();
-			iw4of::params_t initializeIW4OfApi();
+
+			void initializeIW4OfApi();
 
 			uint32_t safeGetPointer(const void* pointer);
 
