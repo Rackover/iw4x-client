@@ -20,11 +20,11 @@ function iw4of.import()
 		require(dep)
 	end
 	
-	libtomcrypt.import()
-	libtommath.import()
-	rapidjson.import()
-	zlib.import()
-	zstd.import()
+	iw4of.libtomcrypt.import()
+	iw4of.libtommath.import()
+	iw4of.rapidjson.import()
+	iw4of.zlib.import()
+	iw4of.zstd.import()
 	
 	
 	iw4of.includes()
@@ -56,11 +56,11 @@ function iw4of.project()
 			path.join(dependencies.basePath, "iw4-open-formats", "include")
 		}
 		
-		libtomcrypt.includes()
-		libtommath.includes()
-		rapidjson.includes()
-		zlib.includes()
-		zstd.includes()
+		iw4of.libtomcrypt.includes()
+		iw4of.libtommath.includes()
+		iw4of.rapidjson.includes()
+		iw4of.zlib.includes()
+		iw4of.zstd.includes()
 		
 end
 
