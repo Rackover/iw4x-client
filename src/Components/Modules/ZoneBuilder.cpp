@@ -759,29 +759,28 @@ namespace Components
 
 	void ZoneBuilder::Zone::initializeIW4OfApi()
 	{
-		this->iw4ofApi.params.find_other_asset = [this](int type, const std::string& name)
+		this->iw4ofApi.params.find_other_asset = [this](int type, const std::string& name) -> Game::XAssetHeader
 		{
 			return Components::AssetHandler::FindAssetForZone(static_cast<Game::XAssetType>(type), name, this).data;
 		};
 
-		this->iw4ofApi.params.fs_read_file = [](const std::string& filename)
+		this->iw4ofApi.params.fs_read_file = [](const std::string& filename) -> std::string
 		{
 			auto file = FileSystem::File(filename);
-
 			if (file.exists())
 			{
 				return file.getBuffer();
 			}
 
-			return std::string();
+			return {};
 		};
 
-		this->iw4ofApi.params.store_in_string_table = [](const std::string& text)
+		this->iw4ofApi.params.store_in_string_table = [](const std::string& text) -> unsigned int
 		{
 			return Game::SL_GetString(text.data(), 0);
 		};
 
-		this->iw4ofApi.params.print = [](iw4of::params_t::print_type t, const std::string& message)
+		this->iw4ofApi.params.print = [](iw4of::params_t::print_type t, const std::string& message) -> void
 		{
 			switch (t)
 			{
