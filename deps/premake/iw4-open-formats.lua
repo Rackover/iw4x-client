@@ -25,12 +25,12 @@ function iw4_open_formats.project()
 
 		files {
 			path.join(iw4_open_formats.source, "iw4-of/**.hpp"),
-			path.join(iw4_open_formats.source, "iw4-of/**.cpp").
+			path.join(iw4_open_formats.source, "iw4-of/**.cpp"),
 		}
 
 		includedirs {
 			path.join(iw4_open_formats.source, "iw4-of"),
-			path.join(dependencies.basePath, "iw4-open-formats", "include")
+			path.join(dependencies.basePath, "iw4-open-formats", "include"),
 		}
 
 		libtomcrypt.import()
