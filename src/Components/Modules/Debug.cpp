@@ -242,6 +242,7 @@ namespace Components
 
 	void Debug::CG_DrawDebugOverlays_Hk(const int localClientNum)
 	{
+		assert(DebugOverlay);
 		if (!DebugOverlay)
 		{
 			return;
