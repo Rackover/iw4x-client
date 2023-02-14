@@ -33,10 +33,10 @@ function iw4_open_formats.project()
 			path.join(dependencies.basePath, "iw4-open-formats", "include"),
 		}
 
-		libtomcrypt.import()
-		libtommath.import()
-		rapidjson.import()
-		zlib.import()
+		libtomcrypt.includes()
+		libtommath.includes()
+		rapidjson.includes()
+		zlib.includes()
 
 		kind "StaticLib"
 end
