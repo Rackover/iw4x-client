@@ -8,9 +8,9 @@ namespace Utils::Json
 
 	unsigned long ReadFlags(const std::string binaryFlags, size_t size);
 
-	Game::Bounds ReadBounds(const  nlohmann::json_abi_v3_11_2::json value);
+	Game::Bounds ReadBounds(const nlohmann::json::value_t& value);
 
-	template <typename T> void CopyArray(T* destination, const nlohmann::json_abi_v3_11_2::json& json_member, size_t count = 0)
+	template <typename T> void CopyArray(T* destination, const nlohmann::json::value_t& json_member, size_t count = 0)
 	{
 		if (count == 0)
 		{
