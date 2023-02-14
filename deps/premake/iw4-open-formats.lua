@@ -62,8 +62,6 @@ function iw4of.project()
 		zlib.includes()
 		zstd.includes()
 		
-		print(zstd)
-		
 end
 
 table.insert(dependencies, iw4of)
