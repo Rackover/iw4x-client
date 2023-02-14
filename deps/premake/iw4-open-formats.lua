@@ -3,7 +3,7 @@ iw4_open_formats = {
 }
 
 function iw4_open_formats.import()
-	links {"iw4-open-formats"}
+	links "iw4-open-formats"
 
 	iw4_open_formats.includes()
 end
