@@ -18,10 +18,6 @@ function iw4_open_formats.project()
 	project "iw4-open-formats"
 		language "C++"
 
-		libtomcrypt.import()
-		ibtommath.import()
-		rapidjson.import()
-		zlib.import()
 		iw4_open_formats.includes()
 
 		pchheader "std_include.hpp"
@@ -37,7 +33,11 @@ function iw4_open_formats.project()
 			path.join(dependencies.basePath, "iw4-open-formats", "include")
 		}
 
-		warnings "Off"
+		libtomcrypt.import()
+		ibtommath.import()
+		rapidjson.import()
+		zlib.import()
+
 		kind "StaticLib"
 end
 
