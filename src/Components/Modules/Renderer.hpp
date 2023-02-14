@@ -51,10 +51,10 @@ namespace Components
 		static Utils::Signal<BackendCallback> SingleBackendFrameSignal;
 
 		static Dvar::Var r_drawTriggers;
-		static Dvar::Var r_drawRunners;
 		static Dvar::Var r_drawSceneModelCollisions;
 		static Dvar::Var r_drawModelBoundingBoxes;
 		static Dvar::Var r_drawModelNames;
+		static Dvar::Var r_drawRunners;
 		static Dvar::Var r_drawAABBTrees;
 		static Dvar::Var r_playerDrawDebugDistance;
 		static Dvar::Var r_forceTechnique;

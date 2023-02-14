@@ -121,10 +121,8 @@ namespace Components
 
 	void Renderer::R_TextureFromCodeError(const char* sampler, Game::GfxCmdBufState* state, int samplerCode)
 	{
-		Logger::Error(
-			Game::ERR_FATAL, 
-			"Tried to use sampler #{} ('{}') at the wrong timing! Additional info:\nMaterial: '{}'\nTechnique {}\nTechnique slot: {}\nTechnique flags:{}\nPass: {}\nPixel shader: {}\n",
-			samplerCode, sampler, state->material->info.name, state->technique->name, (int)state->techType, state->technique->flags, state->passIndex, state->pixelShader->name
+		Logger::Error(Game::ERR_FATAL, "Tried to use sampler '{}' ({}) at the wrong time! Additional info:\nMaterial: '{}'\nTechnique '{}'\nTechnique slot: {}\nTechnique flags: {}\nPass: {}\nPixel shader: '{}'\n",
+			samplerCode, sampler, state->material->info.name, state->technique->name, static_cast<int>(state->techType), state->technique->flags, state->passIndex, state->pixelShader->name
 		);
 	}
 
@@ -607,7 +605,6 @@ namespace Components
 				nullptr
 			};
 
-			Renderer::r_drawRunners = Game::Dvar_RegisterBool("r_drawRunners", false, Game::DVAR_NONE, "Draw active sound & fx runners");
 			Renderer::r_drawModelBoundingBoxes = Game::Dvar_RegisterEnum("r_drawModelBoundingBoxes", values, 0, Game::DVAR_CHEAT, "Draw scene model bounding boxes");
 			Renderer::r_drawSceneModelCollisions = Game::Dvar_RegisterBool("r_drawSceneModelCollisions", false, Game::DVAR_CHEAT, "Draw scene model collisions");
 			Renderer::r_drawTriggers = Game::Dvar_RegisterBool("r_drawTriggers", false, Game::DVAR_CHEAT, "Draw triggers");
