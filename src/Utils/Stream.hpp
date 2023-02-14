@@ -12,6 +12,9 @@
 
 namespace Utils
 {
+	constexpr auto POINTER = 255;
+	constexpr auto FOLLOWING = 254;				
+
 	class Stream
 	{
 	private:
@@ -42,9 +45,6 @@ namespace Utils
 
 			template <typename T> T* readArrayOnce(std::size_t count = 1)
 			{
-				constexpr auto POINTER = 255;
-				constexpr auto FOLLOWING = 254;
-				
 				auto b = static_cast<unsigned char>(readByte());	
 				switch (b)
 				{
@@ -145,9 +145,6 @@ namespace Utils
 
 		template <typename T> void saveArrayIfNotExisting(T* data, size_t count)
 		{
-#define POINTER 255
-#define FOLLOWING 254
-
 			if (const auto itr = dataPointers.find(data); itr != dataPointers.end())
 			{
 				saveByte(POINTER);
@@ -160,7 +157,6 @@ namespace Utils
 				saveArray(data, count);
 			}
 		}
-
 
 		char* save(int value, size_t count = 1)
 		{
