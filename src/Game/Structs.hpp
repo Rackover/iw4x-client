@@ -30,6 +30,13 @@ namespace Game
 		unsigned __int16 classnum;
 	};
 
+	struct SndCurve
+	{
+		const char* filename;
+		unsigned __int16 knotCount;
+		float knots[16][2];
+	};
+
 	typedef void(*BuiltinFunction)();
 	typedef void(*BuiltinMethod)(scr_entref_t);
 
@@ -2687,110 +2694,6 @@ namespace Game
 		SoundFileRef u;
 	};
 
-	struct snd_background_info_t
-	{
-		float goalvolume;
-		float goalrate;
-	};
-
-	struct snd_enveffect
-	{
-		int roomtype;
-		float drylevel;
-		float drygoal;
-		float dryrate;
-		float wetlevel;
-		float wetgoal;
-		float wetrate;
-		bool active;
-	};
-
-	struct orientation_t
-	{
-		float origin[3];
-		float axis[3][3];
-	};
-
-	struct snd_listener
-	{
-		orientation_t orient;
-		float velocity;
-		int clientNum;
-		bool active;
-	};
-
-	struct snd_amplifier
-	{
-		snd_listener* listener;
-		int minRadius;
-		int maxRadius;
-		float falloffExp;
-		float minVol;
-		float maxVol;
-	};
-
-	struct snd_entchannel_info_t
-	{
-		char name[64];
-		int priority;
-		bool is3d;
-		bool isRestricted;
-		bool isPausable;
-		int maxVoices;
-		int voiceCount;
-	};
-
-	struct snd_entchan_overrides_t
-	{
-		unsigned int isPausable[2];
-		float timescaleLerp[64];
-	};
-
-	enum SndFileLoadingState
-	{
-		SFLS_UNLOADED = 0x0,
-		SFLS_LOADING = 0x1,
-		SFLS_LOADED = 0x2,
-	};
-
-	struct SndFileSpecificChannelInfo
-	{
-		SndFileLoadingState loadingState;
-		int srcChannelCount;
-		int baserate;
-	};
-
-	union SndEntHandle
-	{
-		struct
-		{
-			unsigned int entIndex;
-		} field;
-		int handle;
-	};
-
-	enum SndLengthId
-	{
-		SndLengthNotify_Subtitle = 0x0,
-		SndLengthNotify_EntityCustom = 0x1,
-		SndLengthNotifyCount = 0x2,
-	};
-
-	struct sndLengthNotifyInfo
-	{
-		SndLengthId id[4];
-		void* data[4];
-		int count;
-	};
-
-	enum snd_alias_system_t
-	{
-		SASYS_UI = 0x0,
-		SASYS_CGAME = 0x1,
-		SASYS_GAME = 0x2,
-		SASYS_COUNT = 0x3,
-	};
-
 	struct MSSSpeakerLevels
 	{
 		int speaker;
@@ -2847,8 +2750,7 @@ namespace Game
 		float distMin;
 		float distMax;
 		float velocityMin;
-		SoundAliasFlags flags
-		int flags;
+		SoundAliasFlags flags;
 		union
 		{
 			float slavePercentage;
@@ -2863,71 +2765,6 @@ namespace Game
 		float envelopMax;
 		float envelopPercentage;
 		SpeakerMap* speakerMap;
-	};
-
-	struct snd_channel_info_t
-	{
-		SndFileSpecificChannelInfo soundFileInfo;
-		SndEntHandle sndEnt;
-		int entchannel;
-		int startDelay;
-		int looptime;
-		int totalMsec;
-		int playbackId;
-		sndLengthNotifyInfo lengthNotifyInfo;
-		float basevolume;
-		float pitch;
-		snd_alias_t* alias0;
-		snd_alias_t* alias1;
-		int saveIndex0;
-		int saveIndex1;
-		float lerp;
-		float org[3];
-		float offset[3];
-		bool paused;
-		bool master;
-		float timescaleLerp;
-		snd_alias_system_t system;
-	};
-
-	struct snd_local_t
-	{
-		bool Initialized2d;
-		bool Initialized3d;
-		bool paused;
-		int playbackIdCounter;
-		unsigned int playback_rate;
-		int playback_channels;
-		float timescale;
-		int pausetime;
-		int cpu;
-		struct
-		{
-			char buffer[16384];
-			volatile int size;
-			bool compress;
-		} restore;
-		float volume;
-		snd_volume_info_t mastervol;
-		snd_channelvolgroup channelVolGroups[4];
-		snd_channelvolgroup* channelvol;
-		snd_background_info_t background[4];
-		int ambient_track;
-		float slaveLerp;
-		float masterPercentage;
-		snd_enveffect envEffects[5];
-		snd_enveffect* effect;
-		snd_listener listeners[2];
-		int time;
-		int looptime;
-		snd_amplifier amplifier;
-		snd_entchannel_info_t entchaninfo[64];
-		snd_entchan_overrides_t entchanOverrides;
-		int entchannel_count;
-		snd_channel_info_t chaninfo[52];
-		int max_2D_channels;
-		int max_3D_channels;
-		int max_stream_channels;
 	};
 
 	struct Poly
@@ -5912,6 +5749,7 @@ namespace Game
 		int numEntityChars;
 		MapTriggers trigger;
 	};
+
 
 	union XAssetHeader
 	{
@@ -11160,11 +10998,6 @@ namespace Game
 		unsigned int pad1[14];
 	};
 
-	struct ClientEntSound
-	{
-		float origin[3];
-		snd_alias_list_t* aliasList;
-	};
 
 #pragma endregion
 

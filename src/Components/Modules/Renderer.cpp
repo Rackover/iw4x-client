@@ -16,7 +16,6 @@ namespace Components
 	Dvar::Var Renderer::r_drawAABBTrees;
 	Dvar::Var Renderer::r_playerDrawDebugDistance;
 	Dvar::Var Renderer::r_forceTechnique;
-	Dvar::Var Renderer::r_drawRunners;
 
 	float cyan[4] = { 0.0f, 0.5f, 0.5f, 1.0f };
 	float red[4] = { 1.0f, 0.0f, 0.0f, 1.0f };
