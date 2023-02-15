@@ -29,9 +29,9 @@ namespace Components
 		zoneName(name),
 		dataMap("zone_source/" + name + ".csv"),
 		branding{nullptr},
-		assetDepth(0)
+		assetDepth(0),
+		iw4ofApi(getIW4OfApiParams())
 	{
-		this->initializeIW4OfApi();
 	}
 
 	ZoneBuilder::Zone::~Zone()
@@ -757,7 +757,7 @@ namespace Components
 		return header;
 	}
 
-	void ZoneBuilder::Zone::initializeIW4OfApi()
+	iw4of::params_t ZoneBuilder::Zone::getIW4OfApiParams()
 	{
 		iw4of::params_t params;
 
@@ -795,9 +795,16 @@ namespace Components
 			}
 		};
 
-		params.work_directory = (*Game::fs_basepath)->current.string;
+		if (Game::fs_basepath && Game::fs_gameDirVar)
+		{
+			params.work_directory = std::format("{}/{}", (*Game::fs_basepath)->current.string, (*Game::fs_gameDirVar)->current.string);
+		}
+		else
+		{
+			Components::Logger::Error(Game::ERR_FATAL, "Missing FS Game directory or basepath directory!");
+		}
 
-		this->iw4ofApi = iw4of::api{ params };
+		return params;
 	}
 
 	int ZoneBuilder::StoreTexture(Game::GfxImageLoadDef **loadDef, Game::GfxImage *image)
