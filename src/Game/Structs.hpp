@@ -2614,46 +2614,6 @@ namespace Game
 		SASYS_COUNT = 0x3,
 	};
 
-	struct snd_local_t
-	{
-		bool Initialized2d;
-		bool Initialized3d;
-		bool paused;
-		int playbackIdCounter;
-		unsigned int playback_rate;
-		int playback_channels;
-		float timescale;
-		int pausetime;
-		int cpu;
-		struct
-		{
-			char buffer[16384];
-			volatile int size;
-			bool compress;
-		} restore;
-		float volume;
-		snd_volume_info_t mastervol;
-		snd_channelvolgroup channelVolGroups[4];
-		snd_channelvolgroup* channelvol;
-		snd_background_info_t background[4];
-		int ambient_track;
-		float slaveLerp;
-		float masterPercentage;
-		snd_enveffect envEffects[5];
-		snd_enveffect* effect;
-		snd_listener listeners[2];
-		int time;
-		int looptime;
-		snd_amplifier amplifier;
-		snd_entchannel_info_t entchaninfo[64];
-		snd_entchan_overrides_t entchanOverrides;
-		int entchannel_count;
-		snd_channel_info_t chaninfo[52];
-		int max_2D_channels;
-		int max_3D_channels;
-		int max_stream_channels;
-	};
-
 	struct SoundFile
 	{
 		char type;
@@ -2708,7 +2668,7 @@ namespace Game
 		float knots[16][2];
 	};
 
-	const struct snd_alias_t
+	struct snd_alias_t
 	{
 		const char* aliasName;
 		const char* subtitle;
@@ -2764,6 +2724,46 @@ namespace Game
 		bool master;
 		float timescaleLerp;
 		snd_alias_system_t system;
+	};
+
+	struct snd_local_t
+	{
+		bool Initialized2d;
+		bool Initialized3d;
+		bool paused;
+		int playbackIdCounter;
+		unsigned int playback_rate;
+		int playback_channels;
+		float timescale;
+		int pausetime;
+		int cpu;
+		struct
+		{
+			char buffer[16384];
+			volatile int size;
+			bool compress;
+		} restore;
+		float volume;
+		snd_volume_info_t mastervol;
+		snd_channelvolgroup channelVolGroups[4];
+		snd_channelvolgroup* channelvol;
+		snd_background_info_t background[4];
+		int ambient_track;
+		float slaveLerp;
+		float masterPercentage;
+		snd_enveffect envEffects[5];
+		snd_enveffect* effect;
+		snd_listener listeners[2];
+		int time;
+		int looptime;
+		snd_amplifier amplifier;
+		snd_entchannel_info_t entchaninfo[64];
+		snd_entchan_overrides_t entchanOverrides;
+		int entchannel_count;
+		snd_channel_info_t chaninfo[52];
+		int max_2D_channels;
+		int max_3D_channels;
+		int max_stream_channels;
 	};
 
 	struct Poly

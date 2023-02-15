@@ -1,5 +1,5 @@
 iw4_open_formats = {
-	source = path.join(dependencies.basePath, "iw4-open-formats/src"),
+	source = path.join(dependencies.basePath, "iw4-open-formats"),
 }
 
 function iw4_open_formats.import()
@@ -10,7 +10,7 @@ end
 
 function iw4_open_formats.includes()
 	includedirs {
-		path.join(iw4_open_formats.source, "src/headers")
+		path.join(iw4_open_formats.source, "include")
 	}
 end
 
@@ -21,16 +21,16 @@ function iw4_open_formats.project()
 		iw4_open_formats.includes()
 
 		pchheader "std_include.hpp"
-		pchsource (path.join(iw4_open_formats.source, "iw4-of/std_include.cpp"))
+		pchsource (path.join(iw4_open_formats.source, "src/iw4-of/std_include.cpp"))
 
 		files {
-			path.join(iw4_open_formats.source, "iw4-of/**.hpp"),
-			path.join(iw4_open_formats.source, "iw4-of/**.cpp"),
+			path.join(iw4_open_formats.source, "src/iw4-of/**.hpp"),
+			path.join(iw4_open_formats.source, "src/iw4-of/**.cpp"),
 		}
 
 		includedirs {
-			path.join(iw4_open_formats.source, "iw4-of"),
-			path.join(dependencies.basePath, "iw4-open-formats", "include"),
+			path.join(iw4_open_formats.source, "src/iw4-of"),
+			path.join(iw4_open_formats.source, "include"),
 		}
 
 		libtomcrypt.includes()

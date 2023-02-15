@@ -759,12 +759,14 @@ namespace Components
 
 	void ZoneBuilder::Zone::initializeIW4OfApi()
 	{
-		this->iw4ofApi.params.find_other_asset = [this](int type, const std::string& name) -> Game::XAssetHeader
+		iw4of::params_t params;
+
+		params.find_other_asset = [this](int type, const std::string& name) -> void*
 		{
-			return Components::AssetHandler::FindAssetForZone(static_cast<Game::XAssetType>(type), name, this).data;
+			return AssetHandler::FindAssetForZone(static_cast<Game::XAssetType>(type), name, this).data;
 		};
 
-		this->iw4ofApi.params.fs_read_file = [](const std::string& filename) -> std::string
+		params.fs_read_file = [](const std::string& filename) -> std::string
 		{
 			auto file = FileSystem::File(filename);
 			if (file.exists())
@@ -775,25 +777,27 @@ namespace Components
 			return {};
 		};
 
-		this->iw4ofApi.params.store_in_string_table = [](const std::string& text) -> unsigned int
+		params.store_in_string_table = [](const std::string& text) -> unsigned int
 		{
 			return Game::SL_GetString(text.data(), 0);
 		};
 
-		this->iw4ofApi.params.print = [](iw4of::params_t::print_type t, const std::string& message) -> void
+		params.print = [](iw4of::params_t::print_type t, const std::string& message) -> void
 		{
 			switch (t)
 			{
 			case iw4of::params_t::P_ERR:
-				Components::Logger::PrintError(Game::CON_CHANNEL_ERROR, "{}", message);
+				Logger::PrintError(Game::CON_CHANNEL_ERROR, "{}", message);
 				break;
 			case iw4of::params_t::P_WARN:
-				Components::Logger::Print("{}", message);
+				Logger::Print("{}", message);
 				break;
 			}
 		};
 
-		this->iw4ofApi.params.work_directory = (*Game::fs_basepath)->current.string;
+		params.work_directory = (*Game::fs_basepath)->current.string;
+
+		this->iw4ofApi = iw4of::api{ params };
 	}
 
 	int ZoneBuilder::StoreTexture(Game::GfxImageLoadDef **loadDef, Game::GfxImage *image)
