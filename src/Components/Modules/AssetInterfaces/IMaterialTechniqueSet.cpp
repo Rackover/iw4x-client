@@ -28,7 +28,7 @@ namespace Assets
 		while (ptr->remappedTechniqueSet && ptr->remappedTechniqueSet != ptr)
 		{
 			ptr = ptr->remappedTechniqueSet;
-			builder->addRawAsset(Game::XAssetType::ASSET_TYPE_TECHNIQUE_SET, ptr);
+			builder->loadAsset(Game::XAssetType::ASSET_TYPE_TECHNIQUE_SET, ptr, false);
 
 			for (size_t i = 0; i < Game::TECHNIQUE_COUNT; i++)
 			{
