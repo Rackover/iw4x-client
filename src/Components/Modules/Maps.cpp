@@ -666,12 +666,24 @@ namespace Components
 		return Utils::Hook::Call<bool(Game::gentity_s*)>(0x5050C0)(ent);
 	}
 
-	int16 Maps::CM_TriggerModelBounds(int modelPointer, Game::Bounds* bounds) {
-#ifdef DEBUG
+	int16 Maps::CM_TriggerModelBounds(unsigned int triggerIndex, Game::Bounds* bounds) {
+
 		Game::MapEnts* ents = *reinterpret_cast<Game::MapEnts**>(0x1AA651C);  // Use me for debugging
-		(void)ents;
-#endif
-		return Utils::Hook::Call<int16(int, Game::Bounds*)>(0x4416C0)(modelPointer, bounds);
+
+		if (ents)
+		{
+			if (triggerIndex >= ents->trigger.count)
+			{
+				Components::Logger::Error(Game::errorParm_t::ERR_DROP, "Invalid trigger index {} in entities exceeds the maximum trigger count ({}) defined in the clipmap. Check your map ents, or your clipmap.", triggerIndex, ents->trigger.count);
+				return 0;
+			}
+			else 
+			{
+				return Utils::Hook::Call<int16(int, Game::Bounds*)>(0x4416C0)(triggerIndex, bounds);
+			}
+		}
+
+		return 0;
 	}
 	
 	Maps::Maps()
@@ -714,11 +726,13 @@ namespace Components
 		Utils::Hook(0x5EE577, Maps::G_SpawnTurretHook, HOOK_CALL).install()->quick();
 		Utils::Hook(0x44A4D5, Maps::G_SpawnTurretHook, HOOK_CALL).install()->quick();
 
+		// Catch trigger errors before they're critical
+		Utils::Hook(0x5050D4, Maps::CM_TriggerModelBounds, HOOK_CALL).install()->quick();
+
 #ifdef DEBUG
 		// Check trigger models
 		Utils::Hook(0x5FC0F1, Maps::SV_SetTriggerModelHook, HOOK_CALL).install()->quick();
 		Utils::Hook(0x5FC2671, Maps::SV_SetTriggerModelHook, HOOK_CALL).install()->quick();
-		Utils::Hook(0x5050D4, Maps::CM_TriggerModelBounds, HOOK_CALL).install()->quick();
 #endif
 
 		// 

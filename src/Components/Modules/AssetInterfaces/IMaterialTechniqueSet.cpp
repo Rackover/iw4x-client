@@ -23,6 +23,28 @@ namespace Assets
 	void IMaterialTechniqueSet::loadFromDisk(Game::XAssetHeader* header, const std::string& name, Components::ZoneBuilder::Zone* builder)
 	{
 		header->techniqueSet = builder->getIW4OfApi()->read<Game::MaterialTechniqueSet>(Game::XAssetType::ASSET_TYPE_TECHNIQUE_SET, name);
+
+		auto ptr = header->techniqueSet;
+		while (ptr->remappedTechniqueSet && ptr->remappedTechniqueSet != ptr)
+		{
+			ptr = ptr->remappedTechniqueSet;
+			builder->addRawAsset(Game::XAssetType::ASSET_TYPE_TECHNIQUE_SET, ptr);
+
+			for (size_t i = 0; i < Game::TECHNIQUE_COUNT; i++)
+			{
+				const auto technique = ptr->techniques[i];
+				if (technique)
+				{
+					for (size_t j = 0; j < technique->passCount; j++)
+					{
+						const auto pass = &technique->passArray[j];
+						builder->loadAsset(Game::XAssetType::ASSET_TYPE_VERTEXDECL, pass->vertexDecl, true);
+						builder->loadAsset(Game::XAssetType::ASSET_TYPE_PIXELSHADER, pass->pixelShader, true);
+						builder->loadAsset(Game::XAssetType::ASSET_TYPE_VERTEXSHADER, pass->vertexShader, true);
+					}
+				}
+			}
+		}
 	}
 
 	void IMaterialTechniqueSet::mark(Game::XAssetHeader header, Components::ZoneBuilder::Zone* builder)
