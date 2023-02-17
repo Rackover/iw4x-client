@@ -539,7 +539,7 @@ namespace Components
 		std::string data = std::format("Built using the IW4x ZoneBuilder! {:%d-%m-%Y %H:%M:%OS}", now);
 		auto dataLen = data.size(); // + 1 is added by the save code
 
-		this->branding = {this->zoneName.data(), 0, static_cast<int>(dataLen), data.data()};
+		this->branding = {this->zoneName.data(), 0, static_cast<int>(dataLen), getAllocator()->duplicateString(data)};
 
 		if (this->findAsset(Game::XAssetType::ASSET_TYPE_RAWFILE, this->branding.name) != -1)
 		{
@@ -788,7 +788,7 @@ namespace Components
 			switch (t)
 			{
 			case iw4of::params_t::P_ERR:
-				Logger::PrintError(Game::CON_CHANNEL_ERROR, "{}", message);
+				Logger::Error(Game::ERR_FATAL, "{}", message);
 				break;
 			case iw4of::params_t::P_WARN:
 				Logger::Print("{}", message);
