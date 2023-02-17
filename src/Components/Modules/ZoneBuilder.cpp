@@ -539,7 +539,7 @@ namespace Components
 		
 		std::string zoneBranding = std::format("Built using the IW4x ZoneBuilder! {:%d-%m-%Y %H:%M:%OS}", now);
 		auto brandingLen = zoneBranding.size(); // + 1 is added by the save code
-		
+
 		this->branding = {this->zoneName.data(), 0, static_cast<int>(brandingLen), getAllocator()->duplicateString(zoneBranding)};
 
 		if (this->findAsset(Game::ASSET_TYPE_RAWFILE, this->branding.name) != -1)
