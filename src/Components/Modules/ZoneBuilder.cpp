@@ -30,7 +30,7 @@ namespace Components
 		dataMap("zone_source/" + name + ".csv"),
 		branding{nullptr},
 		assetDepth(0),
-		iw4ofApi(getIW4OfApiParams()),
+		iw4ofApi(getIW4OfApiParams())
 	{
 	}
 
@@ -535,13 +535,13 @@ namespace Components
 	// Add branding asset
 	void ZoneBuilder::Zone::addBranding()
 	{
-		static std::string branding;
+		static std::string zoneBranding;
 
 		const auto now = std::chrono::system_clock::now();
-		branding = std::format("Built using the IW4x ZoneBuilder! {:%d-%m-%Y %H:%M:%OS}", now);
-		auto brandingLen = branding.size(); // + 1 is added by the save code
+		zoneBranding = std::format("Built using the IW4x ZoneBuilder! {:%d-%m-%Y %H:%M:%OS}", now);
+		auto brandingLen = zoneBranding.size(); // + 1 is added by the save code
 
-		this->branding = {this->zoneName.data(), 0, static_cast<int>(brandingLen), branding.data()};
+		this->branding = {this->zoneName.data(), 0, static_cast<int>(brandingLen), zoneBranding.data()};
 
 		if (this->findAsset(Game::ASSET_TYPE_RAWFILE, this->branding.name) != -1)
 		{
