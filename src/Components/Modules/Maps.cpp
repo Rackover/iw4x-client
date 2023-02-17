@@ -666,20 +666,21 @@ namespace Components
 		return Utils::Hook::Call<bool(Game::gentity_s*)>(0x5050C0)(ent);
 	}
 
-	int16 Maps::CM_TriggerModelBounds_Hk(unsigned int triggerIndex, Game::Bounds* bounds) {
+	unsigned short Maps::CM_TriggerModelBounds_Hk(unsigned int triggerIndex, Game::Bounds* bounds)
+	{
 
-		Game::MapEnts* ents = *reinterpret_cast<Game::MapEnts**>(0x1AA651C);  // Use me for debugging
+		auto* ents = *reinterpret_cast<Game::MapEnts**>(0x1AA651C);  // Use me for debugging
 
 		if (ents)
 		{
 			if (triggerIndex >= ents->trigger.count)
 			{
-				Components::Logger::Error(Game::errorParm_t::ERR_DROP, "Invalid trigger index {} in entities exceeds the maximum trigger count ({}) defined in the clipmap. Check your map ents, or your clipmap.", triggerIndex, ents->trigger.count);
+				Logger::Error(Game::errorParm_t::ERR_DROP, "Invalid trigger index ({}) in entities exceeds the maximum trigger count ({}) defined in the clipmap. Check your map ents, or your clipmap!", triggerIndex, ents->trigger.count);
 				return 0;
 			}
 			else 
 			{
-				return Utils::Hook::Call<int16(int, Game::Bounds*)>(0x4416C0)(triggerIndex, bounds);
+				return Utils::Hook::Call<unsigned short(int, Game::Bounds*)>(0x4416C0)(triggerIndex, bounds);
 			}
 		}
 

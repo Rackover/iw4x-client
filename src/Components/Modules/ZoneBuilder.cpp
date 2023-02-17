@@ -30,7 +30,7 @@ namespace Components
 		dataMap("zone_source/" + name + ".csv"),
 		branding{nullptr},
 		assetDepth(0),
-		iw4ofApi(getIW4OfApiParams())
+		iw4ofApi(getIW4OfApiParams()),
 	{
 	}
 
@@ -535,19 +535,21 @@ namespace Components
 	// Add branding asset
 	void ZoneBuilder::Zone::addBranding()
 	{
+		static std::string branding;
+
 		const auto now = std::chrono::system_clock::now();
-		std::string data = std::format("Built using the IW4x ZoneBuilder! {:%d-%m-%Y %H:%M:%OS}", now);
-		auto dataLen = data.size(); // + 1 is added by the save code
+		branding = std::format("Built using the IW4x ZoneBuilder! {:%d-%m-%Y %H:%M:%OS}", now);
+		auto brandingLen = branding.size(); // + 1 is added by the save code
 
-		this->branding = {this->zoneName.data(), 0, static_cast<int>(dataLen), getAllocator()->duplicateString(data)};
+		this->branding = {this->zoneName.data(), 0, static_cast<int>(brandingLen), branding.data()};
 
-		if (this->findAsset(Game::XAssetType::ASSET_TYPE_RAWFILE, this->branding.name) != -1)
+		if (this->findAsset(Game::ASSET_TYPE_RAWFILE, this->branding.name) != -1)
 		{
 			Logger::Error(Game::ERR_FATAL, "Unable to add branding. Asset '{}' already exists!", this->branding.name);
 		}
 
 		Game::XAssetHeader header = { &this->branding };
-		Game::XAsset brandingAsset = { Game::XAssetType::ASSET_TYPE_RAWFILE, header };
+		Game::XAsset brandingAsset = { Game::ASSET_TYPE_RAWFILE, header };
 		this->loadedAssets.push_back(brandingAsset);
 	}
 
@@ -802,7 +804,7 @@ namespace Components
 		}
 		else
 		{
-			Components::Logger::Error(Game::ERR_FATAL, "Missing FS Game directory or basepath directory!");
+			Logger::Error(Game::ERR_FATAL, "Missing FS Game directory or basepath directory!");
 		}
 
 		return params;
