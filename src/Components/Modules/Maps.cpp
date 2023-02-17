@@ -666,7 +666,7 @@ namespace Components
 		return Utils::Hook::Call<bool(Game::gentity_s*)>(0x5050C0)(ent);
 	}
 
-	int16 Maps::CM_TriggerModelBounds(unsigned int triggerIndex, Game::Bounds* bounds) {
+	int16 Maps::CM_TriggerModelBounds_Hk(unsigned int triggerIndex, Game::Bounds* bounds) {
 
 		Game::MapEnts* ents = *reinterpret_cast<Game::MapEnts**>(0x1AA651C);  // Use me for debugging
 
@@ -727,7 +727,7 @@ namespace Components
 		Utils::Hook(0x44A4D5, Maps::G_SpawnTurretHook, HOOK_CALL).install()->quick();
 
 		// Catch trigger errors before they're critical
-		Utils::Hook(0x5050D4, Maps::CM_TriggerModelBounds, HOOK_CALL).install()->quick();
+		Utils::Hook(0x5050D4, Maps::CM_TriggerModelBounds_Hk, HOOK_CALL).install()->quick();
 
 #ifdef DEBUG
 		// Check trigger models

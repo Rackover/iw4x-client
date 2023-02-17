@@ -796,7 +796,7 @@ namespace Components
 			}
 		};
 
-		if (Game::fs_basepath && Game::fs_gameDirVar)
+		if (*Game::fs_basepath && *Game::fs_gameDirVar)
 		{
 			params.work_directory = std::format("{}/{}", (*Game::fs_basepath)->current.string, (*Game::fs_gameDirVar)->current.string);
 		}
