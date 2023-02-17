@@ -537,7 +537,7 @@ namespace Components
 	{
 		const auto now = std::chrono::system_clock::now();
 		
-		std::string zoneBranding = std::format("Built using the IW4x ZoneBuilder! {:%d-%m-%Y %H:%M:%OS}", now);
+		auto zoneBranding = std::format("Built using the IW4x ZoneBuilder! {:%d-%m-%Y %H:%M:%OS}", now);
 		auto brandingLen = zoneBranding.size(); // + 1 is added by the save code
 
 		this->branding = {this->zoneName.data(), 0, static_cast<int>(brandingLen), getAllocator()->duplicateString(zoneBranding)};
