@@ -14,7 +14,7 @@ namespace Assets
 
 		if (!header->data)
 		{
-			assert(false);
+			AssertUnreachable();
 		}
 	}
 
