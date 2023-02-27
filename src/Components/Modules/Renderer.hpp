@@ -34,6 +34,8 @@ namespace Components
 
 		static int DrawTechsetForMaterial(int a1, float a2, float a3, const char* material, Game::vec4_t* color, int a6);
 
+		static void ListSamplers();
+
 		static void DebugDrawTriggers();
 		static void DebugDrawSceneModelCollisions();
 		static void DebugDrawModelBoundingBoxes();
@@ -58,5 +60,6 @@ namespace Components
 		static Dvar::Var r_drawAABBTrees;
 		static Dvar::Var r_playerDrawDebugDistance;
 		static Dvar::Var r_forceTechnique;
+		static Dvar::Var r_listSamplers;
 	};
 }
