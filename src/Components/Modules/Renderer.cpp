@@ -531,7 +531,7 @@ namespace Components
 
 			const auto* str = Utils::String::Format("{}/{:#X} => {} {}", i, i,
 				(source->input.codeImages[i] == nullptr ? "---" : source->input.codeImages[i]->name),
-				std::to_string(source->input.codeImageSamplerStates[i]
+				std::to_string(source->input.codeImageSamplerStates[i])
 			);
 
 			Game::R_AddCmdDrawText(str, std::numeric_limits<int>::max(), font, 15.0f, (height * scale + 1) * (i + 1) + 14.0f, scale, scale, 0.0f, color, Game::ITEM_TEXTSTYLE_NORMAL);
