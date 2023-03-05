@@ -34,8 +34,6 @@ namespace Components
 
 		static int DrawTechsetForMaterial(int a1, float a2, float a3, const char* material, Game::vec4_t* color, int a6);
 
-		static void ListSamplers();
-
 		static void DebugDrawTriggers();
 		static void DebugDrawSceneModelCollisions();
 		static void DebugDrawModelBoundingBoxes();
@@ -43,6 +41,7 @@ namespace Components
 		static void DebugDrawRunners();
 		static void DebugDrawAABBTrees();
 		static void ForceTechnique();
+		static void ListSamplers();
 
 		static int FixSunShadowPartitionSize(Game::GfxCamera* camera, Game::GfxSunShadowMapMetrics* mapMetrics, Game::GfxSunShadow* sunShadow, Game::GfxSunShadowClip* clip, float* partitionFraction);
 

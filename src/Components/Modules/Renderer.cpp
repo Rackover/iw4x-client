@@ -179,35 +179,6 @@ namespace Components
 		return Utils::Hook::Call<int(int, float, float, const char*, Game::vec4_t*, int)>(0x005033E0)(a1, a2, a3, Utils::String::VA("%s (^3%s^7)", mat->info.name, mat->techniqueSet->name), color, a6);
 	}
 
-	void Renderer::ListSamplers()
-	{
-		if (r_listSamplers.get<bool>())
-		{
-			static auto* source = reinterpret_cast<Game::GfxCmdBufSourceState*>(0x6CAF080);
-
-			Game::Font_s* font = Game::R_RegisterFont("fonts/smallFont", 0);
-			auto height = Game::R_TextHeight(font);
-			auto scale = 1.0f;
-			float color[4] = { 0.0f, 1.0f, 0.0f, 1.0f };
-
-			for (std::size_t i = 0; i < 27; ++i)
-			{
-				if (source->input.codeImages[i] == nullptr)
-				{
-					color[0] = 1.f;
-				}
-				else
-				{
-					color[0] = 0.f;
-				}
-
-				std::stringstream str;
-				str << std::format("{}/{:#X} => ", i, i) << (source->input.codeImages[i] == nullptr ? "---" : source->input.codeImages[i]->name) << " " << std::to_string(source->input.codeImageSamplerStates[i]);
-				Game::R_AddCmdDrawText(str.str().data(), std::numeric_limits<int>::max(), font, 15.0f, (height * scale + 1) * (i + 1) + 14.0f, scale, scale, 0.0f, color, Game::ITEM_TEXTSTYLE_NORMAL);
-			}
-		}
-	}
-
 	void Renderer::DebugDrawTriggers()
 	{
 		if (!r_drawTriggers.get<bool>()) return;
@@ -533,6 +504,40 @@ namespace Components
 		}
 	}
 
+	void Renderer::ListSamplers()
+	{
+		if (!r_listSamplers.get<bool>())
+		{
+			return;
+		}
+
+		static auto* source = reinterpret_cast<Game::GfxCmdBufSourceState*>(0x6CAF080);
+
+		auto* font = Game::R_RegisterFont("fonts/smallFont", 0);
+		auto height = Game::R_TextHeight(font);
+		auto scale = 1.0f;
+		float color[] = {0.0f, 1.0f, 0.0f, 1.0f};
+
+		for (std::size_t i = 0; i < 27; ++i)
+		{
+			if (source->input.codeImages[i] == nullptr)
+			{
+				color[0] = 1.f;
+			}
+			else
+			{
+				color[0] = 0.f;
+			}
+
+			const auto* str = Utils::String::Format("{}/{:#X} => {} {}", i, i,
+				(source->input.codeImages[i] == nullptr ? "---" : source->input.codeImages[i]->name),
+				std::to_string(source->input.codeImageSamplerStates[i]
+			);
+
+			Game::R_AddCmdDrawText(str.data(), std::numeric_limits<int>::max(), font, 15.0f, (height * scale + 1) * (i + 1) + 14.0f, scale, scale, 0.0f, color, Game::ITEM_TEXTSTYLE_NORMAL);
+		}
+	}
+
 	int Renderer::FixSunShadowPartitionSize(Game::GfxCamera* camera, Game::GfxSunShadowMapMetrics* mapMetrics, Game::GfxSunShadow* sunShadow, Game::GfxSunShadowClip* clip, float* partitionFraction)
 	{
 		auto result = Utils::Hook::Call<int(Game::GfxCamera*, Game::GfxSunShadowMapMetrics*, Game::GfxSunShadow*, Game::GfxSunShadowClip*, float*)>(0x5463B0)(camera, mapMetrics, sunShadow, clip, partitionFraction);
@@ -560,8 +565,8 @@ namespace Components
 				DebugDrawModelBoundingBoxes();
 				DebugDrawSceneModelCollisions();
 				DebugDrawTriggers();
-				ListSamplers();
 				ForceTechnique();
+				ListSamplers();
 			}
 		}, Scheduler::Pipeline::RENDERER);
 
