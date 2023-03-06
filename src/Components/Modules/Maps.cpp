@@ -11,6 +11,8 @@ namespace Components
 	std::string Maps::CurrentMainZone;
 	std::vector<std::pair<std::string, std::string>> Maps::DependencyList;
 	std::vector<std::string> Maps::CurrentDependencies;
+	std::vector<std::string> Maps::FoundCustomMaps;
+	std::mutex Maps::CustomMapsScanningMutex;
 
 	Dvar::Var Maps::RListSModels;
 
@@ -106,7 +108,7 @@ namespace Components
 		if (Maps::UserMap.isValid())
 		{
 			const std::string mapname = Maps::UserMap.getName();
-			const auto* arena = Utils::String::VA("usermaps/%s/%s.arena", mapname.data(), mapname.data());
+			std::string arena = GetArenaPath(mapname);
 
 			if (Utils::IO::FileExists(arena))
 			{
@@ -336,6 +338,27 @@ namespace Components
 	int Maps::IgnoreEntityStub(const char* entity)
 	{
 		return (Utils::String::StartsWith(entity, "dyn_") || Utils::String::StartsWith(entity, "node_") || Utils::String::StartsWith(entity, "actor_"));
+	}
+
+	std::unordered_map<std::string, std::string> Maps::ParseCustomMapArena(const std::string& singleMapArena)
+	{
+		static const std::regex regex("  (\\w*) *\"?((?:\\w| )*)\"?");
+		std::unordered_map<std::string, std::string> arena{};
+
+		std::smatch m;
+
+		std::string::const_iterator search_start(singleMapArena.cbegin());
+
+		while (std::regex_search(search_start, singleMapArena.cend(), m, regex))
+		{
+			if (m.size() > 2)
+			{
+				arena.emplace(m[1].str(), m[2].str());
+				search_start = m.suffix().first;
+			}
+		}
+
+		return arena;
 	}
 
 	Maps::MapDependencies Maps::GetDependenciesForMap(const std::string& map)
@@ -578,6 +601,37 @@ namespace Components
 		return Utils::IO::DirectoryExists(std::format("usermaps/{}", mapname)) && Utils::IO::FileExists(std::format("usermaps/{}/{}.ff", mapname, mapname));
 	}
 
+	void Maps::ScanCustomMaps()
+	{
+		std::lock_guard _(CustomMapsScanningMutex);
+
+		FoundCustomMaps.clear();
+		Components::Logger::Print("Scanning custom maps...\n");
+
+		auto basePath = std::format("{}\\usermaps", (*Game::fs_basepath)->current.string);
+
+		auto entries = Utils::IO::ListFiles(basePath);
+
+		for (const auto& entry : entries)
+		{
+			if (entry.is_directory())
+			{
+				auto zoneName = entry.path().filename().string();
+				auto mapPath = std::format("{}\\{}.ff", entry.path().string(), zoneName);
+				if (Utils::IO::FileExists(mapPath))
+				{
+					FoundCustomMaps.push_back(zoneName);
+					Components::Logger::Print("Discovered custom map {}\n", zoneName);
+				}
+			}
+		}
+	}
+
+	std::string Maps::GetArenaPath(const std::string& mapName)
+	{
+		return Utils::String::VA("usermaps/%s/%s.arena", mapName.data(), mapName.data());
+	}
+
 	Game::XAssetEntry* Maps::GetAssetEntryPool()
 	{
 		return *reinterpret_cast<Game::XAssetEntry**>(0x48E6F4);
@@ -696,13 +750,9 @@ namespace Components
 
 			Maps::AddDlc({ 1, "Stimulus Pack", {"mp_complex", "mp_compact", "mp_storm", "mp_overgrown", "mp_crash"} });
 			Maps::AddDlc({ 2, "Resurgence Pack", {"mp_abandon", "mp_vacant", "mp_trailerpark", "mp_strike", "mp_fuel2"} });
-			Maps::AddDlc({ 3, "Nuketown", {"mp_nuked"} });
-			Maps::AddDlc({ 4, "Classics Pack #1", {"mp_cross_fire", "mp_cargoship", "mp_bloc"} });
-			Maps::AddDlc({ 5, "Classics Pack #2", {"mp_killhouse", "mp_bog_sh"} });
-			Maps::AddDlc({ 6, "Freighter", {"mp_cargoship_sh"} });
-			Maps::AddDlc({ 7, "Resurrection Pack", {"mp_shipment_long", "mp_rust_long", "mp_firingrange"} });
-			Maps::AddDlc({ 8, "Recycled Pack", {"mp_bloc_sh", "mp_crash_tropical", "mp_estate_tropical", "mp_fav_tropical", "mp_storm_spring"} });
-			Maps::AddDlc({ 9, "Classics Pack #3", {"mp_farm", "mp_backlot", "mp_pipeline", "mp_countdown", "mp_crash_snow", "mp_carentan", "mp_broadcast", "mp_showdown", "mp_convoy"} });
+			Maps::AddDlc({ 3, "IW4x Classics", {"mp_nuked", "mp_cross_fire", "mp_cargoship", "mp_bloc", "mp_killhouse", "mp_bog_sh", "mp_cargoship_sh", "mp_shipment_long", "mp_rust_long", "mp_firingrange", "mp_bloc_sh", "mp_crash_tropical", "mp_estate_tropical", "mp_fav_tropical", "mp_storm_spring"} });
+			Maps::AddDlc({ 4, "Call Of Duty 4 Pack", {"mp_farm", "mp_backlot", "mp_pipeline", "mp_countdown", "mp_crash_snow", "mp_carentan", "mp_broadcast", "mp_showdown", "mp_convoy"} });
+			Maps::AddDlc({ 5, "Modern Warfare 3 Pack", {"mp_dome", "mp_hardhat", "mp_paris", "mp_seatown", "mp_bravo", "mp_underground", "mp_plaza2", "mp_village", "mp_alpha"}});
 
 			Maps::UpdateDlcStatus();
 

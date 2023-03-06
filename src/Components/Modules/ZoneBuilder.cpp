@@ -1336,8 +1336,9 @@ namespace Components
 
 				const auto dir = std::format("zone/{}", Game::Win_GetLanguage());
 				auto fileList = Utils::IO::ListFiles(dir, false);
-				for (auto zone : fileList)
+				for (auto entry : fileList)
 				{
+					auto zone = entry.path().string();
 					Utils::String::Replace(zone, Utils::String::VA("zone/%s/", Game::Win_GetLanguage()), "");
 					Utils::String::Replace(zone, ".ff", "");
 
@@ -1431,8 +1432,10 @@ namespace Components
 				auto list = Utils::IO::ListFiles("zone/techsets", false);
 				int i = 0;
 				int subCount = 0;
-				for (auto it : list)
+				for (auto entry : list)
 				{
+					auto it = entry.path().string();
+
 					Utils::String::Replace(it, "zone/techsets/", "");
 					Utils::String::Replace(it, ".ff", "");
 
