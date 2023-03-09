@@ -17,6 +17,7 @@ namespace Components
 	Dvar::Var Renderer::r_playerDrawDebugDistance;
 	Dvar::Var Renderer::r_forceTechnique;
 	Dvar::Var Renderer::r_listSamplers;
+	Dvar::Var Renderer::r_drawLights;
 
 	float cyan[4] = { 0.0f, 0.5f, 0.5f, 1.0f };
 	float red[4] = { 1.0f, 0.0f, 0.0f, 1.0f };
@@ -504,6 +505,82 @@ namespace Components
 		}
 	}
 
+	void Renderer::DrawPrimaryLights()
+	{
+		if (!r_drawLights.get<bool>())
+		{
+			return;
+		}
+
+		auto clientNum = Game::CG_GetClientNum();
+		Game::gentity_t* clientEntity = &Game::g_entities[clientNum];
+
+		// Ingame only & player only
+		if (!Game::CL_IsCgameInitialized() || clientEntity->client == nullptr)
+		{
+			return;
+		}
+
+		auto scene = Game::scene;
+		auto asset = Game::DB_FindXAssetEntry(Game::XAssetType::ASSET_TYPE_COMWORLD, Utils::String::VA("maps/mp/%s.d3dbsp", (*Game::sv_mapname)->current.string));
+
+		if (asset == nullptr)
+		{
+			return;
+		}
+
+		auto world = asset->asset.header.comWorld;
+
+		for (size_t i = 0; i < world->primaryLightCount; i++)
+		{
+			auto light = &world->primaryLights[i];
+
+			float to[3];
+			to[0] = light->origin[0] + light->dir[0] * 10;
+			to[1] = light->origin[1] + light->dir[1] * 10;
+			to[2] = light->origin[2] + light->dir[2] * 10;
+
+			auto n = light->defName == nullptr ? "NONE" : light->defName;
+
+			auto str = std::format("LIGHT #{} ({})", i, n);
+
+			float color[4]{};
+			color[3] = 1.0f;
+			color[0] = light->color[0];
+			color[1] = light->color[1];
+			color[2] = light->color[2];
+
+
+			Game::R_AddDebugLine(color, light->origin, to);
+			Game::R_AddDebugString(color, light->origin, 1.0f, str.data());
+		}
+
+		if (scene)
+		{
+			for (size_t i = 0; i < scene->addedLightCount; i++)
+			{
+				auto light = &scene->addedLight[i];
+
+				float color[4]{};
+				color[3] = 1.0f;
+				color[0] = light->color[0];
+				color[1] = light->color[1];
+				color[2] = light->color[2];
+
+				float to[3];
+				to[0] = light->origin[0] + light->dir[0] * 10;
+				to[1] = light->origin[1] + light->dir[1] * 10;
+				to[2] = light->origin[2] + light->dir[2] * 10;
+
+				auto str = std::format("ADDED LIGHT #{}", i);
+
+				Game::R_AddDebugLine(color, light->origin, to);
+				Game::R_AddDebugString(color, light->origin, 1.0f, str.data());
+				
+			}
+		}
+	}
+
 	void Renderer::ListSamplers()
 	{
 		if (!r_listSamplers.get<bool>())
@@ -567,6 +644,7 @@ namespace Components
 				DebugDrawTriggers();
 				ForceTechnique();
 				ListSamplers();
+				DrawPrimaryLights();
 			}
 		}, Scheduler::Pipeline::RENDERER);
 
@@ -629,6 +707,7 @@ namespace Components
 			Renderer::r_playerDrawDebugDistance = Game::Dvar_RegisterInt("r_drawDebugDistance", 1000, 0, 50000, Game::DVAR_ARCHIVE, "r_draw debug functions draw distance relative to the player");
 			Renderer::r_forceTechnique = Game::Dvar_RegisterInt("r_forceTechnique", 0, 0, 14, Game::DVAR_NONE, "Force a base technique on the renderer");
 			Renderer::r_listSamplers = Game::Dvar_RegisterBool("r_listSamplers", false, Game::DVAR_NONE, "List samplers & sampler states");
+			Renderer::r_drawLights = Game::Dvar_RegisterBool("r_drawLights", false, Game::DVAR_NONE, "Draws every comworld light in the level");
 		});
 	}
 
