@@ -88,9 +88,11 @@ namespace Components
 		static bool SPMap;
 		static UserMapContainer UserMap;
 		static std::vector<DLC> DlcPacks;
-
+		
 		static std::vector<std::pair<std::string, std::string>> DependencyList;
 		static std::vector<std::string> CurrentDependencies;
+		static std::vector<std::string> FoundCustomMaps;
+		static std::mutex CustomMapsScanningMutex;
 
 		static Dvar::Var RListSModels;
 
