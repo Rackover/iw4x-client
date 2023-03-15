@@ -10,6 +10,8 @@ namespace Components
 	symmetric_CTR FastFiles::CurrentCTR;
 	std::vector<std::string> FastFiles::ZonePaths;
 
+	Dvar::Var FastFiles::g_loadingInitialZones;
+
 	bool FastFiles::IsIW4xZone = false;
 	bool FastFiles::StreamRead = false;
 
@@ -135,6 +137,8 @@ namespace Components
 	// This has to be called only once, when the game starts
 	void FastFiles::LoadInitialZones(Game::XZoneInfo *zoneInfo, unsigned int zoneCount, int sync)
 	{
+		g_loadingInitialZones = Dvar::Register("g_loadingInitialZones", true, 0, "Is still loading initial zones");
+
 		std::vector<Game::XZoneInfo> data;
 		Utils::Merge(&data, zoneInfo, zoneCount);
 
@@ -213,6 +217,23 @@ namespace Components
 		data.push_back(info);
 
 		Game::DB_LoadXAssets(data.data(), data.size(), sync);
+
+		Scheduler::Once([]() 
+		{
+			while (!Game::Sys_IsDatabaseReady())
+			{
+				while (!Game::Sys_IsDatabaseReady2())
+				{
+					// Wait for maps to be loaded
+				}
+			}
+
+			Scheduler::Once([]() 
+			{
+				g_loadingInitialZones.set(false);
+			}, Scheduler::Pipeline::MAIN);
+
+		}, Scheduler::Pipeline::ASYNC);
 	}
 
 	// Name is a bit weird, due to FasFileS and ExistS :P

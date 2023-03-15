@@ -3479,71 +3479,74 @@ namespace Components
 	{
 		Zones::ZoneVersion = 0;
 
-		Command::Add("decryptImages", [](Command::Params*)
+		if (ZoneBuilder::IsEnabled())
 		{
-			auto images = FileSystem::GetSysFileList("iw4x/images", "iwi");
-			Logger::Print("decrypting {} images...\n", images.size());
-			
-			for (auto& image : images)
-			{
-				char* buffer = nullptr;
-				auto fileLength = Game::FS_ReadFile(Utils::String::VA("images/%s", image.data()), &buffer);
-
-				if (fileLength && buffer)
+			Command::Add("decryptImages", [](Command::Params*)
 				{
-					if (!std::filesystem::exists("raw/images"))
-					{
-						std::filesystem::create_directories("raw/images");
-					}
+					auto images = FileSystem::GetSysFileList("iw4x/images", "iwi");
+					Logger::Print("decrypting {} images...\n", images.size());
 
-					if (!std::filesystem::exists(Utils::String::VA("raw/images/%s", image.data())))
+					for (auto& image : images)
 					{
-						const auto fp = fopen(Utils::String::VA("raw/images/%s", image.data()), "wb");
-						if (fp)
+						char* buffer = nullptr;
+						auto fileLength = Game::FS_ReadFile(Utils::String::VA("images/%s", image.data()), &buffer);
+
+						if (fileLength && buffer)
 						{
-							fwrite(buffer, fileLength, 1, fp);
-							fclose(fp);
+							if (!std::filesystem::exists("raw/images"))
+							{
+								std::filesystem::create_directories("raw/images");
+							}
+
+							if (!std::filesystem::exists(Utils::String::VA("raw/images/%s", image.data())))
+							{
+								const auto fp = fopen(Utils::String::VA("raw/images/%s", image.data()), "wb");
+								if (fp)
+								{
+									fwrite(buffer, fileLength, 1, fp);
+									fclose(fp);
+								}
+							}
+
+							Game::FS_FreeFile(buffer);
 						}
 					}
 
-					Game::FS_FreeFile(buffer);
-				}
-			}
+					Logger::Print("decrypted {} images!\n", images.size());
+				});
 
-			Logger::Print("decrypted {} images!\n", images.size());
-		});
-
-		Command::Add("decryptSounds", []([[maybe_unused]] Command::Params* params)
-		{
-			auto sounds = FileSystem::GetSysFileList("iw4x/sound", "iwi");
-			Logger::Print("decrypting {} sounds...\n", sounds.size());
-
-			for (auto& sound : sounds)
-			{
-				char* buffer = nullptr;
-				auto len = Game::FS_ReadFile(Utils::String::Format("sound/{}", sound), &buffer);
-
-				if (len && buffer)
+			Command::Add("decryptSounds", []([[maybe_unused]] Command::Params* params)
 				{
-					auto path = std::filesystem::path(sound.data());
-					std::filesystem::create_directories("raw/sound" / path.parent_path());
+					auto sounds = FileSystem::GetSysFileList("iw4x/sound", "iwi");
+					Logger::Print("decrypting {} sounds...\n", sounds.size());
 
-					if (!std::filesystem::exists(std::format("raw/sound/{}", sound)))
+					for (auto& sound : sounds)
 					{
-						FILE* fp;
-						if (!fopen_s(&fp, Utils::String::Format("raw/sound/{}", sound), "wb") && fp)
+						char* buffer = nullptr;
+						auto len = Game::FS_ReadFile(Utils::String::Format("sound/{}", sound), &buffer);
+
+						if (len && buffer)
 						{
-							fwrite(buffer, len, 1, fp);
-							fclose(fp);
+							auto path = std::filesystem::path(sound.data());
+							std::filesystem::create_directories("raw/sound" / path.parent_path());
+
+							if (!std::filesystem::exists(std::format("raw/sound/{}", sound)))
+							{
+								FILE* fp;
+								if (!fopen_s(&fp, Utils::String::Format("raw/sound/{}", sound), "wb") && fp)
+								{
+									fwrite(buffer, len, 1, fp);
+									fclose(fp);
+								}
+							}
+
+							Game::FS_FreeFile(buffer);
 						}
 					}
 
-					Game::FS_FreeFile(buffer);
-				}
-			}
-
-			Logger::Print("decrypted {} sounds!\n", sounds.size());
-		});
+					Logger::Print("decrypted {} sounds!\n", sounds.size());
+				});
+		}
 
 		// patch max filecount Sys_ListFiles can return
 		Utils::Hook::Set<std::uint32_t>(0x45A66B, (maxFileCount + fileCountMultiplier) * 4);
@@ -3566,11 +3569,14 @@ namespace Components
 		Utils::Hook::Set<BYTE>(0x418B31, 0x72);
 
 		// encrypted images hooks
-		Utils::Hook(0x462000, Zones::FS_FCloseFileHook, HOOK_JUMP).install()->quick();
-		Utils::Hook(0x4A04C0, Zones::FS_ReadHook, HOOK_JUMP).install()->quick();
-		Utils::Hook(0x643270, Zones::FS_FOpenFileReadForThreadHook, HOOK_JUMP).install()->quick();
-		Utils::Hook(0x4A63D0, Zones::FS_SeekHook, HOOK_JUMP).install()->quick();
-		
+		if (ZoneBuilder::IsEnabled())
+		{
+			Utils::Hook(0x462000, Zones::FS_FCloseFileHook, HOOK_JUMP).install()->quick();
+			Utils::Hook(0x4A04C0, Zones::FS_ReadHook, HOOK_JUMP).install()->quick();
+			Utils::Hook(0x643270, Zones::FS_FOpenFileReadForThreadHook, HOOK_JUMP).install()->quick();
+			Utils::Hook(0x4A63D0, Zones::FS_SeekHook, HOOK_JUMP).install()->quick();
+		}
+
 		// asset hooks
 		Utils::Hook(0x47146D, Zones::LoadTracerDef, HOOK_CALL).install()->quick();
 		Utils::Hook(0x4714A3, Zones::LoadTracerDefFxEffect, HOOK_JUMP).install()->quick();
