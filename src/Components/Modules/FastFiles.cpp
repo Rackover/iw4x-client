@@ -218,22 +218,9 @@ namespace Components
 
 		Game::DB_LoadXAssets(data.data(), data.size(), sync);
 
-		Scheduler::Once([]() 
-		{
-			while (!Game::Sys_IsDatabaseReady())
-			{
-				while (!Game::Sys_IsDatabaseReady2())
-				{
-					// Wait for maps to be loaded
-				}
-			}
-
-			Scheduler::Once([]() 
-			{
-				g_loadingInitialZones.set(false);
-			}, Scheduler::Pipeline::MAIN);
-
-		}, Scheduler::Pipeline::ASYNC);
+		Scheduler::OnGameInitialized([]() {
+			g_loadingInitialZones.set(false);
+		}, Scheduler::Pipeline::MAIN);
 	}
 
 	// Name is a bit weird, due to FasFileS and ExistS :P
