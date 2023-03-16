@@ -1336,7 +1336,7 @@ namespace Components
 
 				const auto dir = std::format("zone/{}", Game::Win_GetLanguage());
 				auto fileList = Utils::IO::ListFiles(dir, false);
-				for (auto entry : fileList)
+				for (const auto& entry : fileList)
 				{
 					auto zone = entry.path().string();
 					Utils::String::Replace(zone, Utils::String::VA("zone/%s/", Game::Win_GetLanguage()), "");
@@ -1432,7 +1432,7 @@ namespace Components
 				auto list = Utils::IO::ListFiles("zone/techsets", false);
 				int i = 0;
 				int subCount = 0;
-				for (auto entry : list)
+				for (const auto& entry : list)
 				{
 					auto it = entry.path().string();
 
@@ -1558,7 +1558,7 @@ namespace Components
 
 				// create csv with the techsets in it
 				csvStr.clear();
-				for (auto tech : curTechsets_list)
+				for (const auto& tech : curTechsets_list)
 				{
 					auto mat = ZoneBuilder::FindMaterialByTechnique(tech);
 					if (mat.length() == 0)

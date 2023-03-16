@@ -69,11 +69,11 @@ namespace Components
 
 			retn
 
-		continue:
-			fld ds:739FD0h
+			continue:
+			fld ds : 739FD0h
 
-			mov eax, 4C25D6h
-			jmp eax
+				mov eax, 4C25D6h
+				jmp eax
 		}
 	}
 
@@ -101,12 +101,12 @@ namespace Components
 			pop ebx
 			retn
 
-		continue:
+			continue:
 			push ecx
-			fld ds:739FD0h
+				fld ds : 739FD0h
 
-			mov eax, 4CE9E7h
-			jmp eax
+				mov eax, 4CE9E7h
+				jmp eax
 		}
 	}
 
@@ -124,12 +124,12 @@ namespace Components
 
 			retn
 
-		continue:
+			continue:
 			push ecx
-			fld ds:739FD0h
+				fld ds : 739FD0h
 
-			mov eax, 41A0D7h
-			jmp eax;
+				mov eax, 41A0D7h
+				jmp eax;
 		}
 	}
 
@@ -182,17 +182,17 @@ namespace Components
 			je returnSafe
 
 			// Update indices if not
-			mov [ecx], edx
+			mov[ecx], edx
 			mov Current.index, edx
 
 			call SetItemSelection
 
-		returnSafe:
+			returnSafe :
 			retn
 
-		continueOriginal:
+				continueOriginal :
 			mov eax, 635570h
-			jmp eax
+				jmp eax
 		}
 	}
 
@@ -208,11 +208,11 @@ namespace Components
 			test al, al
 			jnz continue
 
-			mov [edi + 130h], esi
+			mov[edi + 130h], esi
 
-		continue:
+			continue:
 			mov eax, 639D75h
-			jmp eax
+				jmp eax
 		}
 	}
 
@@ -231,7 +231,7 @@ namespace Components
 			mov eax, 4C25D0h
 			jmp eax
 
-		continue:
+			continue:
 			retn
 		}
 	}
@@ -251,7 +251,7 @@ namespace Components
 			mov eax, 685E10h
 			jmp eax
 
-		continue:
+			continue:
 			retn
 		}
 	}
@@ -290,7 +290,7 @@ namespace Components
 			return maps.at(index).data();
 		}
 
-#if DEBUG
+#ifdef DEBUG
 		if (IsDebuggerPresent())
 		{
 			__debugbreak();
@@ -333,9 +333,9 @@ namespace Components
 				}
 			}
 
-			UIMapName.set(Game::SEH_StringEd_GetString(mapName.data()));
-			UIMapLong.set(Game::SEH_StringEd_GetString(longName.data()));
-			UIMapDesc.set(Game::SEH_StringEd_GetString(description.data()));
+			UIMapName.set(Localization::Get(mapName.data()));
+			UIMapLong.set(Localization::Get(longName.data()));
+			UIMapDesc.set(Localization::Get(description.data()));
 		}
 	}
 
@@ -345,7 +345,7 @@ namespace Components
 
 		if (!mapname.empty())
 		{
-			Dvar::Var("ui_mapname").set(mapname);
+			Dvar::Var(const_cast<Game::dvar_t*>(*Game::ui_mapname)).set(mapname);
 			Utils::Hook::Call<void(const char*)>(0x503B50)(mapname.data()); // Party_SetDisplayMapName
 		}
 	}
@@ -380,11 +380,11 @@ namespace Components
 			push 635A9Dh
 			retn
 
-		returnSafe:
+			returnSafe :
 			pop eax
-			xor eax, eax
-			pop ecx
-			retn
+				xor eax, eax
+				pop ecx
+				retn
 		}
 	}
 
@@ -393,11 +393,13 @@ namespace Components
 		if (Dedicated::IsEnabled()) return;
 
 		Events::OnDvarInit([]
-		{
-			UIMapLong = Dvar::Register<const char*>("ui_map_long", "", Game::DVAR_NONE, "");
-			UIMapName = Dvar::Register<const char*>("ui_map_name", "", Game::DVAR_NONE, "");
-			UIMapDesc = Dvar::Register<const char*>("ui_map_desc", "", Game::DVAR_NONE, "");
-		});
+			{
+				UIMapLong = Dvar::Register<const char*>("ui_map_long", "", Game::DVAR_NONE, "");
+				UIMapName = Dvar::Register<const char*>("ui_map_name", "", Game::DVAR_NONE, "");
+				UIMapDesc = Dvar::Register<const char*>("ui_map_desc", "", Game::DVAR_NONE, "");
+			});
+
+		//Utils::Hook(0x63C5A3, UI_FeederDoubleClick_Hk, HOOK_CALL).install()->quick();
 
 		// Get feeder item count
 		Utils::Hook(0x41A0D0, UIFeeder::GetItemCountStub, HOOK_JUMP).install()->quick();

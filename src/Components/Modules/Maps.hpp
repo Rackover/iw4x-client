@@ -92,7 +92,6 @@ namespace Components
 		static std::vector<std::pair<std::string, std::string>> DependencyList;
 		static std::vector<std::string> CurrentDependencies;
 		static std::vector<std::string> FoundCustomMaps;
-		static std::mutex CustomMapsScanningMutex;
 
 		static Dvar::Var RListSModels;
 

@@ -12,7 +12,6 @@ namespace Components
 	std::vector<std::pair<std::string, std::string>> Maps::DependencyList;
 	std::vector<std::string> Maps::CurrentDependencies;
 	std::vector<std::string> Maps::FoundCustomMaps;
-	std::mutex Maps::CustomMapsScanningMutex;
 
 	Dvar::Var Maps::RListSModels;
 
@@ -603,8 +602,6 @@ namespace Components
 
 	void Maps::ScanCustomMaps()
 	{
-		std::lock_guard _(CustomMapsScanningMutex);
-
 		FoundCustomMaps.clear();
 		Components::Logger::Print("Scanning custom maps...\n");
 
