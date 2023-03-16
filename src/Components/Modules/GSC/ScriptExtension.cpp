@@ -113,7 +113,7 @@ namespace Components::GSC
 	{
 		if (static_cast<unsigned int>(index) >= Game::scrVmPub->outparamcount)
 		{
-			Game::Scr_ParamError(static_cast<unsigned int>(index), "^1GetCodePosForParam: Index is out of range!");
+			Game::Scr_ParamError(static_cast<unsigned int>(index), "GetCodePosForParam: Index is out of range!");
 			return "";
 		}
 
@@ -121,7 +121,7 @@ namespace Components::GSC
 
 		if (value->type != Game::VAR_FUNCTION)
 		{
-			Game::Scr_ParamError(static_cast<unsigned int>(index), "^1GetCodePosForParam: Expects a function as parameter!");
+			Game::Scr_ParamError(static_cast<unsigned int>(index), "GetCodePosForParam: Expects a function as parameter!");
 			return "";
 		}
 
@@ -223,7 +223,7 @@ namespace Components::GSC
 		{
 			if (Game::Scr_GetNumParam() != 2)
 			{
-				Game::Scr_Error("^1ReplaceFunc: Needs two parameters!");
+				Game::Scr_Error("ReplaceFunc: Needs two parameters!");
 				return;
 			}
 
@@ -247,7 +247,7 @@ namespace Components::GSC
 			const auto* str = Game::Scr_GetString(0);
 			if (!str)
 			{
-				Game::Scr_ParamError(0, "^1Exec: Illegal parameter!");
+				Game::Scr_ParamError(0, "Exec: Illegal parameter!");
 				return;
 			}
 
@@ -262,7 +262,7 @@ namespace Components::GSC
 				const auto* str = Game::Scr_GetString(i);
 				if (!str)
 				{
-					Game::Scr_ParamError(i, "^1PrintConsole: Illegal parameter!");
+					Game::Scr_ParamError(i, "PrintConsole: Illegal parameter!");
 					return;
 				}
 
@@ -276,7 +276,7 @@ namespace Components::GSC
 		// ScriptExtension methods
 		Script::AddMethod("GetIp", [](const Game::scr_entref_t entref) // gsc: self GetIp()
 		{
-			const auto* ent = Game::GetPlayerEntity(entref);
+			const auto* ent = Script::Scr_GetPlayerEntity(entref);
 			const auto* client = Script::GetClient(ent);
 
 			std::string ip = Game::NET_AdrToString(client->header.netchan.remoteAddress);
@@ -300,7 +300,7 @@ namespace Components::GSC
 
 		Script::AddMethod("GetPing", [](const Game::scr_entref_t entref) // gsc: self GetPing()
 		{
-			const auto* ent = Game::GetPlayerEntity(entref);
+			const auto* ent = Script::Scr_GetPlayerEntity(entref);
 			const auto* client = Script::GetClient(ent);
 
 			Game::Scr_AddInt(client->ping);
@@ -312,7 +312,7 @@ namespace Components::GSC
 
 			ping = std::clamp(ping, 0, 999);
 
-			const auto* ent = Game::GetPlayerEntity(entref);
+			const auto* ent = Script::Scr_GetPlayerEntity(entref);
 			auto* client = Script::GetClient(ent);
 
 			client->ping = ping;
