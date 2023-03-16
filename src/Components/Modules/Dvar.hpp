@@ -37,8 +37,9 @@ namespace Components
 		template<typename T> static Var Register(const char* dvarName, T value, std::uint16_t flag, const char* description);
 		template<typename T> static Var Register(const char* dvarName, T value, T min, T max, std::uint16_t flag, const char* description);
 
-	private:
 		static Var Name;
+
+	private:
 
 		static const Game::dvar_t* Dvar_RegisterName(const char* dvarName, const char* value, std::uint16_t flags, const char* description);
 		static const Game::dvar_t* Dvar_RegisterSVNetworkFps(const char* dvarName, int value, int min, int max, std::uint16_t flags, const char* description);
@@ -48,6 +49,7 @@ namespace Components
 		static void SetFromStringByNameSafeExternal(const char* dvarName, const char* string);
 
 		static bool AreArchiveDvarsUnprotected();
+		static bool IsSettingArchiveDvarsDisabled();
 		static void DvarSetFromStringByName_Stub(const char* dvarName, const char* value);
 
 		static void OnRegisterVariant(Game::dvar_t* dvar);

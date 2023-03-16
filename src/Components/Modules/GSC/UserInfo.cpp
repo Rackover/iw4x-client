@@ -49,12 +49,12 @@ namespace Components::GSC
 	{
 		Script::AddMethod("SetName", [](Game::scr_entref_t entref)  // gsc: self SetName(<string>)
 		{
-			const auto* ent = Game::GetPlayerEntity(entref);
+			const auto* ent = Script::Scr_GetPlayerEntity(entref);
 			const auto* name = Game::Scr_GetString(0);
 
-			if (name == nullptr)
+			if (!name)
 			{
-				Game::Scr_ParamError(0, "^1SetName: Illegal parameter!");
+				Game::Scr_ParamError(0, "SetName: Illegal parameter!");
 				return;
 			}
 
@@ -65,7 +65,7 @@ namespace Components::GSC
 
 		Script::AddMethod("ResetName", [](Game::scr_entref_t entref)  // gsc: self ResetName()
 		{
-			const auto* ent = Game::GetPlayerEntity(entref);
+			const auto* ent = Script::Scr_GetPlayerEntity(entref);
 
 			Logger::Debug("Resetting name of {}", ent->s.number);
 			UserInfoOverrides[ent->s.number].erase("name");
@@ -74,12 +74,12 @@ namespace Components::GSC
 
 		Script::AddMethod("SetClanTag", [](Game::scr_entref_t entref)  // gsc: self SetClanTag(<string>)
 		{
-			const auto* ent = Game::GetPlayerEntity(entref);
+			const auto* ent = Script::Scr_GetPlayerEntity(entref);
 			const auto* clanName = Game::Scr_GetString(0);
 
-			if (clanName == nullptr)
+			if (!clanName)
 			{
-				Game::Scr_ParamError(0, "^1SetClanTag: Illegal parameter!");
+				Game::Scr_ParamError(0, "SetClanTag: Illegal parameter!");
 				return;
 			}
 
@@ -90,7 +90,7 @@ namespace Components::GSC
 
 		Script::AddMethod("ResetClanTag", [](Game::scr_entref_t entref)  // gsc: self ResetClanTag()
 		{
-			const auto* ent = Game::GetPlayerEntity(entref);
+			const auto* ent = Script::Scr_GetPlayerEntity(entref);
 			
 			Logger::Debug("Resetting clanName of {}", ent->s.number);
 			UserInfoOverrides[ent->s.number].erase("clanAbbrev");
@@ -105,15 +105,7 @@ namespace Components::GSC
 
 		AddScriptMethods();
 
-		Events::OnVMShutdown([]
-		{
-			ClearAllOverrides();
-		});
-
-		Events::OnClientDisconnect([](const int clientNum)
-		{
-			// Clear the overrides for UserInfo
-			ClearClientOverrides(clientNum);
-		});
+		Events::OnVMShutdown(ClearAllOverrides);
+		Events::OnClientDisconnect(ClearClientOverrides);
 	}
 }

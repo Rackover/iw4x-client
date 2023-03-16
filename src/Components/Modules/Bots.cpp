@@ -167,8 +167,10 @@ namespace Components
 			Scheduler::Once([]
 			{
 				auto* ent = Game::SV_AddTestClient();
-				if (ent == nullptr)
+				if (!ent)
+				{
 					return;
+				}
 
 				Scheduler::Once([ent]
 				{
@@ -207,11 +209,11 @@ namespace Components
 
 		GSC::Script::AddMethod("BotStop", [](Game::scr_entref_t entref) // Usage: <bot> BotStop();
 		{
-			const auto* ent = Game::GetPlayerEntity(entref);
+			const auto* ent = GSC::Script::Scr_GetPlayerEntity(entref);
 
 			if (Game::SV_IsTestClient(ent->s.number) == 0)
 			{
-				Game::Scr_Error("^1BotStop: Can only call on a bot!");
+				Game::Scr_Error("BotStop: Can only call on a bot!");
 				return;
 			}
 
@@ -222,17 +224,17 @@ namespace Components
 
 		GSC::Script::AddMethod("BotWeapon", [](Game::scr_entref_t entref) // Usage: <bot> BotWeapon(<str>);
 		{
-			const auto* ent = Game::GetPlayerEntity(entref);
+			const auto* ent = GSC::Script::Scr_GetPlayerEntity(entref);
 
 			if (Game::SV_IsTestClient(ent->s.number) == 0)
 			{
-				Game::Scr_Error("^1BotWeapon: Can only call on a bot!");
+				Game::Scr_Error("BotWeapon: Can only call on a bot!");
 				return;
 			}
 
 			const auto* weapon = Game::Scr_GetString(0);
 
-			if (weapon == nullptr || weapon[0] == '\0')
+			if (!weapon || !*weapon)
 			{
 				g_botai[entref.entnum].weapon = 1;
 				return;
@@ -245,25 +247,25 @@ namespace Components
 
 		GSC::Script::AddMethod("BotAction", [](Game::scr_entref_t entref) // Usage: <bot> BotAction(<str action>);
 		{
-			const auto* ent = Game::GetPlayerEntity(entref);
+			const auto* ent = GSC::Script::Scr_GetPlayerEntity(entref);
 
 			if (Game::SV_IsTestClient(ent->s.number) == 0)
 			{
-				Game::Scr_Error("^1BotAction: Can only call on a bot!");
+				Game::Scr_Error("BotAction: Can only call on a bot!");
 				return;
 			}
 
 			const auto* action = Game::Scr_GetString(0);
 
-			if (action == nullptr)
+			if (!action)
 			{
-				Game::Scr_ParamError(0, "^1BotAction: Illegal parameter!");
+				Game::Scr_ParamError(0, "BotAction: Illegal parameter!");
 				return;
 			}
 
 			if (action[0] != '+' && action[0] != '-')
 			{
-				Game::Scr_ParamError(0, "^1BotAction: Sign for action must be '+' or '-'");
+				Game::Scr_ParamError(0, "BotAction: Sign for action must be '+' or '-'");
 				return;
 			}
 
@@ -281,16 +283,16 @@ namespace Components
 				return;
 			}
 
-			Game::Scr_ParamError(0, "^1BotAction: Unknown action");
+			Game::Scr_ParamError(0, "BotAction: Unknown action");
 		});
 
 		GSC::Script::AddMethod("BotMovement", [](Game::scr_entref_t entref) // Usage: <bot> BotMovement(<int>, <int>);
 		{
-			const auto* ent = Game::GetPlayerEntity(entref);
+			const auto* ent = GSC::Script::Scr_GetPlayerEntity(entref);
 
 			if (Game::SV_IsTestClient(ent->s.number) == 0)
 			{
-				Game::Scr_Error("^1BotMovement: Can only call on a bot!");
+				Game::Scr_Error("BotMovement: Can only call on a bot!");
 				return;
 			}
 
@@ -305,8 +307,10 @@ namespace Components
 
 	void Bots::BotAiAction(Game::client_t* cl)
 	{
-		if (cl->gentity == nullptr)
+		if (!cl->gentity)
+		{
 			return;
+		}
 
 		const auto entnum = cl->gentity->s.number;
 
@@ -435,13 +439,19 @@ namespace Components
 
 		Command::Add("spawnBot", [](Command::Params* params)
 		{
-			auto count = 1u;
+			if (!Dedicated::IsRunning())
+			{
+				Logger::Print("Server is not running.\n");
+				return;
+			}
+
+			std::size_t count = 1;
 
 			if (params->size() > 1)
 			{
 				if (params->get(1) == "all"s)
 				{
-					count = *Game::svs_clientCount;
+					count = Game::MAX_CLIENTS;
 				}
 				else
 				{
@@ -458,18 +468,9 @@ namespace Components
 				}
 			}
 
-			count = std::min(static_cast<unsigned int>(*Game::svs_clientCount), count);
+			count = std::min(Game::MAX_CLIENTS, count);
 
-			// Check if ingame and host
-			if (!Game::SV_Loaded())
-			{
-				Toast::Show("cardicon_headshot", "^1Error", "You need to be host to spawn bots!", 3000);
-				Logger::Print("You need to be host to spawn bots!\n");
-				return;
-			}
-
-			Toast::Show("cardicon_headshot", "^2Success", Utils::String::VA("Spawning %d %s...", count, (count == 1 ? "bot" : "bots")), 3000);
-			Logger::Debug("Spawning {} {}", count, (count == 1 ? "bot" : "bots"));
+			Logger::Print("Spawning {} {}", count, (count == 1 ? "bot" : "bots"));
 
 			Spawn(count);
 		});

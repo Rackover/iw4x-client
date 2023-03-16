@@ -600,18 +600,18 @@ namespace Components
 
 					for (int i = 0; i < ARRAYSIZE(Game::MaterialTechniqueSet::techniques); ++i)
 					{
-						Game::MaterialTechnique* technique = asset.techniqueSet->techniques[i];
+						auto* technique = asset.techniqueSet->techniques[i];
 
 						if (technique)
 						{
 							// Size-check is obsolete, as the structure is dynamic
 							buffer.align(Utils::Stream::ALIGN_4);
 
-							Game::MaterialTechnique* destTechnique = buffer.dest<Game::MaterialTechnique>();
+							auto* destTechnique = buffer.dest<Game::MaterialTechnique>();
 							buffer.save(technique, 8);
 
 							// Save_MaterialPassArray
-							Game::MaterialPass* destPasses = buffer.dest<Game::MaterialPass>();
+							auto* destPasses = buffer.dest<Game::MaterialPass>();
 							buffer.saveArray(technique->passArray, technique->passCount);
 
 							for (std::uint16_t j = 0; j < technique->passCount; ++j)
