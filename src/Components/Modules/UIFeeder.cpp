@@ -343,37 +343,17 @@ namespace Components
 	{
 		const auto mapname = Dvar::Var("ui_map_name").get<std::string>();
 
-		Dvar::Var("ui_mapname").set(mapname);
-		Utils::Hook::Call<void(const char*)>(0x503B50)(mapname.data()); // Party_SetDisplayMapName
+		if (!mapname.empty())
+		{
+			Dvar::Var("ui_mapname").set(mapname);
+			Utils::Hook::Call<void(const char*)>(0x503B50)(mapname.data()); // Party_SetDisplayMapName
+		}
 	}
 
 	void UIFeeder::ApplyInitialMap([[maybe_unused]] const UIScript::Token& token, [[maybe_unused]] const Game::uiInfo_s* info)
 	{
 		Maps::ScanCustomMaps();
 		Select(60.0f, 0); // Will select nothing if there's no map
-
-		//const auto* mapname = (*Game::ui_mapname)->current.string;
-
-		//Game::UI_UpdateArenas();
-		//Game::UI_SortArenas();
-
-		//for (unsigned int i = 0; i < static_cast<unsigned int>(*Game::arenaCount); ++i)
-		//{
-		//	if (!std::strcmp(ArenaLength::NewArenas[i].mapName, mapname))
-		//	{
-		//		for (unsigned int j = 0; j < static_cast<unsigned int>(*Game::arenaCount); ++j)
-		//		{
-		//			if (reinterpret_cast<unsigned int*>(0x633E934)[j] == i)
-		//			{
-		//				SelectMap(j);
-		//				Select(60.0f, j);
-		//				break;
-		//			}
-		//		}
-
-		//		break;
-		//	}
-		//}
 	}
 
 	int UIFeeder::CheckSelection(int feeder)
