@@ -186,7 +186,7 @@ namespace Components
 
 		for (std::size_t i = 0; i < Game::MAX_GENTITIES; ++i)
 		{
-			auto* ent = &Game::g_entities;[i];
+			auto* ent = &Game::g_entities[i];
 
 			if (ent->r.isInUse)
 			{
