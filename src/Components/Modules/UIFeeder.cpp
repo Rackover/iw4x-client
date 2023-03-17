@@ -399,8 +399,6 @@ namespace Components
 			UIMapDesc = Dvar::Register<const char*>("ui_map_desc", "", Game::DVAR_NONE, "");
 		});
 
-		//Utils::Hook(0x63C5A3, UI_FeederDoubleClick_Hk, HOOK_CALL).install()->quick();
-
 		// Get feeder item count
 		Utils::Hook(0x41A0D0, UIFeeder::GetItemCountStub, HOOK_JUMP).install()->quick();
 
