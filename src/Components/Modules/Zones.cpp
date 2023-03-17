@@ -1222,7 +1222,7 @@ namespace Components
 		Game::DB_PopStreamPos();
 	}
 
-	// Code-analysis has a bug, the first memcpy makes it believe size of tempVar is 44 instead of 84
+// Code-analysis has a bug, the first memcpy makes it believe size of tempVar is 44 instead of 84
 #pragma warning(push)
 #pragma warning(disable: 6385)
 	bool Zones::LoadGameWorldSp(bool atStreamStart, char* buffer, int size)
@@ -1330,7 +1330,7 @@ namespace Components
 		return result;
 	}
 
-	// Code-analysis has a bug, the first memcpy makes it believe size of tempVar is 400 instead of 788
+// Code-analysis has a bug, the first memcpy makes it believe size of tempVar is 400 instead of 788
 #pragma warning(push)
 #pragma warning(disable: 6385)
 	bool Zones::LoadVehicleDef(bool atStreamStart, char* buffer, int size)
