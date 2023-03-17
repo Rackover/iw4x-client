@@ -184,11 +184,9 @@ namespace Components
 	{
 		if (!r_drawTriggers.get<bool>()) return;
 
-		auto entities = Game::g_entities;
-
 		for (std::size_t i = 0; i < Game::MAX_GENTITIES; ++i)
 		{
-			auto* ent = &entities[i];
+			auto* ent = &Game::g_entities;[i];
 
 			if (ent->r.isInUse)
 			{
@@ -265,7 +263,7 @@ namespace Components
 		if (!val) return;
 
 		auto clientNum = Game::CG_GetClientNum();
-		auto clientEntity = &Game::g_entities[clientNum];
+		auto* clientEntity = &Game::g_entities[clientNum];
 
 		// Ingame only & player only
 		if (!Game::CL_IsCgameInitialized() || clientEntity->client == nullptr)
@@ -359,7 +357,7 @@ namespace Components
 		if (!val) return;
 
 		auto clientNum = Game::CG_GetClientNum();
-		Game::gentity_t* clientEntity = &Game::g_entities[clientNum];
+		auto* clientEntity = &Game::g_entities[clientNum];
 
 		// Ingame only & player only
 		if (!Game::CL_IsCgameInitialized() || clientEntity->client == nullptr)
@@ -707,7 +705,7 @@ namespace Components
 			Renderer::r_playerDrawDebugDistance = Game::Dvar_RegisterInt("r_drawDebugDistance", 1000, 0, 50000, Game::DVAR_ARCHIVE, "r_draw debug functions draw distance relative to the player");
 			Renderer::r_forceTechnique = Game::Dvar_RegisterInt("r_forceTechnique", 0, 0, 14, Game::DVAR_NONE, "Force a base technique on the renderer");
 			Renderer::r_listSamplers = Game::Dvar_RegisterBool("r_listSamplers", false, Game::DVAR_NONE, "List samplers & sampler states");
-			Renderer::r_drawLights = Game::Dvar_RegisterBool("r_drawLights", false, Game::DVAR_NONE, "Draws every comworld light in the level");
+			Renderer::r_drawLights = Game::Dvar_RegisterBool("r_drawLights", false, Game::DVAR_NONE, "Draw every comworld light in the level");
 		});
 	}
 

@@ -190,7 +190,7 @@ namespace Components
 		returnSafe:
 			retn
 
-		continueOriginal 
+		continueOriginal:
 			mov eax, 635570h
 			jmp eax
 		}
