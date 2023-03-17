@@ -65,7 +65,7 @@ namespace Components
 
 		static void ScanCustomMaps();
 		static std::string GetArenaPath(const std::string& mapName);
-		static const std::vector<std::string>& GetCustomMaps() { return FoundCustomMaps; };
+		static const std::vector<std::string>& GetCustomMaps();
 
 		static std::unordered_map<std::string, std::string> ParseCustomMapArena(const std::string& singleMapArena);
 
@@ -88,7 +88,7 @@ namespace Components
 		static bool SPMap;
 		static UserMapContainer UserMap;
 		static std::vector<DLC> DlcPacks;
-		
+
 		static std::vector<std::pair<std::string, std::string>> DependencyList;
 		static std::vector<std::string> CurrentDependencies;
 		static std::vector<std::string> FoundCustomMaps;

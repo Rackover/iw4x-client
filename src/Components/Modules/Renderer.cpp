@@ -505,6 +505,40 @@ namespace Components
 		}
 	}
 
+	void Renderer::ListSamplers()
+	{
+		if (!r_listSamplers.get<bool>())
+		{
+			return;
+		}
+
+		static auto* source = reinterpret_cast<Game::GfxCmdBufSourceState*>(0x6CAF080);
+
+		auto* font = Game::R_RegisterFont("fonts/smallFont", 0);
+		auto height = Game::R_TextHeight(font);
+		auto scale = 1.0f;
+		float color[] = {0.0f, 1.0f, 0.0f, 1.0f};
+
+		for (std::size_t i = 0; i < 27; ++i)
+		{
+			if (source->input.codeImages[i] == nullptr)
+			{
+				color[0] = 1.f;
+			}
+			else
+			{
+				color[0] = 0.f;
+			}
+
+			const auto* str = Utils::String::Format("{}/{:#X} => {} {}", i, i,
+				(source->input.codeImages[i] == nullptr ? "---" : source->input.codeImages[i]->name),
+				std::to_string(source->input.codeImageSamplerStates[i])
+			);
+
+			Game::R_AddCmdDrawText(str, std::numeric_limits<int>::max(), font, 15.0f, (height * scale + 1) * (i + 1) + 14.0f, scale, scale, 0.0f, color, Game::ITEM_TEXTSTYLE_NORMAL);
+		}
+	}
+
 	void Renderer::DrawPrimaryLights()
 	{
 		if (!r_drawLights.get<bool>())
@@ -513,7 +547,7 @@ namespace Components
 		}
 
 		auto clientNum = Game::CG_GetClientNum();
-		Game::gentity_t* clientEntity = &Game::g_entities[clientNum];
+		auto* clientEntity = &Game::g_entities[clientNum];
 
 		// Ingame only & player only
 		if (!Game::CL_IsCgameInitialized() || clientEntity->client == nullptr)
@@ -578,40 +612,6 @@ namespace Components
 				Game::R_AddDebugString(color, light->origin, 1.0f, str.data());
 				
 			}
-		}
-	}
-
-	void Renderer::ListSamplers()
-	{
-		if (!r_listSamplers.get<bool>())
-		{
-			return;
-		}
-
-		static auto* source = reinterpret_cast<Game::GfxCmdBufSourceState*>(0x6CAF080);
-
-		auto* font = Game::R_RegisterFont("fonts/smallFont", 0);
-		auto height = Game::R_TextHeight(font);
-		auto scale = 1.0f;
-		float color[] = {0.0f, 1.0f, 0.0f, 1.0f};
-
-		for (std::size_t i = 0; i < 27; ++i)
-		{
-			if (source->input.codeImages[i] == nullptr)
-			{
-				color[0] = 1.f;
-			}
-			else
-			{
-				color[0] = 0.f;
-			}
-
-			const auto* str = Utils::String::Format("{}/{:#X} => {} {}", i, i,
-				(source->input.codeImages[i] == nullptr ? "---" : source->input.codeImages[i]->name),
-				std::to_string(source->input.codeImageSamplerStates[i])
-			);
-
-			Game::R_AddCmdDrawText(str, std::numeric_limits<int>::max(), font, 15.0f, (height * scale + 1) * (i + 1) + 14.0f, scale, scale, 0.0f, color, Game::ITEM_TEXTSTYLE_NORMAL);
 		}
 	}
 

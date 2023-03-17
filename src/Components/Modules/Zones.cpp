@@ -1789,7 +1789,8 @@ namespace Components
 		return result;
 	}
 
-	void Zones::FixImageCategory(Game::GfxImage* image) {
+	void Zones::FixImageCategory(Game::GfxImage* image)
+	{
 		// CODO makes use of additional enumerator values (9, 10, 11) that don't exist in IW4
 		// We have to translate them. 9 is for Reflection probes,  11 is for Compass,  10 is for Lightmap
 		switch (image->category)
@@ -1806,8 +1807,8 @@ namespace Components
 		}
 
 
-		if (image->category > 7 || image->category < 0) {
-
+		if (image->category > 7 || image->category < 0)
+		{
 #ifdef DEBUG
 			if (IsDebuggerPresent()) __debugbreak();
 #endif
@@ -2143,7 +2144,7 @@ namespace Components
 			call Zones::ImpactFxArrayCount
 			pop edi
 
-			mov[esp + 20h], eax
+			mov [esp + 20h], eax
 
 			popad
 			pop edi
@@ -2222,10 +2223,10 @@ namespace Components
 			push 4189AEh
 			retn
 
-			returnSafe :
+		returnSafe:
 			popad
-				push 41899Dh
-				retn
+			push 41899Dh
+			retn
 		}
 	}
 
@@ -2248,7 +2249,7 @@ namespace Components
 
 			call Zones::PathDataSize
 
-			add[esp + 20h], eax
+			add [esp + 20h], eax
 
 			popad
 			pop esi
@@ -2337,7 +2338,7 @@ namespace Components
 				gfxSurfaceExtraData.push_back({
 					read_count,
 					read_ptr
-					});
+				});
 
 				// fix structure
 				std::memmove(buffer + (40 * i), buffer + (48 * i), 40);
@@ -3482,70 +3483,70 @@ namespace Components
 		if (ZoneBuilder::IsEnabled())
 		{
 			Command::Add("decryptImages", [](Command::Params*)
+			{
+				auto images = FileSystem::GetSysFileList("iw4x/images", "iwi");
+				Logger::Print("decrypting {} images...\n", images.size());
+
+				for (auto& image : images)
 				{
-					auto images = FileSystem::GetSysFileList("iw4x/images", "iwi");
-					Logger::Print("decrypting {} images...\n", images.size());
+					char* buffer = nullptr;
+					auto fileLength = Game::FS_ReadFile(Utils::String::Format("images/{}", image), &buffer);
 
-					for (auto& image : images)
+					if (fileLength && buffer)
 					{
-						char* buffer = nullptr;
-						auto fileLength = Game::FS_ReadFile(Utils::String::VA("images/%s", image.data()), &buffer);
-
-						if (fileLength && buffer)
+						if (!std::filesystem::exists("raw/images"))
 						{
-							if (!std::filesystem::exists("raw/images"))
-							{
-								std::filesystem::create_directories("raw/images");
-							}
-
-							if (!std::filesystem::exists(Utils::String::VA("raw/images/%s", image.data())))
-							{
-								const auto fp = fopen(Utils::String::VA("raw/images/%s", image.data()), "wb");
-								if (fp)
-								{
-									fwrite(buffer, fileLength, 1, fp);
-									fclose(fp);
-								}
-							}
-
-							Game::FS_FreeFile(buffer);
+							std::filesystem::create_directories("raw/images");
 						}
-					}
 
-					Logger::Print("decrypted {} images!\n", images.size());
-				});
+						if (!std::filesystem::exists(Utils::String::Format("raw/images/{}", image)))
+						{
+							const auto fp = fopen(Utils::String::Format("raw/images/{}", image), "wb");
+							if (fp)
+							{
+								fwrite(buffer, fileLength, 1, fp);
+								fclose(fp);
+							}
+						}
+
+						Game::FS_FreeFile(buffer);
+					}
+				}
+
+				Logger::Print("decrypted {} images!\n", images.size());
+			});
 
 			Command::Add("decryptSounds", []([[maybe_unused]] Command::Params* params)
+			{
+				auto sounds = FileSystem::GetSysFileList("iw4x/sound", "iwi");
+				Logger::Print("decrypting {} sounds...\n", sounds.size());
+
+				for (auto& sound : sounds)
 				{
-					auto sounds = FileSystem::GetSysFileList("iw4x/sound", "iwi");
-					Logger::Print("decrypting {} sounds...\n", sounds.size());
+					char* buffer = nullptr;
+					auto len = Game::FS_ReadFile(Utils::String::Format("sound/{}", sound), &buffer);
 
-					for (auto& sound : sounds)
+					if (len && buffer)
 					{
-						char* buffer = nullptr;
-						auto len = Game::FS_ReadFile(Utils::String::Format("sound/{}", sound), &buffer);
+						auto path = std::filesystem::path(sound.data());
+						std::filesystem::create_directories("raw/sound" / path.parent_path());
 
-						if (len && buffer)
+						if (!std::filesystem::exists(std::format("raw/sound/{}", sound)))
 						{
-							auto path = std::filesystem::path(sound.data());
-							std::filesystem::create_directories("raw/sound" / path.parent_path());
-
-							if (!std::filesystem::exists(std::format("raw/sound/{}", sound)))
+							FILE* fp;
+							if (!fopen_s(&fp, Utils::String::Format("raw/sound/{}", sound), "wb") && fp)
 							{
-								FILE* fp;
-								if (!fopen_s(&fp, Utils::String::Format("raw/sound/{}", sound), "wb") && fp)
-								{
-									fwrite(buffer, len, 1, fp);
-									fclose(fp);
-								}
+								fwrite(buffer, len, 1, fp);
+								fclose(fp);
 							}
-
-							Game::FS_FreeFile(buffer);
 						}
-					}
 
-					Logger::Print("decrypted {} sounds!\n", sounds.size());
-				});
+						Game::FS_FreeFile(buffer);
+					}
+				}
+
+				Logger::Print("decrypted {} sounds!\n", sounds.size());
+			});
 		}
 
 		// patch max filecount Sys_ListFiles can return
@@ -3632,32 +3633,32 @@ namespace Components
 		Utils::Hook(0x4B4F0C, Zones::ParseShellShock_Stub, HOOK_CALL).install()->quick();
 
 		Utils::Hook(0x4F4D3B, []
+		{
+			if (Zones::ZoneVersion >= VERSION_ALPHA3)
 			{
-				if (Zones::ZoneVersion >= VERSION_ALPHA3)
-				{
-					ZeroMemory(*Game::varPathData, sizeof(Game::PathData));
-				}
-				else
-				{
-					// Load_PathData
-					Utils::Hook::Call<void(int)>(0x4278A0)(false);
-				}
-			}, HOOK_CALL).install()->quick();
+				ZeroMemory(*Game::varPathData, sizeof(Game::PathData));
+			}
+			else
+			{
+				// Load_PathData
+				Utils::Hook::Call<void(int)>(0x4278A0)(false);
+			}
+		}, HOOK_CALL).install()->quick();
 
-			// Change stream for images
-			Utils::Hook(0x4D3225, []()
-				{
-					Game::DB_PushStreamPos((Zones::ZoneVersion >= 332) ? 3 : 0);
-				}, HOOK_CALL).install()->quick();
+		// Change stream for images
+		Utils::Hook(0x4D3225, []()
+		{
+			Game::DB_PushStreamPos((Zones::ZoneVersion >= 332) ? 3 : 0);
+		}, HOOK_CALL).install()->quick();
 
-				Utils::Hook(0x4597DD, Zones::LoadStatement, HOOK_CALL).install()->quick();
-				Utils::Hook(0x471A39, Zones::LoadWindowImage, HOOK_JUMP).install()->quick();
+		Utils::Hook(0x4597DD, Zones::LoadStatement, HOOK_CALL).install()->quick();
+		Utils::Hook(0x471A39, Zones::LoadWindowImage, HOOK_JUMP).install()->quick();
 
 #ifdef DEBUG
-				// Easy dirty disk debugging
-				Utils::Hook::Set<WORD>(0x4CF7F0, 0xC3CC);
-				// disable _invoke_watson to allow debugging
-				Utils::Hook::Set<WORD>(0x6B9602, 0xCCCC);
+		// Easy dirty disk debugging
+		Utils::Hook::Set<WORD>(0x4CF7F0, 0xC3CC);
+		// disable _invoke_watson to allow debugging
+		Utils::Hook::Set<WORD>(0x6B9602, 0xCCCC);
 #endif
 	}
 }

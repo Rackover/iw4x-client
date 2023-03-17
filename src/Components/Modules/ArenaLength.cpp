@@ -124,7 +124,7 @@ namespace Components
 		Utils::Hook(0x632799, ArenaLength::ArenaMapOffsetHook3, HOOK_JUMP).install()->quick();
 		Utils::Hook(0x4064B2, ArenaLength::ArenaMapOffsetHook4, HOOK_JUMP).install()->quick();
 
-		Utils::Hook::Set<BYTE>(0x4A95F8, ARRAYSIZE(Game::newMapArena_t::mapName));
+		Utils::Hook::Set<BYTE>(0x4A95F8, sizeof(Game::newMapArena_t::mapName));
 		Utils::Hook::Set<int>(0x42F22B, offsetof(Game::newMapArena_t, mapName) - offsetof(Game::newMapArena_t, other));
 	}
 }

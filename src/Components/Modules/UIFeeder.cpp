@@ -69,11 +69,11 @@ namespace Components
 
 			retn
 
-			continue:
-			fld ds : 739FD0h
+		continue:
+			fld ds:739FD0h
 
-				mov eax, 4C25D6h
-				jmp eax
+			mov eax, 4C25D6h
+			jmp eax
 		}
 	}
 
@@ -101,12 +101,12 @@ namespace Components
 			pop ebx
 			retn
 
-			continue:
+		continue:
 			push ecx
-				fld ds : 739FD0h
+			fld ds:739FD0h
 
-				mov eax, 4CE9E7h
-				jmp eax
+			mov eax, 4CE9E7h
+			jmp eax
 		}
 	}
 
@@ -124,12 +124,12 @@ namespace Components
 
 			retn
 
-			continue:
+		continue:
 			push ecx
-				fld ds : 739FD0h
+			fld ds:739FD0h
 
-				mov eax, 41A0D7h
-				jmp eax;
+			mov eax, 41A0D7h
+			jmp eax
 		}
 	}
 
@@ -182,17 +182,17 @@ namespace Components
 			je returnSafe
 
 			// Update indices if not
-			mov[ecx], edx
+			mov [ecx], edx
 			mov Current.index, edx
 
 			call SetItemSelection
 
-			returnSafe :
+		returnSafe:
 			retn
 
-				continueOriginal :
+		continueOriginal 
 			mov eax, 635570h
-				jmp eax
+			jmp eax
 		}
 	}
 
@@ -208,11 +208,11 @@ namespace Components
 			test al, al
 			jnz continue
 
-			mov[edi + 130h], esi
+			mov [edi + 130h], esi
 
-			continue:
+		continue:
 			mov eax, 639D75h
-				jmp eax
+			jmp eax
 		}
 	}
 
@@ -231,7 +231,7 @@ namespace Components
 			mov eax, 4C25D0h
 			jmp eax
 
-			continue:
+		continue:
 			retn
 		}
 	}
@@ -251,7 +251,7 @@ namespace Components
 			mov eax, 685E10h
 			jmp eax
 
-			continue:
+		continue:
 			retn
 		}
 	}
@@ -341,12 +341,12 @@ namespace Components
 
 	void UIFeeder::ApplyMap([[maybe_unused]] const UIScript::Token& token, [[maybe_unused]] const Game::uiInfo_s* info)
 	{
-		const auto mapname = Dvar::Var("ui_map_name").get<std::string>();
+		const auto* mapname = Dvar::Var("ui_map_name").get<const char*>();
 
-		if (!mapname.empty())
+		if (*mapname)
 		{
-			Dvar::Var(const_cast<Game::dvar_t*>(*Game::ui_mapname)).set(mapname);
-			Utils::Hook::Call<void(const char*)>(0x503B50)(mapname.data()); // Party_SetDisplayMapName
+			Game::Dvar_SetString(*Game::ui_mapname, mapname);
+			Utils::Hook::Call<void(const char*)>(0x503B50)(mapname); // Party_SetDisplayMapName
 		}
 	}
 
@@ -380,11 +380,11 @@ namespace Components
 			push 635A9Dh
 			retn
 
-			returnSafe :
+		returnSafe:
 			pop eax
-				xor eax, eax
-				pop ecx
-				retn
+			xor eax, eax
+			pop ecx
+			retn
 		}
 	}
 
@@ -393,11 +393,11 @@ namespace Components
 		if (Dedicated::IsEnabled()) return;
 
 		Events::OnDvarInit([]
-			{
-				UIMapLong = Dvar::Register<const char*>("ui_map_long", "", Game::DVAR_NONE, "");
-				UIMapName = Dvar::Register<const char*>("ui_map_name", "", Game::DVAR_NONE, "");
-				UIMapDesc = Dvar::Register<const char*>("ui_map_desc", "", Game::DVAR_NONE, "");
-			});
+		{
+			UIMapLong = Dvar::Register<const char*>("ui_map_long", "", Game::DVAR_NONE, "");
+			UIMapName = Dvar::Register<const char*>("ui_map_name", "", Game::DVAR_NONE, "");
+			UIMapDesc = Dvar::Register<const char*>("ui_map_desc", "", Game::DVAR_NONE, "");
+		});
 
 		//Utils::Hook(0x63C5A3, UI_FeederDoubleClick_Hk, HOOK_CALL).install()->quick();
 

@@ -41,8 +41,8 @@ namespace Components
 		static void DebugDrawRunners();
 		static void DebugDrawAABBTrees();
 		static void ForceTechnique();
-		static void DrawPrimaryLights();
 		static void ListSamplers();
+		static void DrawPrimaryLights();
 
 		static int FixSunShadowPartitionSize(Game::GfxCamera* camera, Game::GfxSunShadowMapMetrics* mapMetrics, Game::GfxSunShadow* sunShadow, Game::GfxSunShadowClip* clip, float* partitionFraction);
 

@@ -184,17 +184,17 @@ namespace Components
 	void Maps::OverrideMapEnts(Game::MapEnts* ents)
 	{
 		auto callback = [] (Game::XAssetHeader header, void* ents)
-			{
-				Game::MapEnts* mapEnts = reinterpret_cast<Game::MapEnts*>(ents);
-				Game::clipMap_t* clipMap = header.clipMap;
+		{
+			Game::MapEnts* mapEnts = reinterpret_cast<Game::MapEnts*>(ents);
+			Game::clipMap_t* clipMap = header.clipMap;
 
-				if (clipMap && mapEnts && !_stricmp(mapEnts->name, clipMap->name))
-				{
-					clipMap->mapEnts = mapEnts;
-					//*Game::marMapEntsPtr = mapEnts;
-					//Game::G_SpawnEntitiesFromString();
-				}
-			};
+			if (clipMap && mapEnts && !_stricmp(mapEnts->name, clipMap->name))
+			{
+				clipMap->mapEnts = mapEnts;
+				//*Game::marMapEntsPtr = mapEnts;
+				//Game::G_SpawnEntitiesFromString();
+			}
+		};
 
 		// Internal doesn't lock the thread, as locking is impossible, due to executing this in the thread that holds the current lock
 		Game::DB_EnumXAssets_Internal(Game::XAssetType::ASSET_TYPE_CLIPMAP_MP, callback, ents, true);
@@ -342,7 +342,7 @@ namespace Components
 	std::unordered_map<std::string, std::string> Maps::ParseCustomMapArena(const std::string& singleMapArena)
 	{
 		static const std::regex regex("  (\\w*) *\"?((?:\\w| )*)\"?");
-		std::unordered_map<std::string, std::string> arena{};
+		std::unordered_map<std::string, std::string> arena;
 
 		std::smatch m;
 
@@ -365,7 +365,7 @@ namespace Components
 		std::string teamAxis = "opforce_composite";
 		std::string teamAllies = "us_army";
 
-		Maps::MapDependencies dependencies{};
+		Maps::MapDependencies dependencies;
 
 		// True by default - cause some maps won't have an arenafile entry
 		dependencies.requiresTeamZones = true;
@@ -627,6 +627,11 @@ namespace Components
 	std::string Maps::GetArenaPath(const std::string& mapName)
 	{
 		return std::format("usermaps/{}/{}.arena", mapName, mapName);
+	}
+
+	const std::vector<std::string>& Maps::GetCustomMaps()
+	{
+		return FoundCustomMaps;
 	}
 
 	Game::XAssetEntry* Maps::GetAssetEntryPool()
