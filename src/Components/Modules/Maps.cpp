@@ -106,8 +106,8 @@ namespace Components
 
 		if (Maps::UserMap.isValid())
 		{
-			const std::string mapname = Maps::UserMap.getName();
-			std::string arena = GetArenaPath(mapname);
+			const auto mapname = Maps::UserMap.getName();
+			const auto arena = GetArenaPath(mapname);
 
 			if (Utils::IO::FileExists(arena))
 			{
@@ -603,7 +603,7 @@ namespace Components
 	void Maps::ScanCustomMaps()
 	{
 		FoundCustomMaps.clear();
-		Components::Logger::Print("Scanning custom maps...\n");
+		Logger::Print("Scanning custom maps...\n");
 
 		auto basePath = std::format("{}\\usermaps", (*Game::fs_basepath)->current.string);
 
@@ -618,7 +618,7 @@ namespace Components
 				if (Utils::IO::FileExists(mapPath))
 				{
 					FoundCustomMaps.push_back(zoneName);
-					Components::Logger::Print("Discovered custom map {}\n", zoneName);
+					Logger::Print("Discovered custom map {}\n", zoneName);
 				}
 			}
 		}
@@ -626,7 +626,7 @@ namespace Components
 
 	std::string Maps::GetArenaPath(const std::string& mapName)
 	{
-		return Utils::String::VA("usermaps/%s/%s.arena", mapName.data(), mapName.data());
+		return std::format("usermaps/{}/{}.arena", mapName, mapName);
 	}
 
 	Game::XAssetEntry* Maps::GetAssetEntryPool()

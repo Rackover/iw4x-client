@@ -265,7 +265,7 @@ namespace Components
 		if (!val) return;
 
 		auto clientNum = Game::CG_GetClientNum();
-		Game::gentity_t* clientEntity = &Game::g_entities[clientNum];
+		auto clientEntity = &Game::g_entities[clientNum];
 
 		// Ingame only & player only
 		if (!Game::CL_IsCgameInitialized() || clientEntity->client == nullptr)
