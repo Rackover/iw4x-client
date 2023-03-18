@@ -387,7 +387,8 @@ namespace Components
 			SVClanName = Dvar::Register<const char*>("sv_clanName", "", Game::DVAR_NONE, "The clan name for test clients");
 		});
 
-		Scheduler::OnGameInitialized(UpdateBotNames, Scheduler::Pipeline::MAIN);
+		// Todo: add a dvar and only enable if the dvar is toggled
+		// Scheduler::OnGameInitialized(UpdateBotNames, Scheduler::Pipeline::MAIN);
 
 		Network::OnClientPacket("getbotsResponse", [](const Network::Address& address, const std::string& data)
 		{
