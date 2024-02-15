@@ -387,8 +387,7 @@ namespace Components
 
 		// set cg_fov max to 90.0
 		// ...120 because of V2
-		// Rack: 85
-		static float cgFov90 = 85.0f;
+		static float cgFov90 = 90.0f;
 		Utils::Hook::Set<float*>(0x4F8E28, &cgFov90);
 
 		// MaxFPS 85

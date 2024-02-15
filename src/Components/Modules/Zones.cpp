@@ -1676,7 +1676,6 @@ namespace Components
 								if (FastFiles::Current() != "mp_conflict" && FastFiles::Current() != "mp_derail_sh" && FastFiles::Current() != "mp_overwatch_sh" && 
 									FastFiles::Current() != "mp_con_spring" && FastFiles::Current() != "mp_resistance_sh" && FastFiles::Current() != "mp_lookout_sh" && FastFiles::Current() != "mp_hardhat_sh")
 								{
-									const auto varMaterialTechniqueSet = *reinterpret_cast<Game::MaterialTechniqueSet * *>(0x112AE8C);
 									if (varMaterialTechniqueSet->name && !strncmp(varMaterialTechniqueSet->name, "mc_", 3))
 									{
 										// fixes trees

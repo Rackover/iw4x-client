@@ -259,6 +259,11 @@ namespace Components
 		char forward;
 		char right;
 
+		if (from == nullptr || to == nullptr)
+		{
+			return;
+		}
+
 		if (Game::MSG_ReadBit(msg))
 		{
 			const auto movementBits = static_cast<short>(key ^ Game::MSG_ReadBits(msg, 16));

@@ -33,7 +33,7 @@ namespace Components
 #if DEBUG
 		RGB(35, 21, 0);
 #else
-		RGB(74, 14, 41);
+		RGB(44, 4, 11);
 #endif
 	HBRUSH Console::ForegroundBrush = CreateSolidBrush(TextColor);
 	HBRUSH Console::BackgroundBrush = CreateSolidBrush(BackgroundColor);
@@ -816,7 +816,7 @@ namespace Components
 			{ "con_inputBoxColor",     { 0.20f, 0.20f, 0.20f, 1.00f } },
 			{ "con_inputHintBoxColor", { 0.30f, 0.30f, 0.30f, 1.00f } },
 			{ "con_outputBarColor",    { 0.50f, 0.50f, 0.50f, 0.60f } },
-			{ "con_outputSliderColor", { 0.70f, 1.00f, 0.00f, 1.00f } },
+			{ "con_outputSliderColor", { 1.0f, 0.85f, 0.85f, 1.00f } },
 			{ "con_outputWindowColor", { 0.25f, 0.25f, 0.25f, 0.85f } },
 		};
 
@@ -870,7 +870,7 @@ namespace Components
 	Console::Console()
 	{        
 		// Display game's native console no matter what
-		Utils::Hook::Nop(0x60BB58, 11);
+		//Utils::Hook::Nop(0x60BB58, 11);
 
 		AssertOffset(Game::clientUIActive_t, connectionState, 0x9B8);
 		AssertOffset(Game::clientUIActive_t, keyCatchers, 0x9B0);
