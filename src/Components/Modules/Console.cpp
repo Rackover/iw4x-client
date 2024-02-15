@@ -856,7 +856,7 @@ namespace Components
 		AssertOffset(Game::clientUIActive_t, keyCatchers, 0x9B0);
 
 		// Console '%s: %s> ' string
-		Utils::Hook::Set<const char*>(0x5A44B4, "IW4x MP: " VERSION "> ");
+		Utils::Hook::Set<const char*>(0x5A44B4, SHORTVERSION "> ");
 
 		// Patch console color
 		static float consoleColor[] = { 0.70f, 1.00f, 0.00f, 1.00f };
