@@ -17,7 +17,7 @@ namespace Components
 		}
 		else
 		{
-			TextRenderer::StripAllTextIcons(name, buffer, size);
+			TextRenderer::StripMaterialTextIcons(name, buffer, size);
 		}
 
 		std::string readablePlayerName(buffer);
