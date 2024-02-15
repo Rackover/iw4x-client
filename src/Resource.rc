@@ -69,12 +69,12 @@ BEGIN
 #else
             VALUE "FileDescription", "IW4 client modification"
 #endif
-            VALUE "FileVersion", REVISION_STR
+            VALUE "FileVersion", SHORTVERSION
             VALUE "InternalName", "iw4x"
             VALUE "LegalCopyright", "Copyright 2023 The IW4x Team. All rights reserved."
             VALUE "OriginalFilename", "iw4x.dll"
             VALUE "ProductName", "IW4x"
-            VALUE "ProductVersion", REVISION_STR
+            VALUE "ProductVersion", VERSION
         END
     END
     BLOCK "VarFileInfo"

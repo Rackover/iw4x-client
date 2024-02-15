@@ -7,6 +7,9 @@
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
 #define _USE_MATH_DEFINES
 
+#define DISABLE_STEAM 1
+#define DISABLE_BINARY_CHECK 1 
+
 #include <Windows.h>
 #include <WinSock2.h>
 #include <ShlObj.h>
