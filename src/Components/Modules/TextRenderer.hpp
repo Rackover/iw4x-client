@@ -2,7 +2,7 @@
 
 namespace Components
 {
-	enum TextColor
+	enum TextColor : int
 	{
 		TEXT_COLOR_BLACK = 0,
 		TEXT_COLOR_RED = 1,
@@ -42,6 +42,7 @@ namespace Components
 
 	class TextRenderer : public Component
 	{
+	public:
 		static constexpr auto STRING_BUFFER_SIZE_BIG = 1024;
 		static constexpr auto STRING_BUFFER_SIZE_SMALL = 128;
 
@@ -88,7 +89,6 @@ namespace Components
 			1.0f
 		};
 
-	public:
 		static constexpr char FONT_ICON_SEPARATOR_CHARACTER = ':';
 		static constexpr char FONT_ICON_MODIFIER_SEPARATOR_CHARACTER = '+';
 		static constexpr char FONT_ICON_MODIFIER_FLIP_HORIZONTALLY = 'h';
@@ -139,7 +139,7 @@ namespace Components
 		class BufferedLocalizedString
 		{
 		public:
-			BufferedLocalizedString(const char* reference, size_t bufferSize);
+			BufferedLocalizedString(const char* reference, std::size_t bufferSize);
 			void Cache();
 			const char* Format(const char* value);
 			const char* GetString() const;
@@ -148,7 +148,7 @@ namespace Components
 		private:
 			const char* stringReference;
 			std::unique_ptr<char[]> stringBuffer;
-			size_t stringBufferSize;
+			std::size_t stringBufferSize;
 			int stringWidth[FONT_ICON_ACI_COUNT];
 		};
 
@@ -202,11 +202,11 @@ namespace Components
 		static void DrawText2D(const char* text, float x, float y, Game::Font_s* font, float xScale, float yScale, float sinAngle, float cosAngle, Game::GfxColor color, int maxLength, int renderFlags, int cursorPos, char cursorLetter, float padding, Game::GfxColor glowForcedColor, int fxBirthTime, int fxLetterTime, int fxDecayStartTime, int fxDecayDuration, Game::Material* fxMaterial, Game::Material* fxMaterialGlow);
 		static int R_TextWidth_Hk(const char* text, int maxChars, Game::Font_s* font);
 		static unsigned int ColorIndex(char index);
-		static void StripColors(const char* in, char* out, size_t max);
+		static void StripColors(const char* in, char* out, std::size_t max);
 		static std::string StripColors(const std::string& in);
-		static void StripMaterialTextIcons(const char* in, char* out, size_t max);
+		static void StripMaterialTextIcons(const char* in, char* out, std::size_t max);
 		static std::string StripMaterialTextIcons(const std::string& in);
-		static void StripAllTextIcons(const char* in, char* out, size_t max);
+		static void StripAllTextIcons(const char* in, char* out, std::size_t max);
 		static std::string StripAllTextIcons(const std::string& in);
 
 		static bool IsFontIcon(const char*& text, FontIconInfo& fontIcon);

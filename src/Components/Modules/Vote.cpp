@@ -1,4 +1,7 @@
 #include <STDInclude.hpp>
+#include "ClientCommand.hpp"
+#include "MapRotation.hpp"
+#include "Vote.hpp"
 
 using namespace Utils::String;
 
@@ -242,8 +245,8 @@ namespace Components
 			return;
 		}
 
-		const auto got = VoteCommands.find(params->get(1));
-		if (got == VoteCommands.end())
+		const auto itr = VoteCommands.find(params->get(1));
+		if (itr == VoteCommands.end())
 		{
 			Game::SV_GameSendServerCommand(ent - Game::g_entities, Game::SV_CMD_CAN_IGNORE, VA("%c \"GAME_INVALIDVOTESTRING\"", 0x65));
 			Game::SV_GameSendServerCommand(ent - Game::g_entities, Game::SV_CMD_CAN_IGNORE, VA(CallVoteDesc, 0x65));
@@ -256,7 +259,7 @@ namespace Components
 			Game::Cbuf_AddText(0, VA("%s\n", Game::level->voteString));
 		}
 
-		const auto shouldDisplay = got->second(ent, params);
+		const auto shouldDisplay = itr->second(ent, params);
 		if (shouldDisplay)
 		{
 			DisplayVote(ent);
@@ -316,10 +319,13 @@ namespace Components
 	Vote::Vote()
 	{
 		// Replicate g_allowVote
-		Utils::Hook::Set<DWORD>(0x5E3A4F, Game::DVAR_INTERNAL | Game::DVAR_CODINFO);
+		Utils::Hook::Set<std::uint32_t>(0x5E3A4F, Game::DVAR_INTERNAL | Game::DVAR_CODINFO);
 
 		ClientCommand::Add("callvote", Cmd_CallVote_f);
 		ClientCommand::Add("vote", Cmd_Vote_f);
+
+		Menus::Add("ui_mp/scriptmenus/callvote.menu");
+		Menus::Add("ui_mp/scriptmenus/kickplayer.menu");
 
 		UIScript::Add("voteKick", []([[maybe_unused]] const UIScript::Token& token, [[maybe_unused]] const Game::uiInfo_s* info)
 		{

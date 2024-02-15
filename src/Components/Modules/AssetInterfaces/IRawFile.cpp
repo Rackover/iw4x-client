@@ -1,37 +1,22 @@
 #include <STDInclude.hpp>
 #include "IRawFile.hpp"
 
+#include <Utils/Compression.hpp>
+
 namespace Assets
 {
 	void IRawFile::load(Game::XAssetHeader* header, const std::string& name, Components::ZoneBuilder::Zone* builder)
 	{
-		Components::FileSystem::File rawFile(name);
-
-		if (rawFile.exists())
-		{
-			Game::RawFile* asset = builder->getAllocator()->allocate<Game::RawFile>();
-
-			if (asset)
-			{
-				//std::string data = Utils::Compression::ZLib::Compress(rawFile.getBuffer());
-
-				asset->name = builder->getAllocator()->duplicateString(name);
-				asset->buffer = builder->getAllocator()->duplicateString(rawFile.getBuffer());
-				asset->compressedLen = 0;//data.size();
-				asset->len = rawFile.getBuffer().size();
-
-				header->rawfile = asset;
-			}
-		}
+		header->rawfile = builder->getIW4OfApi()->read<Game::RawFile>(Game::XAssetType::ASSET_TYPE_RAWFILE, name);
 	}
 
 	void IRawFile::save(Game::XAssetHeader header, Components::ZoneBuilder::Zone* builder)
 	{
 		AssertSize(Game::RawFile, 16);
 
-		Utils::Stream* buffer = builder->getBuffer();
-		Game::RawFile* asset = header.rawfile;
-		Game::RawFile* dest = buffer->dest<Game::RawFile>();
+		auto* buffer = builder->getBuffer();
+		auto* asset = header.rawfile;
+		auto* dest = buffer->dest<Game::RawFile>();
 		buffer->save(asset);
 
 		buffer->pushBlock(Game::XFILE_BLOCK_VIRTUAL);

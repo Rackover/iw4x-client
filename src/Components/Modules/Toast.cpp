@@ -1,5 +1,8 @@
 #include <STDInclude.hpp>
 
+#include "Materials.hpp"
+#include "Toast.hpp"
+
 namespace Components
 {
 	std::queue<Toast::UIToast> Toast::Queue;
@@ -144,7 +147,7 @@ namespace Components
 
 	Toast::Toast()
 	{
-		if (Dedicated::IsEnabled() || Monitor::IsEnabled() || ZoneBuilder::IsEnabled())
+		if (Dedicated::IsEnabled() || ZoneBuilder::IsEnabled())
 		{
 			return;
 		}

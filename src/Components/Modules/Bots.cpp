@@ -1,85 +1,160 @@
 #include <STDInclude.hpp>
+
+#include "Bots.hpp"
+#include "ClanTags.hpp"
+#include "Events.hpp"
+
 #include "GSC/Script.hpp"
+
+// From Quake-III
+#define ANGLE2SHORT(x) ((int)((x) * (USHRT_MAX + 1) / 360.0f) & USHRT_MAX)
+#define SHORT2ANGLE(x) ((x)* (360.0f / (USHRT_MAX + 1)))
 
 namespace Components
 {
-	std::vector<std::string> Bots::BotNames;
+	constexpr std::size_t MAX_NAME_LENGTH = 16;
+
+	const Game::dvar_t* Bots::sv_randomBotNames;
+	const Game::dvar_t* Bots::sv_replaceBots;
+
+	std::size_t Bots::BotDataIndex;
+
+	std::vector<Bots::botData> Bots::RemoteBotNames;
 
 	struct BotMovementInfo
 	{
-		int buttons; // Actions
-		int8_t forward;
-		int8_t right;
-		uint16_t weapon;
+		std::int32_t buttons; // Actions
+		std::int8_t forward;
+		std::int8_t right;
+		std::uint16_t weapon;
+		std::uint16_t lastAltWeapon;
+		std::uint8_t meleeDist;
+		float meleeYaw;
 		bool active;
 	};
 
-	static BotMovementInfo g_botai[18];
+	static BotMovementInfo g_botai[Game::MAX_CLIENTS];
 
 	struct BotAction
 	{
 		std::string action;
-		int key;
+		std::int32_t key;
 	};
 
 	static const BotAction BotActions[] =
 	{
-		{ "gostand", Game::usercmdButtonBits::CMD_BUTTON_UP },
-		{ "gocrouch", Game::usercmdButtonBits::CMD_BUTTON_CROUCH },
-		{ "goprone", Game::usercmdButtonBits::CMD_BUTTON_PRONE },
-		{ "fire", Game::usercmdButtonBits::CMD_BUTTON_ATTACK },
-		{ "melee", Game::usercmdButtonBits::CMD_BUTTON_MELEE },
-		{ "frag", Game::usercmdButtonBits::CMD_BUTTON_FRAG },
-		{ "smoke",  Game::usercmdButtonBits::CMD_BUTTON_OFFHAND_SECONDARY },
-		{ "reload", Game::usercmdButtonBits::CMD_BUTTON_RELOAD },
-		{ "sprint", Game::usercmdButtonBits::CMD_BUTTON_SPRINT },
-		{ "leanleft", Game::usercmdButtonBits::CMD_BUTTON_LEAN_LEFT },
-		{ "leanright", Game::usercmdButtonBits::CMD_BUTTON_LEAN_RIGHT },
-		{ "ads", Game::usercmdButtonBits::CMD_BUTTON_ADS },
-		{ "holdbreath", Game::usercmdButtonBits::CMD_BUTTON_BREATH },
-		{ "usereload", Game::usercmdButtonBits::CMD_BUTTON_USE_RELOAD },
-		{ "activate", Game::usercmdButtonBits::CMD_BUTTON_ACTIVATE },
+		{ "gostand", Game::CMD_BUTTON_UP },
+		{ "gocrouch", Game::CMD_BUTTON_CROUCH },
+		{ "goprone", Game::CMD_BUTTON_PRONE },
+		{ "fire", Game::CMD_BUTTON_ATTACK },
+		{ "melee", Game::CMD_BUTTON_MELEE },
+		{ "frag", Game::CMD_BUTTON_FRAG },
+		{ "smoke",  Game::CMD_BUTTON_OFFHAND_SECONDARY },
+		{ "reload", Game::CMD_BUTTON_RELOAD },
+		{ "sprint", Game::CMD_BUTTON_SPRINT },
+		{ "leanleft", Game::CMD_BUTTON_LEAN_LEFT },
+		{ "leanright", Game::CMD_BUTTON_LEAN_RIGHT },
+		{ "ads", Game::CMD_BUTTON_ADS },
+		{ "holdbreath", Game::CMD_BUTTON_BREATH },
+		{ "usereload", Game::CMD_BUTTON_USE_RELOAD },
+		{ "activate", Game::CMD_BUTTON_ACTIVATE },
 	};
 
-	int Bots::BuildConnectString(char* buffer, const char* connectString, int num, int, int protocol, int checksum, int statVer, int statStuff, int port)
+	void Bots::UpdateBotNames()
 	{
-		static size_t botId = 0;
-		static bool loadedNames = false; // Load file only once
-		const char* botName;
+		const auto masterPort = (*Game::com_masterPort)->current.integer;
+		const auto* masterServerName = (*Game::com_masterServerName)->current.string;
 
-		if (Bots::BotNames.empty() && !loadedNames)
+		Network::Address master(Utils::String::VA("%s:%u", masterServerName, masterPort));
+
+		Logger::Print("Getting bots...\n");
+		Network::Send(master, "getbots");
+	}
+
+	std::vector<Bots::botData> Bots::LoadBotNames()
+	{
+		std::vector<botData> result;
+
+		FileSystem::File bots("bots.txt");
+		if (!bots.exists())
 		{
-			FileSystem::File bots("bots.txt");
-			loadedNames = true;
-
-			if (bots.exists())
-			{
-				auto names = Utils::String::Split(bots.getBuffer(), '\n');
-
-				for (auto& name : names)
-				{
-					Utils::String::Replace(name, "\r", "");
-					name = Utils::String::Trim(name);
-
-					if (!name.empty())
-					{
-						Bots::BotNames.push_back(name);
-					}
-				}
-			}
+			return result;
 		}
 
-		if (!Bots::BotNames.empty())
+		auto data = Utils::String::Split(bots.getBuffer(), '\n');
+
+		for (auto& entry : data)
 		{
-			botId %= Bots::BotNames.size();
-			botName = Bots::BotNames[botId++].data();
+			// Take into account CR line endings
+			Utils::String::Replace(entry, "\r", "");
+			// Remove whitespace
+			Utils::String::Trim(entry);
+
+			if (entry.empty())
+			{
+				continue;
+			}
+
+			std::string clanAbbrev;
+
+			// Check if there is a clan tag
+			if (const auto pos = entry.find(','); pos != std::string::npos)
+			{
+				// Only start copying over from non-null characters (otherwise it can be "<=")
+				if ((pos + 1) < entry.size())
+				{
+					clanAbbrev = entry.substr(pos + 1, ClanTags::MAX_CLAN_NAME_LENGTH - 1);
+				}
+
+				entry = entry.substr(0, pos);
+			}
+
+			entry = entry.substr(0, MAX_NAME_LENGTH - 1);
+
+			result.emplace_back(entry, clanAbbrev);
+		}
+
+		return result;
+	}
+
+	int Bots::BuildConnectString(char* buffer, const char* connectString, int num, int, int protocol, int checksum, int statVer, int stats, int port)
+	{
+		std::string botName;
+		std::string clanName;
+
+		static const auto botNames = []() -> std::vector<botData>
+		{
+			auto names = LoadBotNames();
+			if (names.empty())
+			{
+				Logger::Print("bots.txt was empty. Using the names from the master server\n");
+				names = RemoteBotNames;
+			}
+
+			if (sv_randomBotNames->current.enabled)
+			{
+				std::random_device rd;
+				std::mt19937 gen(rd());
+				std::ranges::shuffle(names, gen);
+			}
+
+			return names;
+		}();
+
+		if (!botNames.empty())
+		{
+			BotDataIndex %= botNames.size();
+			const auto index = BotDataIndex++;
+			botName = botNames[index].first;
+			clanName = botNames[index].second;
 		}
 		else
 		{
-			botName = Utils::String::VA("bot%d", ++botId);
+			botName = std::format("bot{}", num);
+			clanName = "BOT"s;
 		}
 
-		return _snprintf_s(buffer, 0x400, _TRUNCATE, connectString, num, botName, protocol, checksum, statVer, statStuff, port);
+		return _snprintf_s(buffer, 0x400, _TRUNCATE, connectString, num, botName.data(), clanName.data(), protocol, checksum, statVer, stats, port);
 	}
 
 	void Bots::Spawn(unsigned int count)
@@ -89,20 +164,22 @@ namespace Components
 			Scheduler::Once([]
 			{
 				auto* ent = Game::SV_AddTestClient();
-				if (ent == nullptr)
+				if (!ent)
+				{
 					return;
+				}
 
 				Scheduler::Once([ent]
 				{
 					Game::Scr_AddString("autoassign");
 					Game::Scr_AddString("team_marinesopfor");
-					Game::Scr_Notify(ent, Game::SL_GetString("menuresponse", 0), 2);
+					Game::Scr_Notify(ent, static_cast<std::uint16_t>(Game::SL_GetString("menuresponse", 0)), 2);
 
 					Scheduler::Once([ent]
 					{
-						Game::Scr_AddString(Utils::String::VA("class%u", Utils::Cryptography::Rand::GenerateInt() % 5u));
+						Game::Scr_AddString(Utils::String::Format("class{}", std::rand() % 5));
 						Game::Scr_AddString("changeclass");
-						Game::Scr_Notify(ent, Game::SL_GetString("menuresponse", 0), 2);
+						Game::Scr_Notify(ent, static_cast<std::uint16_t>(Game::SL_GetString("menuresponse", 0)), 2);
 					}, Scheduler::Pipeline::SERVER, 1s);
 
 				}, Scheduler::Pipeline::SERVER, 1s);
@@ -111,24 +188,28 @@ namespace Components
 		}
 	}
 
-	void Bots::GScr_isTestClient(Game::scr_entref_t entref)
+	void Bots::GScr_isTestClient(const Game::scr_entref_t entref)
 	{
-		const auto* ent = Game::GetPlayerEntity(entref);
+		const auto* ent = Game::GetEntity(entref);
+		if (!ent->client)
+		{
+			Game::Scr_Error("isTestClient: entity must be a player entity");
+			return;
+		}
+
 		Game::Scr_AddBool(Game::SV_IsTestClient(ent->s.number) != 0);
 	}
 
-	void Bots::AddMethods()
+	void Bots::AddScriptMethods()
 	{
-		Script::AddMethod("IsBot", Bots::GScr_isTestClient); // Usage: self IsBot();
-		Script::AddMethod("IsTestClient", Bots::GScr_isTestClient); // Usage: self IsTestClient();
+		GSC::Script::AddMethMultiple(GScr_isTestClient, false, {"IsTestClient", "IsBot"}); // Usage: self IsTestClient();
 
-		Script::AddMethod("BotStop", [](Game::scr_entref_t entref) // Usage: <bot> BotStop();
+		GSC::Script::AddMethod("BotStop", [](const Game::scr_entref_t entref) // Usage: <bot> BotStop();
 		{
-			const auto* ent = Game::GetPlayerEntity(entref);
-
-			if (Game::SV_IsTestClient(ent->s.number) == 0)
+			const auto* ent = GSC::Script::Scr_GetPlayerEntity(entref);
+			if (!Game::SV_IsTestClient(ent->s.number))
 			{
-				Game::Scr_Error("^1BotStop: Can only call on a bot!\n");
+				Game::Scr_Error("BotStop: Can only call on a bot!");
 				return;
 			}
 
@@ -137,19 +218,17 @@ namespace Components
 			g_botai[entref.entnum].active = true;
 		});
 
-		Script::AddMethod("BotWeapon", [](Game::scr_entref_t entref) // Usage: <bot> BotWeapon(<str>);
+		GSC::Script::AddMethod("BotWeapon", [](const Game::scr_entref_t entref) // Usage: <bot> BotWeapon(<str>);
 		{
-			const auto* ent = Game::GetPlayerEntity(entref);
-
-			if (Game::SV_IsTestClient(ent->s.number) == 0)
+			const auto* ent = GSC::Script::Scr_GetPlayerEntity(entref);
+			if (!Game::SV_IsTestClient(ent->s.number))
 			{
-				Game::Scr_Error("^1BotWeapon: Can only call on a bot!\n");
+				Game::Scr_Error("BotWeapon: Can only call on a bot!");
 				return;
 			}
 
 			const auto* weapon = Game::Scr_GetString(0);
-
-			if (weapon == nullptr || weapon[0] == '\0')
+			if (!weapon || !*weapon)
 			{
 				g_botai[entref.entnum].weapon = 1;
 				return;
@@ -160,27 +239,25 @@ namespace Components
 			g_botai[entref.entnum].active = true;
 		});
 
-		Script::AddMethod("BotAction", [](Game::scr_entref_t entref) // Usage: <bot> BotAction(<str action>);
+		GSC::Script::AddMethod("BotAction", [](const Game::scr_entref_t entref) // Usage: <bot> BotAction(<str action>);
 		{
-			const auto* ent = Game::GetPlayerEntity(entref);
-
-			if (Game::SV_IsTestClient(ent->s.number) == 0)
+			const auto* ent = GSC::Script::Scr_GetPlayerEntity(entref);
+			if (!Game::SV_IsTestClient(ent->s.number))
 			{
-				Game::Scr_Error("^1BotAction: Can only call on a bot!\n");
+				Game::Scr_Error("BotAction: Can only call on a bot!");
 				return;
 			}
 
 			const auto* action = Game::Scr_GetString(0);
-
-			if (action == nullptr)
+			if (!action)
 			{
-				Game::Scr_ParamError(0, "^1BotAction: Illegal parameter!\n");
+				Game::Scr_ParamError(0, "BotAction: Illegal parameter!");
 				return;
 			}
 
 			if (action[0] != '+' && action[0] != '-')
 			{
-				Game::Scr_ParamError(0, "^1BotAction: Sign for action must be '+' or '-'.\n");
+				Game::Scr_ParamError(0, "BotAction: Sign for action must be '+' or '-'");
 				return;
 			}
 
@@ -198,16 +275,15 @@ namespace Components
 				return;
 			}
 
-			Game::Scr_ParamError(0, "^1BotAction: Unknown action.\n");
+			Game::Scr_ParamError(0, "BotAction: Unknown action");
 		});
 
-		Script::AddMethod("BotMovement", [](Game::scr_entref_t entref) // Usage: <bot> BotMovement(<int>, <int>);
+		GSC::Script::AddMethod("BotMovement", [](const Game::scr_entref_t entref) // Usage: <bot> BotMovement(<int>, <int>);
 		{
-			const auto* ent = Game::GetPlayerEntity(entref);
-
-			if (Game::SV_IsTestClient(ent->s.number) == 0)
+			const auto* ent = GSC::Script::Scr_GetPlayerEntity(entref);
+			if (!Game::SV_IsTestClient(ent->s.number))
 			{
-				Game::Scr_Error("^1BotMovement: Can only call on a bot!\n");
+				Game::Scr_Error("BotMovement: Can only call on a bot!");
 				return;
 			}
 
@@ -218,35 +294,61 @@ namespace Components
 			g_botai[entref.entnum].right = static_cast<int8_t>(rightInt);
 			g_botai[entref.entnum].active = true;
 		});
+
+		GSC::Script::AddMethod("BotMeleeParams", [](const Game::scr_entref_t entref) // Usage: <bot> BotMeleeParams(<float>, <float>);
+		{
+			const auto* ent = GSC::Script::Scr_GetPlayerEntity(entref);
+			if (!Game::SV_IsTestClient(ent->s.number))
+			{
+				Game::Scr_Error("BotMeleeParams: Can only call on a bot!");
+				return;
+			}
+
+			const auto yaw = Game::Scr_GetFloat(0);
+			const auto dist = std::clamp<int>(static_cast<int>(Game::Scr_GetFloat(1)), std::numeric_limits<unsigned char>::min(), std::numeric_limits<unsigned char>::max());
+
+			g_botai[entref.entnum].meleeYaw = yaw;
+			g_botai[entref.entnum].meleeDist = static_cast<int8_t>(dist);
+			g_botai[entref.entnum].active = true;
+		});
 	}
 
-	void Bots::BotAiAction(Game::client_t* cl)
+	void Bots::BotAiAction(Game::client_s* cl)
 	{
-		if (cl->gentity == nullptr)
+		if (!cl->gentity)
+		{
 			return;
+		}
 
-		const auto entnum = cl->gentity->s.number;
+		auto clientNum = cl - Game::svs_clients;
 
 		// Keep test client functionality
-		if (!g_botai[entnum].active)
+		if (!g_botai[clientNum].active)
 		{
 			Game::SV_BotUserMove(cl);
 			return;
 		}
 
-		Game::usercmd_s userCmd = {0};
+		Game::usercmd_s userCmd;
+		ZeroMemory(&userCmd, sizeof(Game::usercmd_s));
 
 		userCmd.serverTime = *Game::svs_time;
 
-		userCmd.buttons = g_botai[entnum].buttons;
-		userCmd.forwardmove = g_botai[entnum].forward;
-		userCmd.rightmove = g_botai[entnum].right;
-		userCmd.weapon = g_botai[entnum].weapon;
+		userCmd.buttons = g_botai[clientNum].buttons;
+		userCmd.forwardmove = g_botai[clientNum].forward;
+		userCmd.rightmove = g_botai[clientNum].right;
+		userCmd.weapon = g_botai[clientNum].weapon;
+		userCmd.primaryWeaponForAltMode = g_botai[clientNum].lastAltWeapon;
+		userCmd.meleeChargeYaw = g_botai[clientNum].meleeYaw;
+		userCmd.meleeChargeDist = g_botai[clientNum].meleeDist;
+
+		userCmd.angles[0] = ANGLE2SHORT((cl->gentity->client->ps.viewangles[0] - cl->gentity->client->ps.delta_angles[0]));
+		userCmd.angles[1] = ANGLE2SHORT((cl->gentity->client->ps.viewangles[1] - cl->gentity->client->ps.delta_angles[1]));
+		userCmd.angles[2] = ANGLE2SHORT((cl->gentity->client->ps.viewangles[2] - cl->gentity->client->ps.delta_angles[2]));
 
 		Game::SV_ClientThink(cl, &userCmd);
 	}
 
-	constexpr auto SV_BotUserMove = 0x626E50;
 	__declspec(naked) void Bots::SV_BotUserMove_Hk()
 	{
 		__asm
@@ -254,7 +356,7 @@ namespace Components
 			pushad
 
 			push edi
-			call Bots::BotAiAction
+			call BotAiAction
 			add esp, 4
 
 			popad
@@ -262,11 +364,38 @@ namespace Components
 		}
 	}
 
-	void Bots::G_SelectWeaponIndex(int clientNum, int iWeaponIndex)
+	void Bots::G_SelectWeaponIndex(int clientNum, unsigned int iWeaponIndex)
 	{
 		if (g_botai[clientNum].active)
 		{
 			g_botai[clientNum].weapon = static_cast<uint16_t>(iWeaponIndex);
+			g_botai[clientNum].lastAltWeapon = 0;
+
+			auto* def = Game::BG_GetWeaponCompleteDef(iWeaponIndex);
+
+			if (def && def->weapDef->inventoryType == Game::WEAPINVENTORY_ALTMODE)
+			{
+				auto* ps = &Game::g_entities[clientNum].client->ps;
+				auto numWeaps = Game::BG_GetNumWeapons();
+
+				for (auto i = 1u; i < numWeaps; i++)
+				{
+					if (!Game::BG_PlayerHasWeapon(ps, i))
+					{
+						continue;
+					}
+
+					auto* thisDef = Game::BG_GetWeaponCompleteDef(i);
+
+					if (!thisDef || thisDef->altWeaponIndex != iWeaponIndex)
+					{
+						continue;
+					}
+
+					g_botai[clientNum].lastAltWeapon = static_cast<uint16_t>(i);
+					break;
+				}
+			}
 		}
 	}
 
@@ -278,7 +407,7 @@ namespace Components
 
 			push [esp + 0x20 + 0x8]
 			push [esp + 0x20 + 0x8]
-			call Bots::G_SelectWeaponIndex
+			call G_SelectWeaponIndex
 			add esp, 0x8
 
 			popad
@@ -292,44 +421,86 @@ namespace Components
 		}
 	}
 
-	Bots::Bots()
+	int Bots::SV_GetClientPing_Hk(const int clientNum)
 	{
-		AssertOffset(Game::client_t, bIsTestClient, 0x41AF0);
-		AssertOffset(Game::client_t, ping, 0x212C8);
+		AssertIn(clientNum, Game::MAX_CLIENTS);
 
-		// Replace connect string
-		Utils::Hook::Set<const char*>(0x48ADA6, "connect bot%d \"\\cg_predictItems\\1\\cl_anonymous\\0\\color\\4\\head\\default\\model\\multi\\snaps\\20\\rate\\5000\\name\\%s\\protocol\\%d\\checksum\\%d\\statver\\%d %u\\qport\\%d\"");
-
-		// Intercept sprintf for the connect string
-		Utils::Hook(0x48ADAB, Bots::BuildConnectString, HOOK_CALL).install()->quick();
-
-		Utils::Hook(0x627021, Bots::SV_BotUserMove_Hk, HOOK_CALL).install()->quick();
-		Utils::Hook(0x627241, Bots::SV_BotUserMove_Hk, HOOK_CALL).install()->quick();
-
-		Utils::Hook(0x441B80, Bots::G_SelectWeaponIndex_Hk, HOOK_JUMP).install()->quick();
-
-		// Reset BotMovementInfo.active when client is dropped
-		Events::OnClientDisconnect([](const int clientNum)
+		if (Game::SV_IsTestClient(clientNum))
 		{
-			g_botai[clientNum].active = false;
-		});
-
-		// Zero the bot command array
-		for (std::size_t i = 0; i < std::extent_v<decltype(g_botai)>; ++i)
-		{
-			ZeroMemory(&g_botai[i], sizeof(BotMovementInfo));
-			g_botai[i].weapon = 1; // Prevent the bots from defaulting to the 'none' weapon
+			return -1;
 		}
 
-		Command::Add("spawnBot", [](Command::Params* params)
+		return Game::svs_clients[clientNum].ping;
+	}
+
+	bool Bots::IsFull()
+	{
+		auto i = 0;
+		while (i < *Game::svs_clientCount)
 		{
-			auto count = 1u;
+			if (Game::svs_clients[i].header.state == Game::CS_FREE)
+			{
+				// Free slot was found
+				break;
+			}
+
+			++i;
+		}
+
+		return i == *Game::svs_clientCount;
+	}
+
+	void Bots::SV_DirectConnect_Full_Check()
+	{
+		if (!sv_replaceBots->current.enabled || !IsFull())
+		{
+			return;
+		}
+
+		for (auto i = 0; i < (*Game::sv_maxclients)->current.integer; ++i)
+		{
+			auto* cl = &Game::svs_clients[i];
+			if (cl->bIsTestClient)
+			{
+				Game::SV_DropClient(cl, "EXE_DISCONNECTED", false);
+				cl->header.state = Game::CS_FREE;
+				return;
+			}
+		}
+	}
+
+	void Bots::CleanBotArray()
+	{
+		ZeroMemory(&g_botai, sizeof(g_botai));
+		for (std::size_t i = 0; i < std::extent_v<decltype(g_botai)>; ++i)
+		{
+			g_botai[i].weapon = 1; // Prevent the bots from defaulting to the 'none' weapon
+		}
+	}
+
+	void Bots::AddServerCommands()
+	{
+		Command::AddSV("spawnBot", [](const Command::Params* params)
+		{
+			if (!Dedicated::IsRunning())
+			{
+				Logger::Print("Server is not running.\n");
+				return;
+			}
+
+			if (IsFull())
+			{
+				Logger::Warning(Game::CON_CHANNEL_DONT_FILTER, "Server is full.\n");
+				return;
+			}
+
+			std::size_t count = 1;
 
 			if (params->size() > 1)
 			{
 				if (params->get(1) == "all"s)
 				{
-					count = *Game::svs_clientCount;
+					count = Game::MAX_CLIENTS;
 				}
 				else
 				{
@@ -339,38 +510,83 @@ namespace Components
 
 					if (input == end)
 					{
-						Logger::Warning(Game::CON_CHANNEL_DONT_FILTER, "{} is not a valid input\nUsage: {} optional <number of bots> or optional <\"all\">\n",
-							input, params->get(0));
+						Logger::Warning(Game::CON_CHANNEL_DONT_FILTER, "{} is not a valid input\nUsage: {} optional <number of bots> or optional <\"all\">\n", input, params->get(0));
 						return;
 					}
 				}
 			}
 
-			count = std::min(static_cast<unsigned int>(*Game::svs_clientCount), count);
+			count = std::clamp<std::size_t>(count, 1, Game::MAX_CLIENTS);
 
-			// Check if ingame and host
-			if (!Game::SV_Loaded())
+			Logger::Print("Spawning {} {}\n", count, (count == 1 ? "bot" : "bots"));
+
+			Spawn(count);
+		});
+	}
+
+	bool Bots::Player_UpdateActivate_stub(int)
+	{
+		return false;
+	}
+
+	Bots::Bots()
+	{
+		AssertOffset(Game::client_s, bIsTestClient, 0x41AF0);
+		AssertOffset(Game::client_s, ping, 0x212C8);
+		AssertOffset(Game::client_s, gentity, 0x212A0);
+
+		// Replace connect string
+		Utils::Hook::Set<const char*>(0x48ADA6, "connect bot%d \"\\cg_predictItems\\1\\cl_anonymous\\0\\color\\4\\head\\default\\model\\multi\\snaps\\20\\rate\\5000\\name\\%s\\clanAbbrev\\%s\\protocol\\%d\\checksum\\%d\\statver\\%d %u\\qport\\%d\"");
+
+		// Intercept sprintf for the connect string
+		Utils::Hook(0x48ADAB, BuildConnectString, HOOK_CALL).install()->quick();
+
+		Utils::Hook(0x627021, SV_BotUserMove_Hk, HOOK_CALL).install()->quick();
+		Utils::Hook(0x627241, SV_BotUserMove_Hk, HOOK_CALL).install()->quick();
+
+		Utils::Hook(0x441B80, G_SelectWeaponIndex_Hk, HOOK_JUMP).install()->quick();
+
+		// fix bots using objects (SV_IsClientBot)
+		Utils::Hook(0x4D79C5, Player_UpdateActivate_stub, HOOK_CALL).install()->quick();
+
+		Utils::Hook(0x459654, SV_GetClientPing_Hk, HOOK_CALL).install()->quick();
+
+		sv_randomBotNames = Game::Dvar_RegisterBool("sv_randomBotNames", false, Game::DVAR_NONE, "Randomize the bots' names");
+		sv_replaceBots = Game::Dvar_RegisterBool("sv_replaceBots", false, Game::DVAR_NONE, "Test clients will be replaced by connecting players when the server is full.");
+
+		Scheduler::OnGameInitialized(UpdateBotNames, Scheduler::Pipeline::MAIN);
+
+		Network::OnClientPacket("getbotsResponse", [](const Network::Address& address, const std::string& data)
+		{
+			const auto masterPort = (*Game::com_masterPort)->current.integer;
+			const auto* masterServerName = (*Game::com_masterServerName)->current.string;
+
+			Network::Address master(Utils::String::VA("%s:%u", masterServerName, masterPort));
+			if (master == address)
 			{
-				Toast::Show("cardicon_headshot", "^1Error", "You need to be host to spawn bots!", 3000);
-				Logger::Print("You need to be host to spawn bots!\n");
-				return;
+				auto botNames = Utils::String::Split(data, '\n');
+				Logger::Print("Got {} names from the master server\n", botNames.size());
+
+				for (const auto& entry : botNames)
+				{
+					RemoteBotNames.emplace_back(entry, "BOT");
+				}
 			}
-
-			Toast::Show("cardicon_headshot", "^2Success", Utils::String::VA("Spawning %d %s...", count, (count == 1 ? "bot" : "bots")), 3000);
-			Logger::Debug("Spawning {} {}", count, (count == 1 ? "bot" : "bots"));
-
-			Bots::Spawn(count);
 		});
 
-		Bots::AddMethods();
+		// Reset BotMovementInfo.active when client is dropped
+		Events::OnClientDisconnect([](const int clientNum) -> void
+		{
+			g_botai[clientNum].active = false;
+		});
+
+		Events::OnSVInit(AddServerCommands);
+
+		CleanBotArray();
+
+		AddScriptMethods();
 
 		// In case a loaded mod didn't call "BotStop" before the VM shutdown
-		Events::OnVMShutdown([]
-		{
-			for (std::size_t i = 0; i < std::extent_v<decltype(g_botai)>; ++i)
-			{
-				g_botai[i].active = false;
-			}
-		});
+		Events::OnVMShutdown(CleanBotArray);
 	}
 }

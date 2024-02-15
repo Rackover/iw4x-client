@@ -2,17 +2,17 @@
 
 namespace Utils
 {
-	std::string Entities::build()
+	std::string Entities::build() const
 	{
 		std::string entityString;
 
-		for (auto& entity : this->entities)
+		for (const auto& entity : this->entities)
 		{
 			entityString.append("{\n");
 
-			for (auto& property : entity)
+			for (const auto& property : entity)
 			{
-				entityString.push_back('"');
+				entityString.append("\"");
 				entityString.append(property.first);
 				entityString.append("\" \"");
 				entityString.append(property.second);
@@ -31,11 +31,13 @@ namespace Utils
 
 		for (auto& entity : this->entities)
 		{
-			if (entity.find("model") != entity.end())
+			if (const auto itr = entity.find("model"); itr != entity.end())
 			{
-				std::string model = entity["model"];
+				const auto& model = itr->second;
 
-				if (!model.empty() && model[0] != '*' && model[0] != '?') // Skip brushmodels
+				if (!model.empty() && model[0] != '*' && model[0] != '?' &&  // Skip brushmodels
+					model != "com_plasticcase_green_big_us_dirt"s // Team zones
+				)
 				{
 					if (std::find(models.begin(), models.end(), model) == models.end())
 					{
@@ -55,7 +57,7 @@ namespace Utils
 			if (i->find("classname") != i->end())
 			{
 				std::string classname = (*i)["classname"];
-				if (Utils::String::StartsWith(classname, "trigger_"))
+				if (String::StartsWith(classname, "trigger_"))
 				{
 					i = this->entities.erase(i);
 					continue;
@@ -105,9 +107,9 @@ namespace Utils
 		std::string value;
 		std::unordered_map<std::string, std::string> entity;
 
-		for (unsigned int i = 0; i < buffer.size(); ++i)
+		for (std::size_t i = 0; i < buffer.size(); ++i)
 		{
-			char character = buffer[i];
+			const auto character = buffer[i];
 			if (character == '{')
 			{
 				entity.clear();
@@ -146,7 +148,7 @@ namespace Utils
 				}
 				else if (parseState == PARSE_READ_VALUE)
 				{
-					entity[Utils::String::ToLower(key)] = value;
+					entity[String::ToLower(key)] = value;
 					parseState = PARSE_AWAIT_KEY;
 				}
 				else

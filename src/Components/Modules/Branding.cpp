@@ -1,4 +1,7 @@
 #include <STDInclude.hpp>
+#include "Branding.hpp"
+
+#include <version.hpp>
 
 namespace Components
 {
@@ -37,9 +40,9 @@ namespace Components
 	{
 		Utils::Hook::Call<void(int)>(0x4EFF80)(localClientNum);
 
-		if (Branding::CGDrawVersion.get<bool>())
+		if (CGDrawVersion.get<bool>())
 		{
-			Branding::CG_DrawVersion();
+			CG_DrawVersion();
 		}
 	}
 
@@ -51,22 +54,20 @@ namespace Components
 	const char* Branding::GetVersionString()
 	{
 		// IW4x is technically a beta
-		const auto* result = Utils::String::VA("%s %s build %s %s",
-			BUILD_TYPE, "(Beta)", Branding::GetBuildNumber(), reinterpret_cast<const char*>(0x7170A0));
-
-		return result;
+		return Utils::String::VA("%s %s build %s %s",
+			BUILD_TYPE, "(Beta)", GetBuildNumber(), reinterpret_cast<const char*>(0x7170A0));
 	}
 
 	void Branding::Dvar_SetVersionString(const Game::dvar_t* dvar, [[maybe_unused]] const char* value)
 	{
-		const auto* result = Branding::GetVersionString();
+		const auto* result = GetVersionString();
 		Utils::Hook::Call<void(const Game::dvar_t*, const char*)>(0x4A9580)(dvar, result);
 	}
 
 	// Branding this might be a good idea in case this LSP logging ever gets turned on for some reason
 	void Branding::MSG_WriteVersionStringHeader(Game::msg_t* msg, [[maybe_unused]] const char* string)
 	{
-		const auto* result = Branding::GetVersionString();
+		const auto* result = GetVersionString();
 		Utils::Hook::Call<void(Game::msg_t*, const char*)>(0x463820)(msg, result);
 	}
 

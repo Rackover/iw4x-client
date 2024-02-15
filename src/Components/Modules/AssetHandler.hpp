@@ -8,12 +8,12 @@ namespace Components
 		class IAsset
 		{
 		public:
-			virtual ~IAsset() {};
-			virtual Game::XAssetType getType() { return Game::XAssetType::ASSET_TYPE_INVALID; };
-			virtual void mark(Game::XAssetHeader /*header*/, ZoneBuilder::Zone* /*builder*/) { /*ErrorTypeNotSupported(this);*/ };
-			virtual void save(Game::XAssetHeader /*header*/, ZoneBuilder::Zone* /*builder*/) { /*ErrorTypeNotSupported(this);*/ };
-			virtual void dump(Game::XAssetHeader /*header*/) { /*ErrorTypeNotSupported(this);*/ };
-			virtual void load(Game::XAssetHeader* /*header*/, const std::string& /*name*/, ZoneBuilder::Zone* /*builder*/) { /*ErrorTypeNotSupported(this);*/ };
+			virtual ~IAsset() {}
+			virtual Game::XAssetType getType() { return Game::XAssetType::ASSET_TYPE_INVALID; }
+			virtual void mark(Game::XAssetHeader /*header*/, ZoneBuilder::Zone* /*builder*/) {}
+			virtual void save(Game::XAssetHeader /*header*/, ZoneBuilder::Zone* /*builder*/) {}
+			virtual void dump(Game::XAssetHeader /*header*/) {}
+			virtual void load(Game::XAssetHeader* /*header*/, const std::string& /*name*/, ZoneBuilder::Zone* /*builder*/) {}
 		};
 
 		typedef Game::XAssetHeader(Callback)(Game::XAssetType type, const std::string& name);
@@ -23,7 +23,7 @@ namespace Components
 		~AssetHandler();
 
 		static void OnFind(Game::XAssetType type, Utils::Slot<Callback> callback);
-		static void OnLoad(Utils::Slot<RestrictCallback> callback);
+		static std::function<void()> OnLoad(Utils::Slot<RestrictCallback> callback);
 
 		static void ClearRelocations();
 		static void Relocate(void* start, void* to, DWORD size = 4);

@@ -1,11 +1,22 @@
 #include <STDInclude.hpp>
 
+#include "Console.hpp"
+#include "Events.hpp"
+
 namespace Components
 {
+	using namespace Utils::String;
+
 	std::mutex Logger::MessageMutex;
 	std::vector<std::string> Logger::MessageQueue;
+
+	std::recursive_mutex Logger::LoggingMutex;
 	std::vector<Network::Address> Logger::LoggingAddresses[2];
-	void(*Logger::PipeCallback)(const std::string&) = nullptr;
+
+	Dvar::Var Logger::IW4x_one_log;
+	Dvar::Var Logger::IW4x_fail2ban_location;
+
+	void(*Logger::PipeCallback)(const std::string&) = nullptr;;
 
 	bool Logger::IsConsoleReady()
 	{
@@ -14,41 +25,40 @@ namespace Components
 
 	void Logger::Print_Stub(const int channel, const char* message, ...)
 	{
-		char buf[4096] = {0};
+		char buf[4096]{};
 
 		va_list va;
 		va_start(va, message);
-		_vsnprintf_s(buf, _TRUNCATE, message, va);
+		vsnprintf_s(buf, _TRUNCATE, message, va);
 		va_end(va);
 
-		Logger::MessagePrint(channel, {buf});
+		MessagePrint(channel, std::string{ buf });
 	}
 
 	void Logger::MessagePrint(const int channel, const std::string& msg)
 	{
-		std::string out = msg;
-
-		// Filter out coloured strings for stdout
-		if (out[0] == '^' && out[1] != '\0')
+		static const auto shouldPrint = []() -> bool
 		{
-			out = out.substr(2);
-		}
+			return Flags::HasFlag("stdout") || Loader::IsPerformingUnitTests();
+		}();
 
-		if (Flags::HasFlag("stdout") || Loader::IsPerformingUnitTests())
+		if (shouldPrint)
 		{
-			printf("%s", out.data());
-			fflush(stdout);
+			(void)std::fputs(msg.data(), stdout);
+			(void)std::fflush(stdout);
 			return;
 		}
 
-		if (!Logger::IsConsoleReady())
+#ifdef _DEBUG
+		if (!IsConsoleReady())
 		{
-			OutputDebugStringA(out.data());
+			OutputDebugStringA(msg.data());
 		}
+#endif
 
 		if (!Game::Sys_IsMainThread())
 		{
-			Logger::EnqueueMessage(msg);
+			EnqueueMessage(msg);
 		}
 		else
 		{
@@ -56,7 +66,7 @@ namespace Components
 		}
 	}
 
-	void Logger::DebugInternal(std::string_view fmt, std::format_args&& args, [[maybe_unused]] const std::source_location& loc)
+	void Logger::DebugInternal(const std::string_view& fmt, std::format_args&& args, [[maybe_unused]] const std::source_location& loc)
 	{
 #ifdef LOGGER_TRACE
 		const auto msg = std::vformat(fmt, args);
@@ -66,99 +76,120 @@ namespace Components
 		const auto out = std::format("^2{}\n", msg);
 #endif
 
-		Logger::MessagePrint(Game::CON_CHANNEL_DONT_FILTER, out);
+		MessagePrint(Game::CON_CHANNEL_DONT_FILTER, out);
 	}
 
-	void Logger::PrintInternal(int channel, std::string_view fmt, std::format_args&& args)
+	void Logger::PrintInternal(Game::conChannel_t channel, const std::string_view& fmt, std::format_args&& args)
 	{
 		const auto msg = std::vformat(fmt, args);
 
-		Logger::MessagePrint(channel, msg);
+		MessagePrint(channel, msg);
 	}
 
-	void Logger::ErrorInternal(const Game::errorParm_t error, const std::string_view fmt, std::format_args&& args)
+	void Logger::ErrorInternal(const Game::errorParm_t error, const std::string_view& fmt, std::format_args&& args)
 	{
+		const auto msg = std::vformat(fmt, args);
+
 #ifdef _DEBUG
 		if (IsDebuggerPresent()) __debugbreak();
 #endif
 
-		const auto msg = std::vformat(fmt, args);
 		Game::Com_Error(error, "%s", msg.data());
 	}
 
-	void Logger::PrintErrorInternal(int channel, std::string_view fmt, std::format_args&& args)
+	void Logger::PrintErrorInternal(Game::conChannel_t channel, const std::string_view& fmt, std::format_args&& args)
 	{
 		const auto msg = "^1Error: " + std::vformat(fmt, args);
 
 		++(*Game::com_errorPrintsCount);
-		Logger::MessagePrint(channel, msg);
+		MessagePrint(channel, msg);
 
-		if (*Game::cls_uiStarted != 0 && (*Game::com_fixedConsolePosition == 0))
+		if (Game::cls->uiStarted && (*Game::com_fixedConsolePosition == 0))
 		{
 			Game::CL_ConsoleFixPosition();
 		}
 	}
 
-	void Logger::WarningInternal(int channel, std::string_view fmt, std::format_args&& args)
+	void Logger::WarningInternal(Game::conChannel_t channel, const std::string_view& fmt, std::format_args&& args)
 	{
 		const auto msg = "^3" + std::vformat(fmt, args);
 
-		Logger::MessagePrint(channel, msg);
+		MessagePrint(channel, msg);
 	}
 
-	void Logger::Flush()
+	void Logger::PrintFail2BanInternal(const std::string_view& fmt, std::format_args&& args)
 	{
-// 		if (!Game::Sys_IsMainThread())
-// 		{
-// 			while (!Logger::MessageQueue.empty())
-// 			{
-// 				std::this_thread::sleep_for(10ms);
-// 			}
-// 		}
-// 		else
+		static const auto shouldPrint = []() -> bool
 		{
-			Logger::Frame();
+			return Flags::HasFlag("fail2ban");
+		}();
+
+		if (!shouldPrint)
+		{
+			return;
 		}
+
+		auto msg = std::vformat(fmt, args);
+
+		static auto log_next_time_stamp = true;
+		if (log_next_time_stamp)
+		{
+			auto now = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+			// Convert to local time
+			std::tm timeInfo = *std::localtime(&now);
+
+			std::ostringstream ss;
+			ss << std::put_time(&timeInfo, "%Y-%m-%d %H:%M:%S ");
+
+			msg.insert(0, ss.str());
+		}
+
+		log_next_time_stamp = (msg.find('\n') != std::string::npos);
+
+		Utils::IO::WriteFile(IW4x_fail2ban_location.get<std::string>(), msg, true);
 	}
 
 	void Logger::Frame()
 	{
-		std::unique_lock _(Logger::MessageMutex);
+		std::unique_lock _(MessageMutex);
 
-		for (auto i = Logger::MessageQueue.begin(); i != Logger::MessageQueue.end();)
+		for (auto i = MessageQueue.begin(); i != MessageQueue.end();)
 		{
 			Game::Com_PrintMessage(Game::CON_CHANNEL_DONT_FILTER, i->data(), 0);
 
-			if (!Logger::IsConsoleReady())
+#ifdef _DEBUG
+			if (!IsConsoleReady())
 			{
 				OutputDebugStringA(i->data());
 			}
+#endif
 
-			i = Logger::MessageQueue.erase(i);
+			i = MessageQueue.erase(i);
 		}
 	}
 
 	void Logger::PipeOutput(void(*callback)(const std::string&))
 	{
-		Logger::PipeCallback = callback;
+		PipeCallback = callback;
 	}
 
 	void Logger::PrintMessagePipe(const char* data)
 	{
-		if (Logger::PipeCallback)
+		if (PipeCallback)
 		{
-			Logger::PipeCallback(data);
+			PipeCallback(data);
 		}
 	}
 
 	void Logger::NetworkLog(const char* data, bool gLog)
 	{
-		if (data == nullptr)
+		if (!data)
 		{
 			return;
 		}
 
-		for (const auto& addr : Logger::LoggingAddresses[gLog & 1])
+		std::unique_lock lock(LoggingMutex);
+		for (const auto& addr : LoggingAddresses[gLog & 1])
 		{
 			Network::SendCommand(addr, "print", data);
 		}
@@ -175,63 +206,69 @@ namespace Components
 		va_end(ap);
 
 		const auto time = Game::level->time / 1000;
-		const auto len = _snprintf_s(string, _TRUNCATE, "%3i:%i%i %s", time / 60, time % 60 / 10, time % 60 % 10, string2);
+		const auto len = sprintf_s(string, "%3i:%i%i %s", time / 60, time % 60 / 10, time % 60 % 10, string2);
 
-		if (Game::level->logFile != nullptr)
+		if (Game::level->logFile)
 		{
-			Game::FS_Write(string, len, reinterpret_cast<int>(Game::level->logFile));
+			Game::FS_Write(string, len, Game::level->logFile);
 		}
 
 		// Allow the network log to run even if logFile was not opened
-		Logger::NetworkLog(string, true);
+		NetworkLog(string, true);
 	}
 
 	__declspec(naked) void Logger::PrintMessage_Stub()
 	{
 		__asm
 		{
-			mov eax, Logger::PipeCallback
+			mov eax, PipeCallback
 			test eax, eax
 			jz returnPrint
 
 			pushad
+
 			push [esp + 28h]
-			call Logger::PrintMessagePipe
+			call PrintMessagePipe
 			add esp, 4h
+
 			popad
-			retn
+			ret
 
 		returnPrint:
 			pushad
-			push 0
-			push [esp + 2Ch]
-			call Logger::NetworkLog
+
+			push 0 // gLog
+			push [esp + 2Ch] // data
+			call NetworkLog
 			add esp, 8h
+
 			popad
 
 			push esi
 			mov esi, [esp + 0Ch]
 
 			push 4AA835h
-			retn
+			ret
 		}
 	}
 
 	void Logger::EnqueueMessage(const std::string& message)
 	{
-		std::unique_lock _(Logger::MessageMutex);
-		Logger::MessageQueue.push_back(message);
+		std::unique_lock _(MessageMutex);
+		MessageQueue.push_back(message);
 	}
 
 	void Logger::RedirectOSPath(const char* file, char* folder)
 	{
-		if (Dvar::Var("g_log").get<std::string>() == file)
+		const auto* g_log = (*Game::g_log) ? (*Game::g_log)->current.string : "";
+
+		if (std::strcmp(g_log, file) == 0)
 		{
-			if (folder != "userraw"s)
+			if (std::strcmp(folder, "userraw") != 0)
 			{
-				if (Dvar::Var("iw4x_onelog").get<bool>())
+				if (IW4x_one_log.get<bool>())
 				{
-					strcpy_s(folder, 256, "userraw");
+					strncpy_s(folder, 256, "userraw", _TRUNCATE);
 				}
 			}
 		}
@@ -243,11 +280,9 @@ namespace Components
 		{
 			pushad
 
-			push [esp + 28h]
-			push [esp + 30h]
-
-			call Logger::RedirectOSPath
-
+			push [esp + 20h + 8h]
+			push [esp + 20h + 10h]
+			call RedirectOSPath
 			add esp, 8h
 
 			popad
@@ -262,139 +297,161 @@ namespace Components
 		}
 	}
 
+	void Logger::LSP_LogString_Stub([[maybe_unused]] int localControllerIndex, const char* string)
+	{
+		NetworkLog(string, false);
+	}
+
+	void Logger::LSP_LogStringAboutUser_Stub([[maybe_unused]] int localControllerIndex, std::uint64_t xuid, const char* string)
+	{
+		NetworkLog(VA("%" PRIx64 ";%s", xuid, string), false);
+	}
+
 	void Logger::AddServerCommands()
 	{
-		Command::AddSV("log_add", [](Command::Params* params)
+		Command::AddSV("log_add", [](const Command::Params* params)
 		{
 			if (params->size() < 2) return;
 
-			Network::Address addr(params->get(1));
+			std::unique_lock lock(LoggingMutex);
 
-			if (std::find(Logger::LoggingAddresses[0].begin(), Logger::LoggingAddresses[0].end(), addr) == Logger::LoggingAddresses[0].end())
+			Network::Address addr(params->get(1));
+			if (std::ranges::find(LoggingAddresses[0], addr) == LoggingAddresses[0].end())
 			{
-				Logger::LoggingAddresses[0].push_back(addr);
+				LoggingAddresses[0].push_back(addr);
 			}
 		});
 
-		Command::AddSV("log_del", [](Command::Params* params)
+		Command::AddSV("log_del", [](const Command::Params* params)
 		{
 			if (params->size() < 2) return;
 
-			const auto num = atoi(params->get(1));
-			if (Utils::String::VA("%i", num) == std::string(params->get(1)) && static_cast<unsigned int>(num) < Logger::LoggingAddresses[0].size())
+			std::unique_lock lock(LoggingMutex);
+
+			const auto num = std::atoi(params->get(1));
+			if (!std::strcmp(VA("%i", num), params->get(1)) && static_cast<unsigned int>(num) < LoggingAddresses[0].size())
 			{
 				auto addr = Logger::LoggingAddresses[0].begin() + num;
-				Logger::Print("Address {} removed\n", addr->getString());
-				Logger::LoggingAddresses[0].erase(addr);
+				Print("Address {} removed\n", addr->getString());
+				LoggingAddresses[0].erase(addr);
 			}
 			else
 			{
 				Network::Address addr(params->get(1));
 
-				const auto i = std::find(Logger::LoggingAddresses[0].begin(), Logger::LoggingAddresses[0].end(), addr);
-				if (i != Logger::LoggingAddresses[0].end())
+				if (const auto i = std::ranges::find(LoggingAddresses[0], addr); i != LoggingAddresses[0].end())
 				{
-					Logger::LoggingAddresses[0].erase(i);
-					Logger::Print("Address {} removed\n", addr.getString());
+					LoggingAddresses[0].erase(i);
+					Print("Address {} removed\n", addr.getString());
 				}
 				else
 				{
-					Logger::Print("Address {} not found!\n", addr.getString());
+					Print("Address {} not found!\n", addr.getString());
 				}
 			}
 		});
 
-		Command::AddSV("log_list", [](Command::Params*)
+		Command::AddSV("log_list", []([[maybe_unused]] const Command::Params* params)
 		{
-			Logger::Print("# ID: Address\n");
-			Logger::Print("-------------\n");
+			Print("# ID: Address\n");
+			Print("-------------\n");
 
-			for (unsigned int i = 0; i < Logger::LoggingAddresses[0].size(); ++i)
+			std::unique_lock lock(LoggingMutex);
+
+			for (unsigned int i = 0; i < LoggingAddresses[0].size(); ++i)
 			{
-				Logger::Print("#{:03d}: {}\n", i, Logger::LoggingAddresses[0][i].getString());
+				Print("#{:03d}: {}\n", i, LoggingAddresses[0][i].getString());
 			}
 		});
 
-		Command::AddSV("g_log_add", [](Command::Params* params)
+		Command::AddSV("g_log_add", [](const Command::Params* params)
 		{
 			if (params->size() < 2) return;
+
+			std::unique_lock lock(LoggingMutex);
 
 			const Network::Address addr(params->get(1));
-
-			if (std::find(Logger::LoggingAddresses[1].begin(), Logger::LoggingAddresses[1].end(), addr) == Logger::LoggingAddresses[1].end())
+			if (std::ranges::find(LoggingAddresses[1], addr) == LoggingAddresses[1].end())
 			{
-				Logger::LoggingAddresses[1].push_back(addr);
+				LoggingAddresses[1].push_back(addr);
 			}
 		});
 
-		Command::AddSV("g_log_del", [](Command::Params* params)
+		Command::AddSV("g_log_del", [](const Command::Params* params)
 		{
 			if (params->size() < 2) return;
 
+			std::unique_lock lock(LoggingMutex);
+
 			const auto num = std::atoi(params->get(1));
-			if (Utils::String::VA("%i", num) == std::string(params->get(1)) && static_cast<unsigned int>(num) < Logger::LoggingAddresses[1].size())
+			if (!std::strcmp(VA("%i", num), params->get(1)) && static_cast<unsigned int>(num) < LoggingAddresses[1].size())
 			{
-				const auto addr = Logger::LoggingAddresses[1].begin() + num;
-				Logger::Print("Address {} removed\n", addr->getString());
-				Logger::LoggingAddresses[1].erase(addr);
+				const auto addr = LoggingAddresses[1].begin() + num;
+				Print("Address {} removed\n", addr->getString());
+				LoggingAddresses[1].erase(addr);
 			}
 			else
 			{
 				const Network::Address addr(params->get(1));
-
-				const auto i = std::find(Logger::LoggingAddresses[1].begin(), Logger::LoggingAddresses[1].end(), addr);
-				if (i != Logger::LoggingAddresses[1].end())
+				const auto i = std::ranges::find(LoggingAddresses[1].begin(), LoggingAddresses[1].end(), addr);
+				if (i != LoggingAddresses[1].end())
 				{
-					Logger::LoggingAddresses[1].erase(i);
-					Logger::Print("Address {} removed\n", addr.getString());
+					LoggingAddresses[1].erase(i);
+					Print("Address {} removed\n", addr.getString());
 				}
 				else
 				{
-					Logger::Print("Address {} not found!\n", addr.getString());
+					Print("Address {} not found!\n", addr.getString());
 				}
 			}
 		});
 
-		Command::AddSV("g_log_list", [](Command::Params*)
+		Command::AddSV("g_log_list", []([[maybe_unused]] const Command::Params* params)
 		{
-			Logger::Print("# ID: Address\n");
-			Logger::Print("-------------\n");
+			Print("# ID: Address\n");
+			Print("-------------\n");
 
-			for (std::size_t i = 0; i < Logger::LoggingAddresses[1].size(); ++i)
+			std::unique_lock lock(LoggingMutex);
+			for (std::size_t i = 0; i < LoggingAddresses[1].size(); ++i)
 			{
-				Logger::Print("#{:03d}: {}\n", i, Logger::LoggingAddresses[1][i].getString());
+				Print("#{:03d}: {}\n", i, LoggingAddresses[1][i].getString());
 			}
 		});
 	}
 
 	Logger::Logger()
 	{
-		Dvar::Register<bool>("iw4x_onelog", false, Game::DVAR_LATCH | Game::DVAR_ARCHIVE, "Only write the game log to the 'userraw' OS folder");
-		Utils::Hook(0x642139, Logger::BuildOSPath_Stub, HOOK_JUMP).install()->quick();
+		Utils::Hook(0x642139, BuildOSPath_Stub, HOOK_JUMP).install()->quick();
 
-		Logger::PipeOutput(nullptr);
+		Scheduler::Loop(Frame, Scheduler::Pipeline::SERVER);
 
-		Scheduler::Loop(Logger::Frame, Scheduler::Pipeline::SERVER);
+		Utils::Hook(Game::G_LogPrintf, G_LogPrintf_Hk, HOOK_JUMP).install()->quick();
+		Utils::Hook(Game::Com_PrintMessage, PrintMessage_Stub, HOOK_JUMP).install()->quick();
 
-		Utils::Hook(Game::G_LogPrintf, Logger::G_LogPrintf_Hk, HOOK_JUMP).install()->quick();
-		Utils::Hook(Game::Com_PrintMessage, Logger::PrintMessage_Stub, HOOK_JUMP).install()->quick();
+		Utils::Hook(0x5F67AE, LSP_LogString_Stub, HOOK_CALL).install()->quick(); // Scr_LogString
+		Utils::Hook(0x5F67EE, LSP_LogStringAboutUser_Stub, HOOK_CALL).install()->quick(); // ScrCmd_LogString_Stub
 
 		if (Loader::IsPerformingUnitTests())
 		{
-			Utils::Hook(Game::Com_Printf, Logger::Print_Stub, HOOK_JUMP).install()->quick();
+			Utils::Hook(Game::Com_Printf, Print_Stub, HOOK_JUMP).install()->quick();
 		}
 
-		Events::OnSVInit(Logger::AddServerCommands);
+		Events::OnSVInit(AddServerCommands);
+		Events::OnDvarInit([]
+		{
+			IW4x_one_log = Dvar::Register<bool>("iw4x_onelog", false, Game::DVAR_LATCH, "Only write the game log to the 'userraw' OS folder");
+			IW4x_fail2ban_location = Dvar::Register<const char*>("iw4x_fail2ban_location", "/var/log/iw4x.log", Game::DVAR_NONE, "Fail2Ban logfile location");
+		});
 	}
 
 	Logger::~Logger()
 	{
-		Logger::LoggingAddresses[0].clear();
-		Logger::LoggingAddresses[1].clear();
+		std::unique_lock lock_logging(LoggingMutex);
+		LoggingAddresses[0].clear();
+		LoggingAddresses[1].clear();
 
-		std::unique_lock lock(Logger::MessageMutex);
-		Logger::MessageQueue.clear();
-		lock.unlock();
+		std::unique_lock lock_message(MessageMutex);
+		MessageQueue.clear();
 
 		// Flush the console log
 		if (*Game::logfile)

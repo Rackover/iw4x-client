@@ -1,4 +1,5 @@
 #include <STDInclude.hpp>
+#include "Components/Modules/StartupMessages.hpp"
 
 namespace Steam
 {
@@ -108,7 +109,14 @@ namespace Steam
 		return false;
 #endif
 
-		return !Components::Flags::HasFlag("nosteam");
+		static std::optional<bool> flag;
+
+		if (!flag.has_value())
+		{
+			flag = Components::Flags::HasFlag("nosteam");
+		}
+
+		return !flag.value();
 	}
 
 	extern "C"
@@ -120,7 +128,9 @@ namespace Steam
 
 			if (!Proxy::Inititalize())
 			{
+#ifdef _DEBUG
 				OutputDebugStringA("Steam proxy not initialized properly");
+#endif
 				Components::StartupMessages::AddMessage("Warning:\nUnable to connect to Steam. Steam features will be unavailable");
 			}
 			else

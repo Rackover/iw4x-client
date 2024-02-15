@@ -1,4 +1,5 @@
 #include <STDInclude.hpp>
+#include "RawFiles.hpp"
 
 namespace Components
 {
@@ -7,12 +8,12 @@ namespace Components
 		auto fileHandle = 0;
 		auto fileSize = Game::FS_FOpenFileRead(filename, &fileHandle);
 
-		if (fileHandle != 0)
+		if (fileHandle)
 		{
 			if ((fileSize + 1) <= size)
 			{
 				Game::FS_Read(buf, fileSize, fileHandle);
-				buf[fileSize] = 0;
+				buf[fileSize] = '\0';
 				Game::FS_FCloseFile(fileHandle);
 				return buf;
 			}
@@ -36,7 +37,7 @@ namespace Components
 		auto fileHandle = 0;
 		auto fileSize = Game::FS_FOpenFileRead(filename, &fileHandle);
 
-		if (fileHandle != 0)
+		if (fileHandle)
 		{
 			if (fileSize < 0x8000)
 			{
@@ -62,6 +63,58 @@ namespace Components
 		return buffer;
 	}
 
+	char* RawFiles::Com_LoadInfoString_LoadObj(const char* fileName, const char* fileDesc, const char* ident, char* loadBuffer)
+	{
+		auto fileHandle = 0;
+
+		const auto fileLen = Game::FS_FOpenFileByMode(fileName, &fileHandle, Game::FS_READ);
+		if (fileLen < 0)
+		{
+			Logger::Debug("Could not load {} [{}] as rawfile", fileDesc, fileName);
+			return nullptr;
+		}
+
+		const auto identLen = static_cast<int>(std::strlen(ident));
+		Game::FS_Read(loadBuffer, identLen, fileHandle);
+		loadBuffer[identLen] = '\0';
+
+		if (std::strncmp(loadBuffer, ident, identLen) != 0)
+		{
+			Game::Com_Error(Game::ERR_DROP, "\x15" "File [%s] is not a %s\n", fileName, fileDesc);
+			return nullptr;
+		}
+
+		if ((fileLen - identLen) >= 0x4000)
+		{
+			Game::Com_Error(Game::ERR_DROP, "\x15" "File [%s] is too long of a %s to parse\n", fileName, fileDesc);
+			return nullptr;
+		}
+
+		Game::FS_Read(loadBuffer, fileLen - identLen, fileHandle);
+		loadBuffer[fileLen - identLen] = '\0';
+		Game::FS_FCloseFile(fileHandle);
+
+		return loadBuffer;
+	}
+
+	const char* RawFiles::Com_LoadInfoString_Hk(const char* fileName, const char* fileDesc, const char* ident, char* loadBuffer)
+	{
+
+		const auto* buffer = Com_LoadInfoString_LoadObj(fileName, fileDesc, ident, loadBuffer);
+		if (!buffer)
+		{
+			buffer = Game::Com_LoadInfoString_FastFile(fileName, fileDesc, ident, loadBuffer);
+		}
+
+		if (!Game::Info_Validate(buffer))
+		{
+			Game::Com_Error(Game::ERR_DROP, "\x15" "File [%s] is not a valid %s\n", fileName, fileDesc);
+			return nullptr;
+		}
+
+		return buffer;
+	}
+
 	RawFiles::RawFiles()
 	{
 		// remove fs_game check for moddable rawfiles - allows non-fs_game to modify rawfiles
@@ -69,8 +122,9 @@ namespace Components
 
 		Utils::Hook(0x4DA0D0, ReadRawFile, HOOK_JUMP).install()->quick();
 		Utils::Hook(0x631640, GetMenuBuffer, HOOK_JUMP).install()->quick();
+		Utils::Hook(0x463500, Com_LoadInfoString_Hk, HOOK_JUMP).install()->quick();
 
-		Command::Add("dumpraw", [](Command::Params* params)
+		Command::Add("dumpraw", [](const Command::Params* params)
 		{
 			if (params->size() < 2)
 			{
@@ -86,9 +140,9 @@ namespace Components
 				return;
 			}
 
-			const char* data = Game::Scr_AddSourceBuffer(nullptr, file.getName().data(), nullptr, false);
+			const auto* data = Game::Scr_AddSourceBuffer(nullptr, file.getName().data(), nullptr, false);
 
-			if (data != nullptr)
+			if (data)
 			{
 				Utils::IO::WriteFile("raw/" + file.getName(), data);
 				Logger::Print("File '{}' written to raw!\n", file.getName());

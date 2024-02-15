@@ -1,5 +1,8 @@
 #pragma once
-#include <mongoose.h>
+
+
+struct mg_connection;
+struct mg_http_message;
 
 namespace Components
 {
@@ -14,59 +17,67 @@ namespace Components
 		static void InitiateClientDownload(const std::string& mod, bool needPassword, bool map = false);
 		static void InitiateMapDownload(const std::string& map, bool needPassword);
 
+		static void ReplyError(mg_connection* connection, int code, std::string messageOverride = {});
+
+		static Dvar::Var SV_wwwDownload;
+		static Dvar::Var SV_wwwBaseUrl;
+
+		static Dvar::Var UIDlTimeLeft;
+		static Dvar::Var UIDlProgress;
+		static Dvar::Var UIDlTransRate;
+
 	private:
 		class ClientDownload
 		{
 		public:
-			ClientDownload(bool _isMap = false) : running(false), valid(false), terminateThread(false), isMap(_isMap), totalBytes(0), downBytes(0), lastTimeStamp(0), timeStampBytes(0) {}
+			ClientDownload(bool isMap = false) : running_(false), valid_(false), terminateThread_(false), isMap_(isMap), totalBytes_(0), downBytes_(0), lastTimeStamp_(0), timeStampBytes_(0) {}
 			~ClientDownload() { this->clear(); }
 
-			bool running;
-			bool valid;
-			bool terminateThread;
-			bool isMap;
-			bool isPrivate;
-			//mg_mgr mgr;
-			Network::Address target;
-			std::string hashedPassword;
-			std::string mod;
-			std::thread thread;
+			bool running_;
+			bool valid_;
+			bool terminateThread_;
+			bool isMap_;
+			bool isPrivate_;
+			Network::Address target_;
+			std::string hashedPassword_;
+			std::string mod_;
+			std::thread thread_;
 
-			size_t totalBytes;
-			size_t downBytes;
+			std::size_t totalBytes_;
+			std::size_t downBytes_;
 
-			int lastTimeStamp;
-			size_t timeStampBytes;
+			int lastTimeStamp_;
+			std::size_t timeStampBytes_;
 
 			class File
 			{
 			public:
 				std::string name;
 				std::string hash;
-				size_t size;
+				std::size_t size;
 			};
 
-			std::vector<File> files;
+			std::vector<File> files_;
 
 			void clear()
 			{
-				this->terminateThread = true;
+				this->terminateThread_ = true;
 
-				if (this->thread.joinable())
+				if (this->thread_.joinable())
 				{
-					this->thread.join();
+					this->thread_.join();
 				}
 
-				this->running = false;
-				this->mod.clear();
-				this->files.clear();
+				this->running_ = false;
+				this->mod_.clear();
+				this->files_.clear();
 
-				if (this->valid)
+				if (this->valid_)
 				{
-					this->valid = false;
-					//mg_mgr_free(&(this->mgr));
+					this->valid_ = false;
 				}
 			}
+
 		};
 
 		class FileDownload
@@ -79,33 +90,30 @@ namespace Components
 			bool downloading;
 			unsigned int index;
 			std::string buffer;
-			size_t receivedBytes;
+			std::size_t receivedBytes;
 		};
 
-		static mg_mgr Mgr;
 		static ClientDownload CLDownload;
 		static std::thread ServerThread;
-		static bool Terminate;
+		static volatile bool Terminate;
 		static bool ServerRunning;
 
-		static void DownloadProgress(FileDownload* fDownload, size_t bytes);
+		static std::string MongooseLogBuffer;
 
-		static bool VerifyPassword(mg_connection *nc, http_message* message);
-
-		static void EventHandler(mg_connection *nc, int ev, void *ev_data);
-		static void ListHandler(mg_connection *nc, int ev, void *ev_data);
-		static void MapHandler(mg_connection *nc, int ev, void *ev_data);
-		static void ServerlistHandler(mg_connection *nc, int ev, void *ev_data);
-		static void FileHandler(mg_connection *nc, int ev, void *ev_data);
-		static void InfoHandler(mg_connection *nc, int ev, void *ev_data);
-		static void DownloadHandler(mg_connection *nc, int ev, void *ev_data);
-
-		static bool IsClient(mg_connection *nc);
-		static Game::client_t* GetClient(mg_connection *nc);
-		static void Forbid(mg_connection *nc);
+		static void DownloadProgress(FileDownload* fDownload, std::size_t bytes);
 
 		static void ModDownloader(ClientDownload* download);
 		static bool ParseModList(ClientDownload* download, const std::string& list);
 		static bool DownloadFile(ClientDownload* download, unsigned int index);
+
+		static void LogFn(char c, void* param);
+		static void Reply(mg_connection* connection, const std::string& contentType, const std::string& data);
+
+		static std::optional<std::string> FileHandler(mg_connection* c, const mg_http_message* hm);
+		static void EventHandler(mg_connection* c, const int ev, void* ev_data, void* fn_data);
+		static std::optional<std::string> ListHandler(mg_connection* c, const mg_http_message* hm);
+		static std::optional<std::string> InfoHandler(mg_connection* c, const mg_http_message* hm);
+		static std::optional<std::string> ServerListHandler(mg_connection* c, const mg_http_message* hm);
+		static std::optional<std::string> MapHandler(mg_connection* c, const mg_http_message* hm);
 	};
 }

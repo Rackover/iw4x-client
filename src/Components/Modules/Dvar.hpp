@@ -5,15 +5,6 @@ namespace Components
 	class Dvar : public Component
 	{
 	public:
-		class Flag
-		{
-		public:
-			Flag(Game::DvarFlags flag) : val(flag) {}
-			Flag(unsigned __int16 flag) : Flag(static_cast<Game::DvarFlags>(flag)) {}
-
-			Game::DvarFlags val;
-		};
-
 		class Var
 		{
 		public:
@@ -41,27 +32,29 @@ namespace Components
 		};
 
 		Dvar();
-		~Dvar();
 
 		// Only strings and bools use this type of declaration
-		template<typename T> static Var Register(const char* dvarName, T value, Flag flag, const char* description);
-		template<typename T> static Var Register(const char* dvarName, T value, T min, T max, Flag flag, const char* description);
+		template<typename T> static Var Register(const char* dvarName, T value, std::uint16_t flag, const char* description);
+		template<typename T> static Var Register(const char* dvarName, T value, T min, T max, std::uint16_t flag, const char* description);
 
-		static void ResetDvarsValue();
+		static Var Name;
 
 	private:
-		static const char* ArchiveDvarPath;
 
-		static Game::dvar_t* Dvar_RegisterName(const char* name, const char* defaultVal, unsigned __int16 flags, const char* description);
+		static const Game::dvar_t* Dvar_RegisterName(const char* dvarName, const char* value, std::uint16_t flags, const char* description);
+		static const Game::dvar_t* Dvar_RegisterSVNetworkFps(const char* dvarName, int value, int min, int max, std::uint16_t flags, const char* description);
+		static const Game::dvar_t* Dvar_RegisterPerkExtendedMeleeRange(const char* dvarName, float value, float min, float max, std::uint16_t flags, const char* description);
 
-		static void SetFromStringByNameExternal(const char* dvar, const char* value);
-		static void SetFromStringByNameSafeExternal(const char* dvar, const char* value);
+		static void SetFromStringByNameExternal(const char* dvarName, const char* string);
+		static void SetFromStringByNameSafeExternal(const char* dvarName, const char* string);
 
-		static bool AreArchiveDvarsProtected();
-		static void SaveArchiveDvar(const Game::dvar_t* var);
-		static void DvarSetFromStringByNameStub(const char* dvarName, const char* value);
+		static bool AreArchiveDvarsUnprotected();
+		static bool IsSettingDvarsDisabled();
+		static void DvarSetFromStringByName_Stub(const char* dvarName, const char* value);
 
 		static void OnRegisterVariant(Game::dvar_t* dvar);
 		static void Dvar_RegisterVariant_Stub();
+
+		static const char* Dvar_EnumToString_Stub(const Game::dvar_t* dvar);
 	};
 }

@@ -1,9 +1,42 @@
 #include <STDInclude.hpp>
+#include <Utils/InfoString.hpp>
+
+#include "Auth.hpp"
+#include "Download.hpp"
+#include "Friends.hpp"
+#include "Gamepad.hpp"
+#include "Node.hpp"
+#include "Party.hpp"
+#include "ServerList.hpp"
+#include "Stats.hpp"
+#include "TextRenderer.hpp"
+#include "Voice.hpp"
+
+#include <version.hpp>
+
+#define CL_MOD_LOADING
 
 namespace Components
 {
-	Party::JoinContainer Party::Container;
-	std::map<uint64_t, Network::Address> Party::LobbyMap;
+	class JoinContainer
+	{
+	public:
+		Network::Address target;
+		std::string challenge;
+		std::string motd;
+		DWORD joinTime;
+		bool valid;
+		int matchType;
+
+		Utils::InfoString info;
+
+		// Party-specific stuff
+		DWORD requestTime;
+		bool awaitingPlaylist;
+	};
+
+	static JoinContainer Container;
+	std::map<std::uint64_t, Network::Address> Party::LobbyMap;
 
 	Dvar::Var Party::PartyEnable;
 
@@ -21,18 +54,18 @@ namespace Components
 
 	Network::Address Party::Target()
 	{
-		return Party::Container.target;
+		return Container.target;
 	}
 
 	void Party::Connect(Network::Address target)
 	{
 		Node::Add(target);
 
-		Party::Container.valid = true;
-		Party::Container.awaitingPlaylist = false;
-		Party::Container.joinTime = Game::Sys_Milliseconds();
-		Party::Container.target = target;
-		Party::Container.challenge = Utils::Cryptography::Rand::GenerateChallenge();
+		Container.valid = true;
+		Container.awaitingPlaylist = false;
+		Container.joinTime = Game::Sys_Milliseconds();
+		Container.target = target;
+		Container.challenge = Utils::Cryptography::Rand::GenerateChallenge();
 
 		if (IsUsingIw4xProtocol()) {
 			Network::SendCommand(Party::Container.target, "getinfo", Party::Container.challenge);
@@ -47,15 +80,16 @@ namespace Components
 
 	const char* Party::GetLobbyInfo(SteamID lobby, const std::string& key)
 	{
-		if (Party::LobbyMap.contains(lobby.bits))
+		if (LobbyMap.contains(lobby.bits))
 		{
-			Network::Address address = Party::LobbyMap[lobby.bits];
+			Network::Address address = LobbyMap[lobby.bits];
 
-			if (key == "addr")
+			if (key == "addr"s)
 			{
 				return Utils::String::VA("%d", address.getIP().full);
 			}
-			else if (key == "port")
+
+			if (key == "port"s)
 			{
 				return Utils::String::VA("%d", address.getPort());
 			}
@@ -66,7 +100,7 @@ namespace Components
 
 	void Party::RemoveLobby(SteamID lobby)
 	{
-		Party::LobbyMap.erase(lobby.bits);
+		LobbyMap.erase(lobby.bits);
 	}
 
 	void Party::ConnectError(const std::string& message)
@@ -79,7 +113,7 @@ namespace Components
 
 	std::string Party::GetMotd()
 	{
-		return Party::Container.motd;
+		return Container.motd;
 	}
 
 	bool Party::IsUsingIw4xProtocol()
@@ -87,14 +121,20 @@ namespace Components
 		return Flags::HasFlag("iw4xprotocol");
 	}
 
-	Game::dvar_t* Party::RegisterMinPlayers(const char* name, int /*value*/, int /*min*/, int max, Game::DvarFlags flag, const char* description)
+	std::string Party::GetHostName()
 	{
-		return Dvar::Register<int>(name, 1, 1, max, Game::DVAR_INIT | flag, description).get<Game::dvar_t*>();
+		return Container.info.get("hostname");
+	}
+
+	int Party::GetMaxClients()
+	{
+		const auto value = Container.info.get("sv_maxclients");
+		return std::strtol(value.data(), nullptr, 10);
 	}
 
 	bool Party::PlaylistAwaiting()
 	{
-		return Party::Container.awaitingPlaylist;
+		return Container.awaitingPlaylist;
 	}
 
 	void Party::PlaylistContinue()
@@ -104,20 +144,20 @@ namespace Components
 		// Ensure we can join
 		*Game::g_lobbyCreateInProgress = false;
 
-		Party::Container.awaitingPlaylist = false;
+		Container.awaitingPlaylist = false;
 
-		SteamID id = Party::GenerateLobbyId();
+		SteamID id = GenerateLobbyId();
 
 		// Temporary workaround
 		// TODO: Patch the 127.0.0.1 -> loopback mapping in the party code
-		if (Party::Container.target.isLoopback())
+		if (Container.target.isLoopback())
 		{
 			if (*Game::numIP)
 			{
-				Party::Container.target.setIP(*Game::localIP);
-				Party::Container.target.setType(Game::netadrtype_t::NA_IP);
+				Container.target.setIP(*Game::localIP);
+				Container.target.setType(Game::netadrtype_t::NA_IP);
 
-				Logger::Print("Trying to connect to party with loopback address, using a local ip instead: {}\n", Party::Container.target.getString());
+				Logger::Print("Trying to connect to party with loopback address, using a local ip instead: {}\n", Container.target.getString());
 			}
 			else
 			{
@@ -125,17 +165,17 @@ namespace Components
 			}
 		}
 
-		Party::LobbyMap[id.bits] = Party::Container.target;
+		LobbyMap[id.bits] = Container.target;
 
 		Game::Steam_JoinLobby(id, 0);
 	}
 
 	void Party::PlaylistError(const std::string& error)
 	{
-		Party::Container.valid = false;
-		Party::Container.awaitingPlaylist = false;
+		Container.valid = false;
+		Container.awaitingPlaylist = false;
 
-		Party::ConnectError(error);
+		ConnectError(error);
 	}
 
 	DWORD Party::UIDvarIntStub(char* dvar)
@@ -150,12 +190,12 @@ namespace Components
 
 	bool Party::IsInLobby()
 	{
-		return (!(*Game::com_sv_running)->current.enabled && PartyEnable.get<bool>() && Dvar::Var("party_host").get<bool>());
+		return (!Dedicated::IsRunning() && PartyEnable.get<bool>() && Dvar::Var("party_host").get<bool>());
 	}
 
 	bool Party::IsInUserMapLobby()
 	{
-		return (Party::IsInLobby() && Maps::IsUserMap(Dvar::Var("ui_mapname").get<const char*>()));
+		return (IsInLobby() && Maps::IsUserMap((*Game::ui_mapname)->current.string));
 	}
 
 	bool Party::IsEnabled()
@@ -165,6 +205,10 @@ namespace Components
 
 	Party::Party()
 	{
+		if (ZoneBuilder::IsEnabled())
+		{
+			return;
+		}
 		static Game::dvar_t* partyEnable = Dvar::Register<bool>("party_enable", IsUsingIw4xProtocol() ? Dedicated::IsEnabled() : true, Game::DVAR_NONE, "Enable party system").get<Game::dvar_t*>();
 
 		Dvar::Register<bool>("xblive_privatematch", true, Game::DvarFlags::DVAR_ROM, "").get<Game::dvar_t*>();
@@ -202,8 +246,8 @@ namespace Components
 		// causes 'does current Steam lobby match' calls in Steam_JoinLobby to be ignored
 		Utils::Hook::Set<BYTE>(0x49D007, 0xEB);
 
-		// functions checking party heartbeat timeouts, cause random issues
-		Utils::Hook::Nop(0x4E532D, 5);
+		// function checking party heartbeat timeouts, cause random issues
+		Utils::Hook::Nop(0x4E532D, 5); // PartyHost_TimeoutMembers
 
 		// Steam_JoinLobby call causes migration
 		Utils::Hook::Nop(0x5AF851, 5);
@@ -240,7 +284,7 @@ namespace Components
 		Utils::Hook::Nop(0x5A8E33, 11);
 
 		// Enable XP Bar
-		Utils::Hook(0x62A2A7, Party::UIDvarIntStub, HOOK_CALL).install()->quick();
+		Utils::Hook(0x62A2A7, UIDvarIntStub, HOOK_CALL).install()->quick();
 
 		// Set NAT to open
 		Utils::Hook::Set<int>(0x79D898, 1);
@@ -260,12 +304,6 @@ namespace Components
 		Utils::Hook::Xor<BYTE>(0x4573FA, 1);
 		Utils::Hook::Xor<BYTE>(0x5B1A17, 1);
 
-		// Fix xstartlobby
-		//Utils::Hook::Set<BYTE>(0x5B71CD, 0xEB);
-
-		// Patch party_minplayers to 1 and protect it
-		//Utils::Hook(0x4D5D51, Party::RegisterMinPlayers, HOOK_CALL).install()->quick();
-
 		// Set ui_maxclients to sv_maxclients
 		Utils::Hook::Set<const char*>(0x42618F, "sv_maxclients");
 		Utils::Hook::Set<const char*>(0x4D3756, "sv_maxclients");
@@ -279,10 +317,7 @@ namespace Components
 		Utils::Hook::Xor<DWORD>(0x4D376D, Game::DVAR_LATCH);
 		Utils::Hook::Xor<DWORD>(0x5E3789, Game::DVAR_LATCH);
 
-		// Patch Live_PlayerHasLoopbackAddr
-		//Utils::Hook::Set<DWORD>(0x418F30, 0x90C3C033);
-
-		Command::Add("connect", [](Command::Params* params)
+		Command::Add("connect", [](const Command::Params* params)
 			{
 				if (params->size() < 2)
 				{

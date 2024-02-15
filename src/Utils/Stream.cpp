@@ -16,60 +16,59 @@ namespace Utils
 
 	const char* Stream::Reader::readCString()
 	{
-		return this->allocator->duplicateString(this->readString());
+		return this->allocator_->duplicateString(this->readString());
 	}
 
 	char Stream::Reader::readByte()
 	{
-		if ((this->position + 1) <= this->buffer.size())
+		if ((this->position_ + 1) <= this->buffer_.size())
 		{
-			return this->buffer[this->position++];
+			return this->buffer_[this->position_++];
 		}
 
 		throw std::runtime_error("Reading past the buffer");
 	}
 
-	void* Stream::Reader::read(size_t size, size_t count)
+	void* Stream::Reader::read(size_t size, std::size_t count)
 	{
-		size_t bytes = size * count;
+		auto bytes = size * count;
 
-		if ((this->position + bytes) <= this->buffer.size())
+		if ((this->position_ + bytes) <= this->buffer_.size())
 		{
-			void* _buffer = this->allocator->allocate(bytes);
+			auto* buffer = this->allocator_->allocate(bytes);
+			std::memcpy(buffer, this->buffer_.data() + this->position_, bytes);
+			this->position_ += bytes;
 
-			std::memcpy(_buffer, this->buffer.data() + this->position, bytes);
-			this->position += bytes;
-
-			return _buffer;
+			return buffer;
 		}
 
 		throw std::runtime_error("Reading past the buffer");
 	}
 
-	bool Stream::Reader::end()
+	bool Stream::Reader::end() const
 	{
-		return (this->buffer.size() == this->position);
+		return (this->buffer_.size() == this->position_);
 	}
 
-	void Stream::Reader::seek(unsigned int _position)
+	void Stream::Reader::seek(unsigned int position)
 	{
-		if (this->buffer.size() >= _position)
+		if (this->buffer_.size() >= position)
 		{
-			this->position = _position;
+			this->position_ = position;
 		}
 	}
 
-	void Stream::Reader::seekRelative(unsigned int _position)
+	void Stream::Reader::seekRelative(unsigned int position)
 	{
-		return this->seek(_position + this->position);
+		return this->seek(position + this->position_);
 	}
 
 	void* Stream::Reader::readPointer()
 	{
-		void* pointer = this->read<void*>();
+		auto* pointer = this->read<void*>();
 		if (!this->hasPointer(pointer))
 		{
-			this->pointerMap[pointer] = nullptr;
+			this->pointerMap_[pointer] = nullptr;
 		}
 		return pointer;
 	}
@@ -78,18 +77,18 @@ namespace Utils
 	{
 		if (this->hasPointer(oldPointer))
 		{
-			this->pointerMap[oldPointer] = newPointer;
+			this->pointerMap_[oldPointer] = newPointer;
 		}
 	}
 
-	bool Stream::Reader::hasPointer(void* pointer)
+	bool Stream::Reader::hasPointer(void* pointer) const
 	{
-		return this->pointerMap.find(pointer) != this->pointerMap.end();
+		return this->pointerMap_.contains(pointer);
 	}
 
 	Stream::Stream() : ptrAssertion(false), criticalSectionState(0)
 	{
-		memset(this->blockSize, 0, sizeof(this->blockSize));
+		std::memset(this->blockSize, 0, sizeof(this->blockSize));
 
 #ifdef WRITE_LOGS
 		this->structLevel = 0;
@@ -99,30 +98,30 @@ namespace Utils
 
 	Stream::Stream(size_t size) : Stream()
 	{
-		this->buffer.reserve(size);
+		this->buffer_.reserve(size);
 	}
 
 	Stream::~Stream()
 	{
-		this->buffer.clear();
+		this->buffer_.clear();
 
 		if (this->criticalSectionState != 0)
 		{
-			MessageBoxA(nullptr, Utils::String::VA("Invalid critical section state '%i' for stream destruction!", this->criticalSectionState), "WARNING", MB_ICONEXCLAMATION);
+			MessageBoxA(nullptr, String::VA("Invalid critical section state '%i' for stream destruction!", this->criticalSectionState), "WARNING", MB_ICONEXCLAMATION);
 		}
 	};
 
-	size_t Stream::length()
+	std::size_t Stream::length() const
 	{
-		return this->buffer.length();
+		return this->buffer_.length();
 	}
 
-	size_t Stream::capacity()
+	std::size_t Stream::capacity() const
 	{
-		return this->buffer.capacity();
+		return this->buffer_.capacity();
 	}
 
-	void Stream::assertPointer(const void* pointer, size_t length)
+	void Stream::assertPointer(const void* pointer, std::size_t length)
 	{
 		if (!this->ptrAssertion) return;
 
@@ -131,22 +130,24 @@ namespace Utils
 			unsigned int ePtr = reinterpret_cast<unsigned int>(entry.first);
 			unsigned int tPtr = reinterpret_cast<unsigned int>(pointer);
 
-			if (Utils::HasIntercection(ePtr, entry.second, tPtr, length))
+			if (HasIntersection(ePtr, entry.second, tPtr, length))
 			{
 				MessageBoxA(nullptr, "Duplicate data written!", "ERROR", MB_ICONERROR);
+#ifdef _DEBUG
 				__debugbreak();
+#endif
 			}
 		}
 
 		this->ptrList.push_back({ pointer, length });
 	}
 
-	char* Stream::save(const void* _str, size_t size, size_t count)
+	char* Stream::save(const void* str, std::size_t size, std::size_t count)
 	{
-		return this->save(this->getCurrentBlock(), _str, size, count);
+		return this->save(this->getCurrentBlock(), str, size, count);
 	}
 
-	char* Stream::save(Game::XFILE_BLOCK_TYPES stream, const void * _str, size_t size, size_t count)
+	char* Stream::save(Game::XFILE_BLOCK_TYPES stream, const void * str, std::size_t size, std::size_t count)
 	{
 		// Only those seem to actually write data.
 		// everything else is allocated at runtime but XFILE_BLOCK_RUNTIME is the only one that actually allocates anything
@@ -157,15 +158,15 @@ namespace Utils
 			return this->at();
 		}
 
-		auto data = this->data();
+		auto* data = this->data();
 
 		if (this->isCriticalSection() && this->length() + (size * count) > this->capacity())
 		{
-			MessageBoxA(nullptr, Utils::String::VA("Potential stream reallocation during critical operation detected! Writing data of the length 0x%X exceeds the allocated stream size of 0x%X\n", (size * count), this->capacity()), "ERROR", MB_ICONERROR);
+			MessageBoxA(nullptr, String::VA("Potential stream reallocation during critical operation detected! Writing data of the length 0x%X exceeds the allocated stream size of 0x%X\n", (size * count), this->capacity()), "ERROR", MB_ICONERROR);
 			__debugbreak();
 		}
 
-		this->buffer.append(static_cast<const char*>(_str), size * count);
+		this->buffer_.append(static_cast<const char*>(str), size * count);
 
 		if (this->data() != data && this->isCriticalSection())
 		{
@@ -174,12 +175,12 @@ namespace Utils
 		}
 
 		this->increaseBlockSize(stream, size * count);
-		this->assertPointer(_str, size * count);
+		this->assertPointer(str, size * count);
 
 		return this->at() - (size * count);
 	}
 
-	char* Stream::save(Game::XFILE_BLOCK_TYPES stream, int value, size_t count)
+	char* Stream::save(Game::XFILE_BLOCK_TYPES stream, int value, std::size_t count)
 	{
 		auto ret = this->length();
 
@@ -201,7 +202,7 @@ namespace Utils
 		return this->saveString(string, strlen(string));
 	}
 
-	char* Stream::saveString(const char* string, size_t len)
+	char* Stream::saveString(const char* string, std::size_t len)
 	{
 		auto ret = this->length();
 
@@ -220,7 +221,7 @@ namespace Utils
 		return this->save(string.data(), string.length());
 	}
 
-	char* Stream::saveByte(unsigned char byte, size_t count)
+	char* Stream::saveByte(unsigned char byte, std::size_t count)
 	{
 		auto ret = this->length();
 
@@ -289,9 +290,9 @@ namespace Utils
 		}
 
 #ifdef WRITE_LOGS
-		std::string data = Utils::String::VA("%*s%d\n", this->structLevel, "", size);
-		if (stream == Game::XFILE_BLOCK_RUNTIME) data = Utils::String::VA("%*s(%d)\n", this->structLevel, "", size);
-		Utils::IO::WriteFile("userraw/logs/zb_writes.log", data, true);
+		const auto* data = String::VA("%*s%u\n", this->structLevel, "", size);
+		if (stream == Game::XFILE_BLOCK_RUNTIME) data = String::VA("%*s(%u)\n", this->structLevel, "", size);
+		IO::WriteFile("userraw/logs/zb_writes.log", data, true);
 #endif
 	}
 
@@ -317,7 +318,7 @@ namespace Utils
 
 	char* Stream::data()
 	{
-		return const_cast<char*>(this->buffer.data());
+		return const_cast<char*>(this->buffer_.data());
 	}
 
 	unsigned int Stream::getBlockSize(Game::XFILE_BLOCK_TYPES stream)
@@ -348,9 +349,9 @@ namespace Utils
 
 	std::string Stream::toBuffer()
 	{
-		std::string _buffer;
-		this->toBuffer(_buffer);
-		return _buffer;
+		std::string buffer;
+		this->toBuffer(buffer);
+		return buffer;
 	}
 
 	void Stream::enterCriticalSection()
@@ -363,7 +364,7 @@ namespace Utils
 		--this->criticalSectionState;
 	}
 
-	bool Stream::isCriticalSection()
+	bool Stream::isCriticalSection() const
 	{
 		if (this->criticalSectionState < 0)
 		{
@@ -379,7 +380,7 @@ namespace Utils
 	{
 		if (this->structLevel >= 0)
 		{
-			Utils::IO::WriteFile("userraw/logs/zb_writes.log", Utils::String::VA("%*s%s\n", this->structLevel++, "", structName), true);
+			IO::WriteFile("userraw/logs/zb_writes.log", String::VA("%*s%s\n", this->structLevel++, "", structName), true);
 		}
 	}
 
@@ -391,7 +392,7 @@ namespace Utils
 			return;
 		}
 
-		Utils::IO::WriteFile("userraw/logs/zb_writes.log", Utils::String::VA("%*s-----\n", this->structLevel, ""), true);
+		IO::WriteFile("userraw/logs/zb_writes.log", String::VA("%*s-----\n", this->structLevel, ""), true);
 	}
 #endif
 }

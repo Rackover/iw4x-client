@@ -26,11 +26,17 @@ namespace Game
 	typedef int(*FS_FOpenFileRead_t)(const char* filename, int* file);
 	extern FS_FOpenFileRead_t FS_FOpenFileRead;
 
+	typedef FILE*(*FS_FileOpenReadText_t)(const char* filename);
+	extern FS_FileOpenReadText_t FS_FileOpenReadText;
+
 	typedef int(*FS_FOpenFileReadDatabase_t)(const char* filename, int* file);
 	extern FS_FOpenFileReadDatabase_t FS_FOpenFileReadDatabase;
 
 	typedef int(*FS_FOpenFileReadForThread_t)(const char* filename, int* file, int thread);
 	extern FS_FOpenFileReadForThread_t FS_FOpenFileReadForThread;
+
+	typedef int(*FS_FOpenFileByMode_t)(const char* qpath, int* f, fsMode_t mode);
+	extern FS_FOpenFileByMode_t FS_FOpenFileByMode;
 
 	typedef int(*FS_FCloseFile_t)(int stream);
 	extern FS_FCloseFile_t FS_FCloseFile;
@@ -50,7 +56,7 @@ namespace Game
 	typedef int(*FS_Printf_t)(int file, const char* fmt, ...);
 	extern FS_Printf_t FS_Printf;
 
-	typedef int(*FS_Read_t)(void* buffer, size_t size, int file);
+	typedef int(*FS_Read_t)(void* buffer, int len, int h);
 	extern FS_Read_t FS_Read;
 
 	typedef int(*FS_Seek_t)(int fileHandle, int seekPosition, int seekOrigin);
@@ -77,7 +83,7 @@ namespace Game
 	typedef void(*FS_BuildOSPath_t)(const char* base, const char* game, const char* qpath, char* ospath);
 	extern FS_BuildOSPath_t FS_BuildOSPath;
 
-	extern searchpath_t** fs_searchpaths;
+	extern searchpath_s** fs_searchpaths;
 
 	extern int FS_FOpenFileReadCurrentThread(const char* filename, int* file);
 

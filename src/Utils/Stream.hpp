@@ -1,7 +1,7 @@
 #pragma once
 
 // write logs for ZoneBuilder
-//#define WRITE_LOGS
+
 #ifndef WRITE_LOGS // they take forever to run so only enable if needed
 #define SaveLogEnter(x)
 #define SaveLogExit()
@@ -12,37 +12,72 @@
 
 namespace Utils
 {
+	constexpr auto POINTER = 255;
+	constexpr auto FOLLOWING = 254;				
+
 	class Stream
 	{
 	private:
 		bool ptrAssertion;
-		std::vector<std::pair<const void*, size_t>> ptrList;
+		std::vector<std::pair<const void*, std::size_t>> ptrList;
 
 		int criticalSectionState;
 		unsigned int blockSize[Game::MAX_XFILE_COUNT];
 		std::vector<Game::XFILE_BLOCK_TYPES> streamStack;
-		std::string buffer;
+		std::string buffer_;
 
 	public:
 		class Reader
 		{
 		public:
-			Reader(Utils::Memory::Allocator* _allocator, const std::string& _buffer) : position(0), buffer(_buffer), allocator(_allocator) {}
+			Reader(Memory::Allocator* allocator, std::string buffer) : position_(0), buffer_(std::move(buffer)), allocator_(allocator) {}
 
 			std::string readString();
 			const char* readCString();
 
 			char readByte();
 
-			void* read(size_t size, size_t count = 1);
-			template <typename T> inline T* readObject()
+			void* read(std::size_t size, std::size_t count = 1);
+			template <typename T> T* readObject()
 			{
 				return readArray<T>(1);
 			}
-			template <typename T> inline T* readArray(size_t count = 1)
+
+			template <typename T> T* readArrayOnce(std::size_t count = 1)
 			{
-				return reinterpret_cast<T*>(this->read(sizeof(T), count));
+				auto b = static_cast<unsigned char>(readByte());	
+				switch (b)
+				{
+				case POINTER:
+				{
+					auto ptr = read<int>();
+					auto* voidPtr = reinterpret_cast<void*>(ptr);
+
+					if (allocator_->isPointerMapped(voidPtr))
+					{
+						return allocator_->getPointer<T>(voidPtr);
+					}
+
+					throw std::runtime_error("Bad data: missing ptr");
+				}
+				case FOLLOWING:
+				{
+					auto filePosition = position_;
+					auto data = readArray<T>(count);
+					allocator_->mapPointer(reinterpret_cast<void*>(filePosition), data);
+          
+					return data;
+				}
+				default:
+					throw std::runtime_error("Bad data");
+				}
 			}
+
+			template <typename T> T* readArray(std::size_t count = 1)
+			{
+				return static_cast<T*>(this->read(sizeof(T), count));
+			}
+
 			template <typename T> T read()
 			{
 				T obj;
@@ -55,19 +90,19 @@ namespace Utils
 				return obj;
 			}
 
-			bool end();
+			bool end() const;
 			void seek(unsigned int position);
 			void seekRelative(unsigned int position);
 
 			void* readPointer();
 			void mapPointer(void* oldPointer, void* newPointer);
-			bool hasPointer(void* pointer);
+			bool hasPointer(void* pointer) const;
 
 		private:
-			unsigned int position;
-			std::string buffer;
-			std::map<void*, void*> pointerMap;
-			Utils::Memory::Allocator* allocator;
+			unsigned int position_;
+			std::string buffer_;
+			std::map<void*, void*> pointerMap_;
+			Memory::Allocator* allocator_;
 		};
 
 		enum Alignment
@@ -89,25 +124,61 @@ namespace Utils
 		Stream(size_t size);
 		~Stream();
 
-		size_t length();
-		size_t capacity();
+		std::unordered_map<void*, size_t> dataPointers;
 
-		char* save(const void * _str, size_t size, size_t count = 1);
-		char* save(Game::XFILE_BLOCK_TYPES stream, const void * _str, size_t size, size_t count);
-		char* save(Game::XFILE_BLOCK_TYPES stream, int value, size_t count);
-		template <typename T> inline char* save(T* object)
+		[[nodiscard]] std::size_t length() const;
+		[[nodiscard]] std::size_t capacity() const;
+
+		char* save(const void * str, std::size_t size, std::size_t count = 1);
+		char* save(Game::XFILE_BLOCK_TYPES stream, const void * str, std::size_t size, std::size_t count);
+		char* save(Game::XFILE_BLOCK_TYPES stream, int value, std::size_t count);
+
+		template <typename T> char* save(T* object)
 		{
 			return saveArray<T>(object, 1);
 		}
-		template <typename T> inline char* saveArray(T* array, size_t count)
+
+		template <typename T> char* saveObject(T value)
+		{
+			return saveArray(&value, 1);
+		}
+
+		template <typename T> void saveArrayIfNotExisting(T* data, size_t count)
+		{
+			if (const auto itr = dataPointers.find(data); itr != dataPointers.end())
+			{
+				saveByte(POINTER);
+				saveObject(itr->second);
+			}
+			else
+			{
+				saveByte(FOLLOWING);
+				dataPointers.insert_or_assign(reinterpret_cast<void*>(data), length());
+				saveArray(data, count);
+			}
+		}
+
+		char* save(int value, size_t count = 1)
+		{
+			auto ret = this->length();
+
+			for (size_t i = 0; i < count; ++i)
+			{
+				this->save(&value, 4, 1);
+			}
+
+			return this->data() + ret;
+		}
+
+		template <typename T> char* saveArray(T* array, std::size_t count)
 		{
 			return save(array, sizeof(T), count);
 		}
 
 		char* saveString(const std::string& string);
 		char* saveString(const char* string);
-		char* saveString(const char* string, size_t len);
-		char* saveByte(unsigned char byte, size_t count = 1);
+		char* saveString(const char* string, std::size_t len);
+		char* saveByte(unsigned char byte, std::size_t count = 1);
 		char* saveNull(size_t count = 1);
 		char* saveMax(size_t count = 1);
 
@@ -131,7 +202,8 @@ namespace Utils
 		{
 			return reinterpret_cast<T*>(this->at());
 		}
-		template <typename T> static inline void ClearPointer(T** object)
+
+		template <typename T> static void ClearPointer(T** object)
 		{
 			*object = reinterpret_cast<T*>(-1);
 		}
@@ -140,7 +212,7 @@ namespace Utils
 		{
 			this->ptrAssertion = value;
 		}
-		void assertPointer(const void* pointer, size_t length);
+		void assertPointer(const void* pointer, std::size_t length);
 
 		void toBuffer(std::string& outBuffer);
 		std::string toBuffer();
@@ -151,7 +223,7 @@ namespace Utils
 		// by editing the code though.
 		void enterCriticalSection();
 		void leaveCriticalSection();
-		bool isCriticalSection();
+		bool isCriticalSection() const;
 
 		// for recording zb writes
 #ifdef WRITE_LOGS

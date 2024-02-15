@@ -25,8 +25,10 @@ namespace Utils
 
 	void OutputDebugLastError()
 	{
+#ifdef DEBUG
 		DWORD errorMessageID = ::GetLastError();
-		OutputDebugStringA(Utils::String::VA("Last error code: 0x%08X (%s)\n", errorMessageID, GetLastWindowsError().data()));
+		OutputDebugStringA(String::VA("Last error code: 0x%08X (%s)\n", errorMessageID, GetLastWindowsError().data()));
+#endif
 	}
 
 	std::string GetLastWindowsError()
@@ -72,7 +74,7 @@ namespace Utils
 		return 0;
 	}
 
-	size_t GetModuleSize(HMODULE module)
+	std::size_t GetModuleSize(HMODULE module)
 	{
 		PIMAGE_DOS_HEADER header = PIMAGE_DOS_HEADER(module);
 		PIMAGE_NT_HEADERS ntHeader = PIMAGE_NT_HEADERS(DWORD(module) + header->e_lfanew);
@@ -85,8 +87,7 @@ namespace Utils
 		if (!ntdll) return nullptr;
 
 
-		static uint8_t ntQueryInformationThread[] = { 0xB1, 0x8B, 0xAE, 0x8A, 0x9A, 0x8D, 0x86, 0xB6, 0x91, 0x99, 0x90, 0x8D, 0x92, 0x9E, 0x8B, 0x96, 0x90, 0x91, 0xAB, 0x97, 0x8D, 0x9A, 0x9E, 0x9B }; // NtQueryInformationThread
-		NtQueryInformationThread_t NtQueryInformationThread = NtQueryInformationThread_t(GetProcAddress(ntdll, String::XOR(std::string(reinterpret_cast<char*>(ntQueryInformationThread), sizeof ntQueryInformationThread), -1).data()));
+		NtQueryInformationThread_t NtQueryInformationThread = NtQueryInformationThread_t(GetProcAddress(ntdll, "NtQueryInformationThread"));
 		if (!NtQueryInformationThread) return nullptr;
 
 		HANDLE dupHandle, currentProcess = GetCurrentProcess();
@@ -106,21 +107,25 @@ namespace Utils
 
 	void SetLegacyEnvironment()
 	{
-		wchar_t binaryPath[512];
+		wchar_t binaryPath[512]{};
 		GetModuleFileNameW(GetModuleHandleW(nullptr), binaryPath, sizeof(binaryPath) / sizeof(wchar_t));
 
 		auto* exeBaseName = std::wcsrchr(binaryPath, L'\\');
 		exeBaseName[0] = L'\0';
 
-		// Make the game work without the xlabs launcher
+		// Make the game work without the AlterWare launcher
 		SetCurrentDirectoryW(binaryPath);
 	}
 
+	/**
+	 * IW4x_INSTALL should point to where the IW4x rawfiles/client files are
+	 * or the current working dir
+	*/
 	void SetEnvironment()
 	{
-		wchar_t* buffer{};
+		char* buffer{};
 		std::size_t size{};
-		if (_wdupenv_s(&buffer, &size, L"XLABS_MW2_INSTALL") != 0 || buffer == nullptr)
+		if (_dupenv_s(&buffer, &size, "IW4x_INSTALL") != 0 || buffer == nullptr)
 		{
 			SetLegacyEnvironment();
 			return;
@@ -128,15 +133,39 @@ namespace Utils
 
 		const auto _0 = gsl::finally([&] { std::free(buffer); });
 
-		const std::wstring dir{buffer, size};
-		SetCurrentDirectoryW(dir.data());
-		SetDllDirectoryW(dir.data());
+		SetCurrentDirectoryA(buffer);
+		SetDllDirectoryA(buffer);
+	}
+
+	/**
+	 * Points to where the Modern Warfare 2 folder is
+	*/
+	std::filesystem::path GetBaseFilesLocation()
+	{
+		char* buffer{};
+		std::size_t size{};
+		if (_dupenv_s(&buffer, &size, "BASE_INSTALL") != 0 || buffer == nullptr)
+		{
+			return {};
+		}
+
+		const auto _0 = gsl::finally([&] { std::free(buffer); });
+
+		try
+		{
+			std::filesystem::path result = buffer;
+			return result;
+		}
+		catch (const std::exception& ex)
+		{
+			printf("Failed to convert '%s' to native file system path. Got error '%s'\n", buffer, ex.what());
+			return {};
+		}
 	}
 
 	HMODULE GetNTDLL()
 	{
-		static uint8_t ntdll[] = { 0x91, 0x8B, 0x9B, 0x93, 0x93, 0xD1, 0x9B, 0x93, 0x93 }; // ntdll.dll
-		return GetModuleHandleA(Utils::String::XOR(std::string(reinterpret_cast<char*>(ntdll), sizeof ntdll), -1).data());
+		return GetModuleHandleA("ntdll.dll");
 	}
 
 	void SafeShellExecute(HWND hwnd, LPCSTR lpOperation, LPCSTR lpFile, LPCSTR lpParameters, LPCSTR lpDirectory, INT nShowCmd)
@@ -159,7 +188,7 @@ namespace Utils
 		SafeShellExecute(nullptr, "open", url.data(), nullptr, nullptr, SW_SHOWNORMAL);
 	}
 
-	bool HasIntercection(unsigned int base1, unsigned int len1, unsigned int base2, unsigned int len2)
+	bool HasIntersection(unsigned int base1, unsigned int len1, unsigned int base2, unsigned int len2)
 	{
 		return !(base1 + len1 <= base2 || base2 + len2 <= base1);
 	}

@@ -3,10 +3,18 @@
 
 namespace Assets
 {
-	void IWeapon::load(Game::XAssetHeader* header, const std::string& name, Components::ZoneBuilder::Zone* /*builder*/)
+	void IWeapon::load(Game::XAssetHeader* header, const std::string& name, Components::ZoneBuilder::Zone* builder)
 	{
+		header->weapon = builder->getIW4OfApi()->read<Game::WeaponCompleteDef>(Game::XAssetType::ASSET_TYPE_WEAPON, name);
+
+		if (header->weapon)
+		{
+			return;
+		}
+
+
 		// Try loading raw weapon
-		if (Components::FileSystem::File(Utils::String::VA("weapons/mp/%s", name.data())).exists())
+		if (Components::FileSystem::File(std::format("weapons/mp/{}", name)))
 		{
 			// let the function see temporary assets when calling DB_FindXAssetHeader during the loading function
 			// otherwise it fails to link things properly
@@ -121,7 +129,10 @@ namespace Assets
 		if (asset->weapDef->projIgnitionEffect) builder->loadAsset(Game::XAssetType::ASSET_TYPE_FX, asset->weapDef->projIgnitionEffect);
 		if (asset->weapDef->turretOverheatEffect) builder->loadAsset(Game::XAssetType::ASSET_TYPE_FX, asset->weapDef->turretOverheatEffect);
 
-#define LoadWeapSound(sound) if (asset->weapDef->##sound##) builder->loadAsset(Game::XAssetType::ASSET_TYPE_SOUND, asset->weapDef->##sound##)
+
+
+		// They are not subassets, because they don't get loaded automatically
+#define LoadWeapSound(sound) if (asset->weapDef->##sound##) builder->loadAsset(Game::XAssetType::ASSET_TYPE_SOUND, asset->weapDef->##sound##, false)
 
 		LoadWeapSound(pickupSound);
 		LoadWeapSound(pickupSoundPlayer);
@@ -193,6 +204,33 @@ namespace Assets
 
 		LoadWeapSound(missileConeSoundAlias);
 		LoadWeapSound(missileConeSoundAliasAtBase);
+
+		for (size_t i = 0; i < 37; i++)
+		{
+			{
+				const auto anim = asset->weapDef->szXAnimsLeftHanded[i];
+				if (anim && strnlen(anim, 1) > 0) {
+					builder->loadAssetByName(Game::XAssetType::ASSET_TYPE_XANIMPARTS, anim, false);
+				}
+			}
+			{
+				const auto anim = asset->weapDef->szXAnimsRightHanded[i];
+				if (anim && strnlen(anim, 1) > 0) {
+					builder->loadAssetByName(Game::XAssetType::ASSET_TYPE_XANIMPARTS, anim, false);
+				}
+			}
+			{
+				const auto anim = asset->szXAnims[i];
+				if (anim && strnlen(anim, 1) > 0) {
+					builder->loadAssetByName(Game::XAssetType::ASSET_TYPE_XANIMPARTS, anim, false);
+				}
+			}
+		}
+
+		if (asset->szAltWeaponName && *asset->szAltWeaponName != 0 && asset->weapDef->ammoCounterClip != Game::AMMO_COUNTER_CLIP_ALTWEAPON) // A very bad way to check if this is already an alt
+		{
+			builder->loadAssetByName(Game::XAssetType::ASSET_TYPE_WEAPON, asset->szAltWeaponName, false);
+		}
 	}
 
 	void IWeapon::writeWeaponDef(Game::WeaponDef* def, Components::ZoneBuilder::Zone* builder, Utils::Stream* buffer)
@@ -358,6 +396,7 @@ namespace Assets
 					continue;
 				}
 
+				buffer->align(Utils::Stream::ALIGN_4);
 				buffer->saveMax(sizeof(Game::snd_alias_list_t*));
 				buffer->saveString(def->bounceSound[i]->aliasName);
 			}
@@ -487,7 +526,7 @@ namespace Assets
 
 		if (def->physCollmap)
 		{
-			dest->physCollmap = builder->saveSubAsset(Game::XAssetType::ASSET_TYPE_PHYSCOLLMAP, def->overlayMaterialEMPLowRes).physCollmap;
+			dest->physCollmap = builder->saveSubAsset(Game::XAssetType::ASSET_TYPE_PHYSCOLLMAP, def->physCollmap).physCollmap;
 		}
 
 		if (def->projectileModel)
@@ -781,5 +820,27 @@ namespace Assets
 		}
 
 		buffer->popBlock();
+	}
+
+	IWeapon::IWeapon()
+	{
+		Components::Command::Add("dumpweapon", [](const Components::Command::Params* params)
+			{
+				if (params->size() < 2) return;
+
+				std::string weapon = params->get(1);
+
+				const auto header = Game::DB_FindXAssetHeader(Game::XAssetType::ASSET_TYPE_WEAPON, weapon.data());
+				if (header.data)
+				{
+					Components::ZoneBuilder::RefreshExporterWorkDirectory();
+					Components::ZoneBuilder::GetExporter()->write(Game::XAssetType::ASSET_TYPE_WEAPON, header.data);
+				}
+				else
+				{
+					Components::Logger::Print("Could not find weapon {}!\n", weapon);
+				}
+			}
+		);
 	}
 }

@@ -156,24 +156,30 @@ namespace Steam
 		template<typename T, typename... Args>
 		T invoke(const std::string& methodName, Args... args)
 		{
-			if(!this->interfacePtr)
+			if (!this->interfacePtr)
 			{
-				OutputDebugStringA(::Utils::String::VA("Steam interface pointer is invalid (%s)!\n", methodName.data()));
+#ifdef _DEBUG
+				OutputDebugStringA(::Utils::String::Format("Steam interface pointer is invalid '{}'!\n", methodName));
+#endif
 				return T();
 			}
 
 			auto method = this->getMethod(methodName);
 			if (!method.first)
 			{
-				OutputDebugStringA(::Utils::String::VA("Steam interface method %s not found!\n", methodName.data()));
+#ifdef _DEBUG
+				OutputDebugStringA(::Utils::String::Format("Steam interface method '{}' not found!\n", methodName));
+#endif
 				return T();
 			}
 
-			size_t argc = method.second;
-			constexpr size_t passedArgc = Interface::AddSizes<sizeof(Args)...>::value;
-			if(passedArgc != argc)
+			std::size_t argc = method.second;
+			constexpr std::size_t passedArgc = Interface::AddSizes<sizeof(Args)...>::value;
+			if (passedArgc != argc)
 			{
-				OutputDebugStringA(::Utils::String::VA("Steam interface arguments for method %s do not match (expected %d bytes, but got %d bytes)!\n", methodName.data(), argc, passedArgc));
+#ifdef _DEBUG
+				OutputDebugStringA(::Utils::String::Format("Steam interface arguments for method '{}' do not match (expected {} bytes, but got {} bytes)!\n", methodName, argc, passedArgc));
+#endif
 				return T();
 			}
 
@@ -185,7 +191,7 @@ namespace Steam
 			return this->interfacePtr != nullptr;
 		}
 
-		size_t paramSize(const std::string& methodName)
+		std::size_t paramSize(const std::string& methodName)
 		{
 			auto method = this->getMethod(methodName);
 			return method.second;
@@ -222,9 +228,9 @@ namespace Steam
 	private:
 		std::string buffer;
 
-		inline void packBytes(const void* bytes, size_t size)
+		inline void packBytes(const void* bytes, std::size_t size)
 		{
-			this->buffer.append(reinterpret_cast<const char*>(bytes), size);
+			this->buffer.append(static_cast<const char*>(bytes), size);
 		}
 
 		inline void packDataType(uint8_t type)
@@ -358,7 +364,7 @@ namespace Steam
 		static std::function<SteamFreeLastCallbackFn> SteamFreeLastCallback;
 		static std::function<SteamGetAPICallResultFn> SteamGetAPICallResult;
 
-		static void RunCallback(int32_t callId, void* data, size_t size);
+		static void RunCallback(int32_t callId, void* data, std::size_t size);
 
 		static void UnregisterCalls();
 		static void LaunchWatchGuard();

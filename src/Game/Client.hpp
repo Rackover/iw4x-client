@@ -20,6 +20,18 @@ namespace Game
 	typedef const char* (*CL_GetConfigString_t)(int index);
 	extern CL_GetConfigString_t CL_GetConfigString;
 
+	typedef void(*CL_AddReliableCommand_t)(int localClientNum, const char* cmd);
+	extern CL_AddReliableCommand_t CL_AddReliableCommand;
+
+	typedef void(*CL_ParseGamestate_t)(int localClientNum, msg_t* msg);
+	extern CL_ParseGamestate_t CL_ParseGamestate;
+
+	typedef void(*CL_ParseSnapshot_t)(int localClientNum, msg_t* msg);
+	extern CL_ParseSnapshot_t CL_ParseSnapshot;
+
+	typedef void(*CL_ParseServerMessage_t)(int localClientNum, msg_t* msg);
+	extern CL_ParseServerMessage_t CL_ParseServerMessage;
+
 	typedef int(*CL_GetMaxRank_t)();
 	extern CL_GetMaxRank_t CL_GetMaxRank;
 
@@ -53,6 +65,18 @@ namespace Game
 	typedef int(*CL_MouseEvent_t)(int x, int y, int dx, int dy);
 	extern CL_MouseEvent_t CL_MouseEvent;
 
+	typedef void(*CL_WriteDemoClientArchive_t)(void (*write)(const void*, int, int), const playerState_s* ps, const float* viewangles, const float* selectedLocation, float selectedLocationAngle, int localClientNum, int index);
+	extern CL_WriteDemoClientArchive_t CL_WriteDemoClientArchive;
+
+	typedef void(*CL_WriteDemoMessage_t)(void (*write)(const void*, int, int), int serverMessageSequence, unsigned char* data, int len, int localClientNum);
+	extern CL_WriteDemoMessage_t CL_WriteDemoMessage;
+
+	typedef void(*CL_AddDebugStarWithText_t)(const float* point, const float* starColor, const float* textColor, const char* string, float fontsize, int duration, int fromServer);
+	extern CL_AddDebugStarWithText_t CL_AddDebugStarWithText;
+
+	typedef void(*Key_ClearStates_t)(int localClientNum);
+	extern Key_ClearStates_t Key_ClearStates;
+
 	extern float* cl_angles;
 
 	extern clientConnection_t* clientConnections;
@@ -61,10 +85,20 @@ namespace Game
 
 	extern clientUIActive_t* clientUIActives;
 
+	extern clientActive_t* clients;
+
 	extern voiceCommunication_t* cl_voiceCommunication;
 
-	extern int CL_GetMaxXP();
-	extern clientConnection_t* CL_GetLocalClientConnection(int localClientNum);
-	extern connstate_t CL_GetLocalClientConnectionState(int localClientNum);
-	extern voiceCommunication_t* CL_GetLocalClientVoiceCommunication(int localClientNum);
+	extern [[nodiscard]] int CL_GetMaxXP();
+	extern [[nodiscard]] clientConnection_t* CL_GetLocalClientConnection(int localClientNum);
+	extern [[nodiscard]] connstate_t CL_GetLocalClientConnectionState(int localClientNum);
+	extern [[nodiscard]] voiceCommunication_t* CL_GetLocalClientVoiceCommunication(int localClientNum);
+	extern [[nodiscard]] clientUIActive_t* CL_GetLocalClientUIGlobals(int localClientNum);
+	extern [[nodiscard]] clientActive_t* CL_GetLocalClientGlobals(int localClientNum);
+
+	extern void CL_AddDebugStar(const float* point, const float* color, int duration, int fromServer);
+
+	extern void CL_MouseMove(int localClientNum, Game::usercmd_s* cmd, float frametime_base);
+
+	extern void AdjustViewanglesForKeyboard(int localClientNum);
 }

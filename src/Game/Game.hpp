@@ -7,9 +7,12 @@
 #include "FileSystem.hpp"
 #include "Functions.hpp"
 #include "Dvars.hpp"
+#include "PlayerMovement.hpp"
+#include "PreProcessor.hpp"
 #include "Script.hpp"
 #include "Server.hpp"
 #include "System.hpp"
+#include "Zone.hpp"
 
 namespace Game
 {
@@ -40,9 +43,23 @@ namespace Game
 	typedef const char*(*G_GetEntityTypeName_t)(const gentity_s* ent);
 	extern G_GetEntityTypeName_t G_GetEntityTypeName;
 
+	typedef int(*G_LocalizedStringIndex_t)(const char* string);
+	extern G_LocalizedStringIndex_t G_LocalizedStringIndex;
+
+	typedef void(*G_DebugLineWithDuration_t)(const float* start, const float* end, const float* color, int depthTest, int duration);
+	extern G_DebugLineWithDuration_t G_DebugLineWithDuration;
+
 	constexpr std::size_t MAX_GENTITIES = 2048;
 	constexpr std::size_t ENTITYNUM_NONE = MAX_GENTITIES - 1;
-	extern gentity_t* g_entities;
+	extern gentity_s* g_entities;
+
+	// This does not belong anywhere else
+	extern NetField* clientStateFields;
+	extern size_t clientStateFieldsCount;
+
+	extern const char* origErrorMsg;
 
 	extern XModel* G_GetModel(int index);
+
+	extern void G_DebugStar(const float* point, const float* color);
 }

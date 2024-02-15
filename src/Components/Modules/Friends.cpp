@@ -1,5 +1,19 @@
 #include <STDInclude.hpp>
 
+#pragma warning(push)
+#pragma warning(disable: 4100)
+#include <proto/friends.pb.h>
+#pragma warning(pop)
+
+#include "Events.hpp"
+#include "Friends.hpp"
+#include "Materials.hpp"
+#include "Node.hpp"
+#include "Party.hpp"
+#include "TextRenderer.hpp"
+#include "Toast.hpp"
+#include "UIFeeder.hpp"
+
 namespace Components
 {
 	bool Friends::LoggedOn = false;
@@ -430,7 +444,7 @@ namespace Components
 			if (!Friends::IsOnline(user.lastTime)) return "Online";
 			if (user.server.getType() == Game::NA_BAD) return "Playing IW4x";
 			if (user.serverName.empty()) return Utils::String::VA("Playing on %s", user.server.getCString());
-			return Utils::String::VA("Playing %s on %s", Game::UI_LocalizeMapName(user.mapname.data()), user.serverName.data());
+			return Utils::String::VA("Playing %s on %s", Localization::LocalizeMapName(user.mapname.data()), user.serverName.data());
 		}
 
 		default:
@@ -446,21 +460,6 @@ namespace Components
 		if (index >= Friends::FriendsList.size()) return;
 
 		Friends::CurrentFriend = index;
-	}
-
-	void Friends::AddFriend(SteamID user)
-	{
-		if (Steam::Proxy::ClientFriends && Steam::Proxy::SteamFriends)
-		{
-			if (Steam::Proxy::ClientFriends.invoke<bool>("AddFriend", user))
-			{
-				Toast::Show("cardicon_joystick", Steam::Proxy::SteamFriends->GetFriendPersonaName(user), "friend request sent", 3000);
-			}
-			else
-			{
-				Toast::Show("cardicon_stop", Steam::Proxy::SteamFriends->GetFriendPersonaName(user), "unable to send friend request", 3000);
-			}
-		}
 	}
 
 	int Friends::GetGame(SteamID user)
@@ -555,26 +554,11 @@ namespace Components
 	{
 		Friends::LoggedOn = false;
 
-		if (Dedicated::IsEnabled() || ZoneBuilder::IsEnabled() || Monitor::IsEnabled())
-			return;
+		if (Dedicated::IsEnabled() || ZoneBuilder::IsEnabled()) return;
 
 		Friends::UIStreamFriendly = Dvar::Register<bool>("ui_streamFriendly", false, Game::DVAR_ARCHIVE, "Stream friendly UI");
 		Friends::CLAnonymous = Dvar::Register<bool>("cl_anonymous", false, Game::DVAR_ARCHIVE, "Enable invisible mode for Steam");
 		Friends::CLNotifyFriendState = Dvar::Register<bool>("cl_notifyFriendState", true, Game::DVAR_ARCHIVE, "Update friends about current game status");
-
-		Command::Add("addFriend", [](Command::Params* params)
-		{
-			if (params->size() < 2)
-			{
-				Logger::Print("Usage: {} <Steam ID in hexadecimal format>\n", params->get(0));
-				return;
-			}
-
-			SteamID id;
-			id.bits = std::strtoull(params->get(1), nullptr, 16);
-
-			Friends::AddFriend(id);
-		});
 
 		// Hook Live_ShowFriendsList
 		Utils::Hook(0x4D6C70, []()
@@ -720,7 +704,7 @@ namespace Components
 
 	Friends::~Friends()
 	{
-		if (Dedicated::IsEnabled() || ZoneBuilder::IsEnabled() || Monitor::IsEnabled()) return;
+		if (Dedicated::IsEnabled() || ZoneBuilder::IsEnabled()) return;
 
 		Friends::StoreFriendsList();
 

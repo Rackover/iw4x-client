@@ -1,5 +1,7 @@
 #include <STDInclude.hpp>
 
+#include "Events.hpp"
+
 namespace Components
 {
 	Utils::Signal<Renderer::BackendCallback> Renderer::BackendFrameSignal;
@@ -12,10 +14,15 @@ namespace Components
 	Dvar::Var Renderer::r_drawSceneModelCollisions;
 	Dvar::Var Renderer::r_drawModelBoundingBoxes;
 	Dvar::Var Renderer::r_drawModelNames;
+	Dvar::Var Renderer::r_drawRunners;
 	Dvar::Var Renderer::r_drawAABBTrees;
 	Dvar::Var Renderer::r_playerDrawDebugDistance;
 	Dvar::Var Renderer::r_forceTechnique;
+	Dvar::Var Renderer::r_listSamplers;
+	Dvar::Var Renderer::r_drawLights;
+	Dvar::Var Renderer::r_drawClipmap;
 
+	float pink[4] = { 1.0f, 0.5f, 0.0f, 1.0f };
 	float cyan[4] = { 0.0f, 0.5f, 0.5f, 1.0f };
 	float red[4] = { 1.0f, 0.0f, 0.0f, 1.0f };
 	float green[4] = { 0.0f, 1.0f, 0.0f, 1.0f };
@@ -118,30 +125,34 @@ namespace Components
 		}
 	}
 
-	void Renderer::R_TextureFromCodeError(const char* sampler, Game::GfxCmdBufState* state)
+	void Renderer::R_TextureFromCodeError(const char* sampler, Game::GfxCmdBufState* state, int samplerCode)
 	{
-		Logger::Error(Game::ERR_FATAL, "Tried to use sampler '{}' when it isn't valid for material '{}' and technique '{}'",
-			sampler, state->material->info.name, state->technique->name);
+		Logger::Error(Game::ERR_FATAL, "Tried to use sampler '{}' ({}) at the wrong time! Additional info:\nMaterial: '{}'\nTechnique '{}'\nTechnique slot: {}\nTechnique flags: {}\nPass: {}\nPixel shader: '{}'\n",
+			samplerCode, sampler, state->material->info.name, state->technique->name, static_cast<int>(state->techType), state->technique->flags, state->passIndex, state->pixelShader->name
+		);
 	}
 
 	__declspec(naked) void Renderer::StoreGfxBufContextPtrStub1()
 	{
 		__asm
 		{
-			// original code
+			// Game's code
 			mov eax, dword ptr [eax * 4 + 0x66E600C]
 
-			// show error
+			// Show error
 			pushad
-			push [esp + 0x24 + 0x20]
+
+			push eax
+			push [esp + 0x20 + 0x24]
 			push eax
 			call R_TextureFromCodeError
-			add esp, 8
+			add esp, 0xC
+
 			popad
 
-			// go back
+			// Jump back in
 			push 0x54CAC1
-			retn
+			ret
 		}
 	}
 
@@ -154,10 +165,11 @@ namespace Components
 
 			// show error
 			pushad
+			push eax
 			push ebx
 			push edx
 			call R_TextureFromCodeError
-			add esp, 8
+			add esp, 0xC
 			popad
 
 			// go back
@@ -172,40 +184,13 @@ namespace Components
 		return Utils::Hook::Call<int(int, float, float, const char*, Game::vec4_t*, int)>(0x005033E0)(a1, a2, a3, Utils::String::VA("%s (^3%s^7)", mat->info.name, mat->techniqueSet->name), color, a6);
 	}
 
-	void ListSamplers() {
-
-		Game::GfxCmdBufSourceState* source = reinterpret_cast<Game::GfxCmdBufSourceState*>(0x6CAF080);
-
-		Game::Font_s* font = Game::R_RegisterFont("fonts/smallFont", 0);
-		auto height = Game::R_TextHeight(font);
-		auto scale = 1.0f;
-		float color[4] = { 0.0f, 1.0f, 0.0f, 1.0f };
-
-		for (size_t i = 0; i < 27; i++)
-		{
-			if (source->input.codeImages[i] == nullptr)
-			{
-				color[0] = 1.f;
-			}
-			else {
-				color[0] = 0.f;
-			}
-
-			std::stringstream str;
-			str << std::format("{}/{:#X} => ", i, i).c_str() << (source->input.codeImages[i] == nullptr ? "---" : source->input.codeImages[i]->name) << " " << std::to_string(source->input.codeImageSamplerStates[i]).c_str();
-			Game::R_AddCmdDrawText(Utils::String::VA("%s", str.str().data()), 0x7FFFFFFF, font, 15.0f, (height * scale + 1) * (i + 1) + 14.0f, scale, scale, 0.0f, color, Game::ITEM_TEXTSTYLE_NORMAL);
-		}
-	}
-
 	void Renderer::DebugDrawTriggers()
 	{
 		if (!r_drawTriggers.get<bool>()) return;
 
-		auto entities = Game::g_entities;
-
 		for (std::size_t i = 0; i < Game::MAX_GENTITIES; ++i)
 		{
-			auto* ent = &entities[i];
+			auto* ent = &Game::g_entities[i];
 
 			if (ent->r.isInUse)
 			{
@@ -282,7 +267,7 @@ namespace Components
 		if (!val) return;
 
 		auto clientNum = Game::CG_GetClientNum();
-		Game::gentity_t* clientEntity = &Game::g_entities[clientNum];
+		auto* clientEntity = &Game::g_entities[clientNum];
 
 		// Ingame only & player only
 		if (!Game::CL_IsCgameInitialized() || clientEntity->client == nullptr)
@@ -352,21 +337,14 @@ namespace Components
 			// Static models
 			for (size_t i = 0; i < world->dpvs.smodelCount; i++)
 			{
-				auto staticModel = world->dpvs.smodelDrawInsts[i];
+				auto staticModel = &world->dpvs.smodelDrawInsts[i];
+				auto* b = &world->dpvs.smodelInsts[i].bounds;
 
-				if (Utils::Maths::Vec3SqrDistance(playerPosition, staticModel.placement.origin) < sqrDist)
+				if (Utils::Maths::Vec3SqrDistance(playerPosition, staticModel->placement.origin) < sqrDist)
 				{
-					if (staticModel.model)
+					if (staticModel->model)
 					{
-						Game::Bounds b = staticModel.model->bounds;
-						b.midPoint[0] += staticModel.placement.origin[0];
-						b.midPoint[1] += staticModel.placement.origin[1];
-						b.midPoint[2] += staticModel.placement.origin[2];
-						b.halfSize[0] *= staticModel.placement.scale;
-						b.halfSize[1] *= staticModel.placement.scale;
-						b.halfSize[2] *= staticModel.placement.scale;
-
-						Game::R_AddDebugBounds(staticModelsColor, &b);
+						Game::R_AddDebugBounds(staticModelsColor, b);
 					}
 				}
 			}
@@ -383,7 +361,7 @@ namespace Components
 		if (!val) return;
 
 		auto clientNum = Game::CG_GetClientNum();
-		Game::gentity_t* clientEntity = &Game::g_entities[clientNum];
+		auto* clientEntity = &Game::g_entities[clientNum];
 
 		// Ingame only & player only
 		if (!Game::CL_IsCgameInitialized() || clientEntity->client == nullptr)
@@ -404,7 +382,7 @@ namespace Components
 		auto world = gfxAsset->asset.header.gfxWorld;
 
 		auto drawDistance = r_playerDrawDebugDistance.get<int>();
-		auto sqrDist = drawDistance * drawDistance;
+		auto sqrDist = drawDistance * static_cast<float>(drawDistance);
 
 		switch (val)
 		{
@@ -445,13 +423,59 @@ namespace Components
 					const auto dist = Utils::Maths::Vec3SqrDistance(playerPosition, staticModel.placement.origin);
 					if (dist < static_cast<float>(sqrDist))
 					{
-						Game::R_AddDebugString(staticModelsColor, staticModel.placement.origin, 1.0, staticModel.model->name);
+						float rgb01Color[] =
+						{
+							staticModel.groundLighting.array[0] / 255.f,
+							staticModel.groundLighting.array[1] / 255.f,
+							staticModel.groundLighting.array[2] / 255.f,
+							1.f,
+						};
+
+						Game::R_AddDebugString(staticModel.flags & 0x20 ? rgb01Color : staticModelsColor, staticModel.placement.origin, 1.0f, staticModel.model->name);
 					}
 				}
 			}
 			break;
 		default:
 			break;
+		}
+	}
+
+	void Renderer::DebugDrawRunners()
+	{
+		if (!Game::CL_IsCgameInitialized())
+		{
+			return;
+		}
+
+		if (!r_drawRunners.get<bool>())
+		{
+			return;
+		}
+
+		auto* fxSystem = reinterpret_cast<Game::FxSystem*>(0x173F200);
+
+		if (fxSystem)
+		{
+			for (auto i = 0; i < fxSystem->activeElemCount; i++)
+			{
+				auto* elem = &fxSystem->effects[i];
+				if (elem->def)
+				{
+					Game::R_AddDebugString(sceneModelsColor, elem->frameNow.origin, 1.0f, elem->def->name);
+				}
+			}
+		}
+
+		auto soundCount = *reinterpret_cast<int*>(0x7C5C90);
+		auto* sounds = reinterpret_cast<Game::ClientEntSound*>(0x7C5CA0);
+
+		for (auto i = 0; i < soundCount; i++)
+		{
+			if (sounds[i].aliasList)
+			{
+				Game::R_AddDebugString(staticModelsColor, sounds[i].origin, 1.0f, sounds[i].aliasList->aliasName);
+			}
 		}
 	}
 
@@ -473,52 +497,211 @@ namespace Components
 		}
 	}
 
-	void Renderer::ForceTechnique() {
+	void Renderer::DebugDrawClipmap()
+	{
+		auto val = r_drawClipmap.get<int>();
+
+		Game::clipMap_t* clipMap = *reinterpret_cast<Game::clipMap_t**>(0x7998E0);
+		if (!clipMap) return;
+
+		auto clientNum = Game::CG_GetClientNum();
+		auto* clientEntity = &Game::g_entities[clientNum];
+
+		// Ingame only & player only
+		if (!Game::CL_IsCgameInitialized() || clientEntity->client == nullptr)
+		{
+			return;
+		}
+
+		auto drawDistance = r_playerDrawDebugDistance.get<int>();
+		unsigned int sqrDist = static_cast<unsigned int>(drawDistance * drawDistance);
+		float playerPosition[3]{ clientEntity->r.currentOrigin[0], clientEntity->r.currentOrigin[1], clientEntity->r.currentOrigin[2] };
+
+		if (val)
+		{
+			for (size_t i = 0; i < clipMap->numBrushes; i++)
+			{
+				const auto bounds = &clipMap->brushBounds[i];
+				const auto dist = Utils::Maths::Vec3SqrDistance(playerPosition, bounds->midPoint);
+
+				if (dist * 3 > sqrDist)
+				{
+					continue;
+				}
+
+				Game::R_AddDebugBounds(green, bounds);
+			}
+
+			for (size_t i = 0; i < clipMap->partitionCount; i++)
+			{
+				const auto partition = &clipMap->partitions[i];
+
+				assert(partition->firstVertSegment == 0);
+
+				auto indices = &clipMap->triIndices[3 * partition->firstTri];
+				auto tris = (float(*)[3])clipMap->verts[0];
+
+				bool tooFar = false;
+				if (!tooFar)
+				{
+					for (size_t j = 0; j < partition->triCount; j++)
+					{
+						auto indiceSet = &indices[j * 3];
+
+						for (size_t triPoint = 0; triPoint < 3; triPoint++)
+						{
+							auto point = tris[indiceSet[triPoint]];
+
+							const auto dist = Utils::Maths::Vec3SqrDistance(playerPosition, point);
+
+							if (dist > sqrDist)
+							{
+								tooFar = true;
+								break;
+							}
+						}
+
+						if (tooFar)
+						{
+							continue;
+						}
+
+						auto A = tris[indiceSet[0]];
+						auto B = tris[indiceSet[1]];
+						auto C = tris[indiceSet[2]];
+
+						Game::R_AddDebugLine(pink, A, B);
+						Game::R_AddDebugLine(pink, B, C);
+						Game::R_AddDebugLine(pink, C, A);
+					}
+
+				}
+			}
+		}
+	}
+
+	void Renderer::ForceTechnique()
+	{
 		auto forceTechnique = r_forceTechnique.get<int>();
 
-		if (forceTechnique > 0) {
+		if (forceTechnique > 0)
+		{
 			Utils::Hook::Set(0x6FABDF4, forceTechnique);
 		}
 	}
 
-	void* Renderer::SkipBrokenXModelSurfacesNonOptimized(Game::GfxStaticModelDrawStream* stream, Game::GfxCmdBufSourceState* source, Game::GfxCmdBufState* buffer) {
-		
-		// Something wrong in iw3xport or iw4x or maybe even cod4, makes it that we end up with invalid surfaces in xmodels sometimes
-		// Very annoying, crashes the game instantly. For now we skip them
-		if (Maps::IsCustomMap())
+	void Renderer::ListSamplers()
+	{
+		if (!r_listSamplers.get<bool>())
 		{
-			// This bad practice - also, it's working. So until we can fix that XModelSurfs bug...
-			if (IsBadReadPtr(stream->localSurf, sizeof(Game::XSurface)))
-			{
-				return nullptr;
-			}
+			return;
 		}
 
-		return Utils::Hook::Call<void* (Game::GfxStaticModelDrawStream*, Game::GfxCmdBufSourceState*, Game::GfxCmdBufState*)>(0x557C70)(stream, source, buffer);
+		static auto* source = reinterpret_cast<Game::GfxCmdBufSourceState*>(0x6CAF080);
+
+		auto* font = Game::R_RegisterFont("fonts/smallFont", 0);
+		auto height = Game::R_TextHeight(font);
+		auto scale = 1.0f;
+		float color[] = {0.0f, 1.0f, 0.0f, 1.0f};
+
+		for (std::size_t i = 0; i < 27; ++i)
+		{
+			if (source->input.codeImages[i] == nullptr)
+			{
+				color[0] = 1.f;
+			}
+			else
+			{
+				color[0] = 0.f;
+			}
+
+			const auto* str = Utils::String::Format("{}/{:#X} => {} {}", i, i,
+				(source->input.codeImages[i] == nullptr ? "---" : source->input.codeImages[i]->name),
+				std::to_string(source->input.codeImageSamplerStates[i])
+			);
+
+			Game::R_AddCmdDrawText(str, std::numeric_limits<int>::max(), font, 15.0f, (height * scale + 1) * (i + 1) + 14.0f, scale, scale, 0.0f, color, Game::ITEM_TEXTSTYLE_NORMAL);
+		}
 	}
 
-	void* Renderer::SkipBrokenXModelSurfaces(Game::GfxStaticModelDrawStream* stream, Game::GfxCmdBufSourceState* source, Game::GfxCmdBufState* buffer)
+	void Renderer::DrawPrimaryLights()
 	{
-		if (Maps::IsCustomMap())
+		if (!r_drawLights.get<bool>())
 		{
-			// See SkipBrokenXModelSurfacesNonOptimized
-			if (IsBadReadPtr(stream->localSurf, sizeof(Game::XSurface)))
-			{
-				return nullptr;
-			}
+			return;
 		}
 
-		return Utils::Hook::Call<void* (Game::GfxStaticModelDrawStream*, Game::GfxCmdBufSourceState*, Game::GfxCmdBufState*)>(0x557B50)(stream, source, buffer);
+		auto clientNum = Game::CG_GetClientNum();
+		auto* clientEntity = &Game::g_entities[clientNum];
+
+		// Ingame only & player only
+		if (!Game::CL_IsCgameInitialized() || clientEntity->client == nullptr)
+		{
+			return;
+		}
+
+		auto scene = Game::scene;
+		auto asset = Game::DB_FindXAssetEntry(Game::XAssetType::ASSET_TYPE_COMWORLD, Utils::String::VA("maps/mp/%s.d3dbsp", (*Game::sv_mapname)->current.string));
+
+		if (asset == nullptr)
+		{
+			return;
+		}
+
+		auto world = asset->asset.header.comWorld;
+
+		for (size_t i = 0; i < world->primaryLightCount; i++)
+		{
+			auto light = &world->primaryLights[i];
+
+			float to[3];
+			to[0] = light->origin[0] + light->dir[0] * 10;
+			to[1] = light->origin[1] + light->dir[1] * 10;
+			to[2] = light->origin[2] + light->dir[2] * 10;
+
+			auto n = light->defName == nullptr ? "NONE" : light->defName;
+
+			auto str = std::format("LIGHT #{} ({})", i, n);
+
+			float color[4]{};
+			color[3] = 1.0f;
+			color[0] = light->color[0];
+			color[1] = light->color[1];
+			color[2] = light->color[2];
+
+
+			Game::R_AddDebugLine(color, light->origin, to);
+			Game::R_AddDebugString(color, light->origin, 1.0f, str.data());
+		}
+
+		if (scene)
+		{
+			for (size_t i = 0; i < scene->addedLightCount; i++)
+			{
+				auto light = &scene->addedLight[i];
+
+				float color[4]{};
+				color[3] = 1.0f;
+				color[0] = light->color[0];
+				color[1] = light->color[1];
+				color[2] = light->color[2];
+
+				float to[3];
+				to[0] = light->origin[0] + light->dir[0] * 10;
+				to[1] = light->origin[1] + light->dir[1] * 10;
+				to[2] = light->origin[2] + light->dir[2] * 10;
+
+				auto str = std::format("ADDED LIGHT #{}", i);
+
+				Game::R_AddDebugLine(color, light->origin, to);
+				Game::R_AddDebugString(color, light->origin, 1.0f, str.data());
+				
+			}
+		}
 	}
 
-	int Renderer::FixSunShadowPartitionSize(
-		Game::GfxCamera* camera,
-		Game::GfxSunShadowMapMetrics* mapMetrics,
-		Game::GfxSunShadow* sunShadow,
-		Game::GfxSunShadowClip* clip,
-		float* partitionFraction)
+	int Renderer::FixSunShadowPartitionSize(Game::GfxCamera* camera, Game::GfxSunShadowMapMetrics* mapMetrics, Game::GfxSunShadow* sunShadow, Game::GfxSunShadowClip* clip, float* partitionFraction)
 	{
-
 		auto result = Utils::Hook::Call<int(Game::GfxCamera*, Game::GfxSunShadowMapMetrics*, Game::GfxSunShadow*, Game::GfxSunShadowClip*, float*)>(0x5463B0)(camera, mapMetrics, sunShadow, clip, partitionFraction);
 
 		if (Maps::IsCustomMap()) 
@@ -528,7 +711,6 @@ namespace Components
 		}
 
 		return result;
-
 	}
 
 	Renderer::Renderer()
@@ -539,20 +721,27 @@ namespace Components
 		{
 			if (Game::CL_IsCgameInitialized())
 			{
+				DebugDrawRunners();
 				DebugDrawAABBTrees();
 				DebugDrawModelNames();
 				DebugDrawModelBoundingBoxes();
 				DebugDrawSceneModelCollisions();
 				DebugDrawTriggers();
 				ForceTechnique();
+				ListSamplers();
+				DrawPrimaryLights();
+				DebugDrawClipmap();
 			}
 		}, Scheduler::Pipeline::RENDERER);
+
+#ifdef _DEBUG
+		// Disable ATI Radeon 4000 optimization that crashes Pixwin
+		Utils::Hook::Set(0x5066F8, D3DFMT_UNKNOWN);
+#endif
 
 		// COD4 Map Fixes
 		// The day map porting is perfect we should be able to remove these
 		Utils::Hook(0x546A09, FixSunShadowPartitionSize, HOOK_CALL).install()->quick();
-		Utils::Hook(0x5587BF, SkipBrokenXModelSurfacesNonOptimized, HOOK_CALL).install()->quick();
-		Utils::Hook(0x55875F, SkipBrokenXModelSurfaces, HOOK_CALL).install()->quick();
 
 		// Log broken materials
 		Utils::Hook(0x0054CAAA, Renderer::StoreGfxBufContextPtrStub1, HOOK_JUMP).install()->quick();
@@ -563,9 +752,6 @@ namespace Components
 		Utils::Hook(0x00580F53, Renderer::DrawTechsetForMaterial, HOOK_CALL).install()->quick();
 
 		Utils::Hook(0x536A80, Renderer::BackendFrameStub, HOOK_JUMP).install()->quick();
-
-		// Do not cull meshes with too many surfaces in the camera (fixes blinking meshes on cha_quad)
-		Utils::Hook::Nop(0x50C68B, 6);
 
 		// Begin device recovery (not D3D9Ex)
 		Utils::Hook(0x508298, []
@@ -587,7 +773,7 @@ namespace Components
 		// End vid_restart
 		Utils::Hook(0x4CA3A7, Renderer::PostVidRestartStub, HOOK_CALL).install()->quick();
 
-		Scheduler::Once([]
+		Events::OnDvarInit([]
 		{
 			static const char* values[] =
 			{
@@ -598,16 +784,18 @@ namespace Components
 				nullptr
 			};
 
-
+			Renderer::r_drawClipmap = Game::Dvar_RegisterInt("r_drawClipmap", 0, 0, 10, Game::DVAR_ARCHIVE, "Draw clipmap collision");
 			Renderer::r_drawModelBoundingBoxes = Game::Dvar_RegisterEnum("r_drawModelBoundingBoxes", values, 0, Game::DVAR_CHEAT, "Draw scene model bounding boxes");
 			Renderer::r_drawSceneModelCollisions = Game::Dvar_RegisterBool("r_drawSceneModelCollisions", false, Game::DVAR_CHEAT, "Draw scene model collisions");
 			Renderer::r_drawTriggers = Game::Dvar_RegisterBool("r_drawTriggers", false, Game::DVAR_CHEAT, "Draw triggers");
 			Renderer::r_drawModelNames = Game::Dvar_RegisterEnum("r_drawModelNames", values, 0, Game::DVAR_CHEAT, "Draw all model names");
+			Renderer::r_drawRunners = Game::Dvar_RegisterBool("r_drawRunners", false, Game::DVAR_NONE, "Draw active sound & fx runners");
 			Renderer::r_drawAABBTrees = Game::Dvar_RegisterBool("r_drawAabbTrees", false, Game::DVAR_CHEAT, "Draw aabb trees");
-			Renderer::r_playerDrawDebugDistance = Game::Dvar_RegisterInt("r_drawDebugDistance", 1000, 0, 50000, Game::DVAR_ARCHIVE, "r_draw debug functions draw distance, relative to the player");
-			Renderer::r_forceTechnique = Game::Dvar_RegisterInt("r_force_technique", 0, 0, 14, Game::DVAR_NONE, "Forces a base technique on the renderer");
-
-		}, Scheduler::Pipeline::MAIN);
+			Renderer::r_playerDrawDebugDistance = Game::Dvar_RegisterInt("r_drawDebugDistance", 1000, 0, 50000, Game::DVAR_ARCHIVE, "r_draw debug functions draw distance relative to the player");
+			Renderer::r_forceTechnique = Game::Dvar_RegisterInt("r_forceTechnique", 0, 0, 14, Game::DVAR_NONE, "Force a base technique on the renderer");
+			Renderer::r_listSamplers = Game::Dvar_RegisterBool("r_listSamplers", false, Game::DVAR_NONE, "List samplers & sampler states");
+			Renderer::r_drawLights = Game::Dvar_RegisterBool("r_drawLights", false, Game::DVAR_NONE, "Draw every comworld light in the level");
+		});
 	}
 
 	Renderer::~Renderer()

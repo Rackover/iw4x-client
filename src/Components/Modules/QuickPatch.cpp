@@ -1,8 +1,15 @@
 #include <STDInclude.hpp>
 #define RAWFILE_VERSION_FILE "VERSION.TXT"
+#include <Utils/Compression.hpp>
+
+#include "QuickPatch.hpp"
+#include "TextRenderer.hpp"
+#include "Toast.hpp"
 
 namespace Components
 {
+	Dvar::Var QuickPatch::UIMousePitch;
+
 	Dvar::Var QuickPatch::r_customAspectRatio;
 
 	void QuickPatch::UnlockStats()
@@ -48,20 +55,6 @@ namespace Components
 		}
 	}
 
-	__declspec(naked) void QuickPatch::JavelinResetHook_Stub()
-	{
-		__asm
-		{
-			mov eax, 577A10h;
-			call eax;
-			pop edi;
-			mov dword ptr [esi+34h], 0;
-			pop esi;
-			pop ebx;
-			retn;
-		}
-	}
-
 	Game::dvar_t* QuickPatch::g_antilag;
 	__declspec(naked) void QuickPatch::ClientEventsFireWeapon_Stub()
 	{
@@ -69,7 +62,7 @@ namespace Components
 		{
 			// check g_antilag dvar value
 			mov eax, g_antilag;
-			cmp byte ptr[eax + 16], 1;
+			cmp byte ptr [eax + 16], 1;
 
 			// do antilag if 1
 			je fireWeapon
@@ -97,7 +90,7 @@ namespace Components
 		{
 			// check g_antilag dvar value
 			mov eax, g_antilag;
-			cmp byte ptr[eax + 16], 1;
+			cmp byte ptr [eax + 16], 1;
 
 			// do antilag if 1
 			je fireWeaponMelee
@@ -206,10 +199,14 @@ namespace Components
 	void QuickPatch::CL_KeyEvent_OnEscape()
 	{
 		if (Game::Con_CancelAutoComplete())
+		{
 			return;
+		}
 
 		if (TextRenderer::HandleFontIconAutocompleteKey(0, TextRenderer::FONT_ICON_ACI_CONSOLE, Game::K_ESCAPE))
+		{
 			return;
+		}
 
 		// Close console
 		Game::Key_RemoveCatcher(0, ~Game::KEYCATCH_CONSOLE);
@@ -249,10 +246,11 @@ namespace Components
 		}
 
 		auto workingDir = std::filesystem::current_path().string();
-		auto binary = FileSystem::GetAppdataPath() / "data" / "iw4x" / *Game::sys_exitCmdLine;
+		const std::string binary = *Game::sys_exitCmdLine;
+		const std::string command = binary == "iw4x-sp.exe" ? "iw4x-sp" : "iw4x";
 
-		SetEnvironmentVariableA("XLABS_MW2_INSTALL", workingDir.data());
-		Utils::Library::LaunchProcess(binary.string(), "-singleplayer", workingDir);
+		SetEnvironmentVariableA("MW2_INSTALL", workingDir.data());
+		Utils::Library::LaunchProcess(binary, std::format("{} --pass \"{}\"", command, GetCommandLineA()), workingDir);
 	}
 
 	__declspec(naked) void QuickPatch::SND_GetAliasOffset_Stub()
@@ -260,7 +258,7 @@ namespace Components
 		using namespace Game;
 
 		static const char* msg = "SND_GetAliasOffset: Could not find sound alias '%s'";
-		static const DWORD func = 0x4B22D0; // Com_Error
+		using namespace Game;
 
 		__asm
 		{
@@ -282,7 +280,7 @@ namespace Components
 			push [esi] // alias->aliasName
 			push msg
 			push ERR_DROP
-			call func // Going to longjmp back to safety
+			call Com_Error // Going to longjmp back to safety
 			add esp, 0xC
 
 			xor eax, eax
@@ -316,9 +314,6 @@ namespace Components
 		Utils::Hook(0x5D6D56, QuickPatch::ClientEventsFireWeapon_Stub, HOOK_JUMP).install()->quick();
 		Utils::Hook(0x5D6D6A, QuickPatch::ClientEventsFireWeaponMelee_Stub, HOOK_JUMP).install()->quick();
 
-		// Javelin fix
-		Utils::Hook(0x578F52, QuickPatch::JavelinResetHook_Stub, HOOK_JUMP).install()->quick();
-
 		// Add ultrawide support
 		Utils::Hook(0x51B13B, QuickPatch::Dvar_RegisterAspectRatioDvar, HOOK_CALL).install()->quick();
 		Utils::Hook(0x5063F3, QuickPatch::SetAspectRatio_Stub, HOOK_JUMP).install()->quick();
@@ -333,30 +328,8 @@ namespace Components
 		// Fix crash as nullptr goes unchecked
 		Utils::Hook(0x437CAD, QuickPatch::SND_GetAliasOffset_Stub, HOOK_JUMP).install()->quick();
 
-		// protocol version (workaround for hacks)
-		Utils::Hook::Set<int>(0x4FB501, PROTOCOL);
-
-		// protocol command
-		Utils::Hook::Set<int>(0x4D36A9, PROTOCOL);
-		Utils::Hook::Set<int>(0x4D36AE, PROTOCOL);
-		Utils::Hook::Set<int>(0x4D36B3, PROTOCOL);
-
-		// internal version is 99, most servers should accept it
-		Utils::Hook::Set<int>(0x463C61, 208);
-
 		// remove system pre-init stuff (improper quit, disk full)
 		Utils::Hook::Set<BYTE>(0x411350, 0xC3);
-
-		// remove STEAMSTART checking for DRM IPC
-		Utils::Hook::Nop(0x451145, 5);
-		Utils::Hook::Set<BYTE>(0x45114C, 0xEB);
-
-		// LSP disabled
-		Utils::Hook::Set<BYTE>(0x435950, 0xC3); // LSP HELLO
-		Utils::Hook::Set<BYTE>(0x49C220, 0xC3); // We wanted to send a logging packet, but we haven't connected to LSP!
-		Utils::Hook::Set<BYTE>(0x4BD900, 0xC3); // main LSP response func
-		Utils::Hook::Set<BYTE>(0x682170, 0xC3); // Telling LSP that we're playing a private match
-		Utils::Hook::Nop(0x4FD448, 5);          // Don't create lsp_socket
 
 		// Don't delete config files if corrupted
 		Utils::Hook::Set<BYTE>(0x47DCB3, 0xEB);
@@ -425,29 +398,6 @@ namespace Components
 		// remove limit on IWD file loading
 		Utils::Hook::Set<BYTE>(0x642BF3, 0xEB);
 
-		// dont run UPNP stuff on main thread
-		Utils::Hook::Set<BYTE>(0x48A135, 0xC3);
-		Utils::Hook::Set<BYTE>(0x48A151, 0xC3);
-		Utils::Hook::Nop(0x684080, 5); // Don't spam the console
-
-		// spawn upnp thread when UPNP_init returns
-		Utils::Hook::Hook(0x47982B, []()
-		{
-			std::thread([]
-			{
-				// check natpmpstate
-				// state 4 is no more devices to query
-				while (Utils::Hook::Get<int>(0x66CE200) < 4)
-				{
-					Utils::Hook::Call<void()>(0x4D7030)();
-					std::this_thread::sleep_for(500ms);
-				}
-			}).detach();
-		}, HOOK_JUMP).install()->quick();
-
-		// disable the IWNet IP detection (default 'got ipdetect' flag to 1)
-		Utils::Hook::Set<BYTE>(0x649D6F0, 1);
-
 		// Fix stats sleeping
 		Utils::Hook::Set<BYTE>(0x6832BA, 0xEB);
 		Utils::Hook::Set<BYTE>(0x4BD190, 0xC3);
@@ -459,11 +409,6 @@ namespace Components
 
 		// default sv_pure to 0
 		Utils::Hook::Set<BYTE>(0x4D3A74, 0);
-
-		// Force debug logging
-		Utils::Hook::Set<BYTE>(0x60AE4A, 1);
-		//Utils::Hook::Nop(0x60AE49, 8);
-		//Utils::Hook::Set<BYTE>(0x6FF53C, 0);
 
 		// remove activeAction execution (exploit in mods)
 		Utils::Hook::Set<BYTE>(0x5A1D43, 0xEB);
@@ -487,7 +432,6 @@ namespace Components
 		// fs_game fixes
 		Utils::Hook::Nop(0x4A5D74, 2); // remove fs_game profiles
 		Utils::Hook::Set<BYTE>(0x4081FD, 0xEB); // defaultweapon
-		Utils::Hook::Set<BYTE>(0x452C1D, 0xEB); // LoadObj weaponDefs
 
 		// filesystem init default_mp.cfg check
 		Utils::Hook::Nop(0x461A9E, 5);
@@ -497,7 +441,7 @@ namespace Components
 		// vid_restart when ingame
 		Utils::Hook::Nop(0x4CA1FA, 6);
 
-		// Filter log (initially com_logFilter, but I don't see why that dvar is needed)
+		// Filter log (initially com_logFilter, but I don't see why that dvar print is needed)
 		// Seems like it's needed for B3, so there is a separate handling for dedicated servers in Dedicated.cpp
 		if (!Dedicated::IsEnabled())
 		{
@@ -567,16 +511,16 @@ namespace Components
 		}, Scheduler::Pipeline::RENDERER);
 
 		// Fix mouse pitch adjustments
-		Dvar::Register<bool>("ui_mousePitch", false, Game::DVAR_ARCHIVE, "");
+		UIMousePitch = Dvar::Register<bool>("ui_mousePitch", false, Game::DVAR_ARCHIVE, "");
 		UIScript::Add("updateui_mousePitch", []([[maybe_unused]] const UIScript::Token& token, [[maybe_unused]] const Game::uiInfo_s* info)
 		{
-			if (Dvar::Var("ui_mousePitch").get<bool>())
+			if (UIMousePitch.get<bool>())
 			{
-				Dvar::Var("m_pitch").set(-0.022f);
+				Game::Dvar_SetFloatByName("m_pitch", -0.022f);
 			}
 			else
 			{
-				Dvar::Var("m_pitch").set(0.022f);
+				Game::Dvar_SetFloatByName("m_pitch", 0.022f);
 			}
 		});
 
@@ -604,7 +548,7 @@ namespace Components
 
 		Command::Add("unlockstats", QuickPatch::UnlockStats);
 
-		Command::Add("dumptechsets", [](Command::Params* param)
+		Command::Add("dumptechsets", [](const Command::Params* param)
 		{
 			if (param->size() != 2)
 			{
@@ -613,17 +557,25 @@ namespace Components
 			}
 
 			std::vector<std::string> fastFiles;
-
-			if (param->get(1) == "all"s)
+			if (std::strcmp(param->get(1), "all") == 0)
 			{
-				for (const auto& f : Utils::IO::ListFiles("zone/english"))
+				for (const auto& entry : Utils::IO::ListFiles("zone/english", false))
+				{
+					const auto& f = entry.path().string();
 					fastFiles.emplace_back(f.substr(7, f.length() - 10));
+				}
 
-				for (const auto& f : Utils::IO::ListFiles("zone/dlc"))
+				for (const auto& entry : Utils::IO::ListFiles("zone/dlc", false))
+				{
+					const auto& f = entry.path().string();
 					fastFiles.emplace_back(f.substr(3, f.length() - 6));
+				}
 
-				for (const auto& f : Utils::IO::ListFiles("zone/patch"))
+				for (const auto& entry : Utils::IO::ListFiles("zone/patch", false))
+				{
+					const auto& f = entry.path().string();
 					fastFiles.emplace_back(f.substr(5, f.length() - 8));
+				}
 			}
 			else
 			{
@@ -649,7 +601,8 @@ namespace Components
 						formatString = "userraw/shader_bin/%.vs";
 					}
 
-					if (Utils::IO::FileExists(Utils::String::VA(formatString, name.data()))) return;
+					const auto path = std::format("{}{}", formatString, name);
+					if (Utils::IO::FileExists(path)) return;
 
 					Utils::Stream buffer(0x1000);
 					auto* dest = buffer.dest<Game::MaterialPixelShader>();
@@ -661,14 +614,14 @@ namespace Components
 						Utils::Stream::ClearPointer(&dest->prog.loadDef.program);
 					}
 
-					Utils::IO::WriteFile(Utils::String::VA(formatString, name.data()), buffer.toBuffer());
+					Utils::IO::WriteFile(path, buffer.toBuffer());
 				}
 
 				if (type == Game::ASSET_TYPE_TECHNIQUE_SET)
 				{
 					Utils::IO::CreateDir("userraw/techsets");
 					Utils::Stream buffer(0x1000);
-					Game::MaterialTechniqueSet* dest = buffer.dest<Game::MaterialTechniqueSet>();
+					auto* dest = buffer.dest<Game::MaterialTechniqueSet>();
 					buffer.save(asset.techniqueSet);
 
 					if (asset.techniqueSet->name)
@@ -679,18 +632,18 @@ namespace Components
 
 					for (int i = 0; i < ARRAYSIZE(Game::MaterialTechniqueSet::techniques); ++i)
 					{
-						Game::MaterialTechnique* technique = asset.techniqueSet->techniques[i];
+						auto* technique = asset.techniqueSet->techniques[i];
 
 						if (technique)
 						{
 							// Size-check is obsolete, as the structure is dynamic
 							buffer.align(Utils::Stream::ALIGN_4);
 
-							Game::MaterialTechnique* destTechnique = buffer.dest<Game::MaterialTechnique>();
+							auto* destTechnique = buffer.dest<Game::MaterialTechnique>();
 							buffer.save(technique, 8);
 
 							// Save_MaterialPassArray
-							Game::MaterialPass* destPasses = buffer.dest<Game::MaterialPass>();
+							auto* destPasses = buffer.dest<Game::MaterialPass>();
 							buffer.saveArray(technique->passArray, technique->passCount);
 
 							for (std::uint16_t j = 0; j < technique->passCount; ++j)
@@ -751,7 +704,7 @@ namespace Components
 			}
 		});
 
-#ifdef DEBUG
+#ifdef DEBUG_MAT_LOG
 		AssetHandler::OnLoad([](Game::XAssetType type, Game::XAssetHeader asset, const std::string& /*name*/, bool* /*restrict*/)
 		{
 			if (type == Game::XAssetType::ASSET_TYPE_GFXWORLD)
