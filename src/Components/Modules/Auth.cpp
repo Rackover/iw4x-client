@@ -8,6 +8,7 @@
 #include "Bots.hpp"
 #include "Friends.hpp"
 #include "Toast.hpp"
+#include "Party.hpp"
 
 namespace Components
 {

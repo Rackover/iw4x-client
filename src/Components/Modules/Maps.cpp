@@ -5,6 +5,7 @@
 #include "RawFiles.hpp"
 #include "StartupMessages.hpp"
 #include "Theatre.hpp"
+#include <Utils/Compression.hpp>
 
 namespace Components
 {

@@ -104,8 +104,8 @@ namespace Components
 
 	void Console::ShowPrompt()
 	{
-		wattron(Console::InputWindow, COLOR_PAIR(10) | A_BOLD);
-		wprintw(Console::InputWindow, "%s> ", SHORTVERSION);
+		wattron(InputWindow, COLOR_PAIR(10) | A_BOLD);
+		wprintw(InputWindow, "%s> ", SHORTVERSION);
 	}
 
 	void Console::RefreshOutput()
@@ -856,7 +856,7 @@ namespace Components
 		AssertOffset(Game::clientUIActive_t, keyCatchers, 0x9B0);
 
 		// Console '%s: %s> ' string
-(??)		Utils::Hook::Set<const char*>(0x5A44B4, "IW4x MP: " VERSION "> ");
+		Utils::Hook::Set<const char*>(0x5A44B4, "IW4x MP: " VERSION "> ");
 
 		// Patch console color
 		static float consoleColor[] = { 0.70f, 1.00f, 0.00f, 1.00f };

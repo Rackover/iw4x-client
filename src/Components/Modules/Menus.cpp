@@ -872,7 +872,7 @@ namespace Components
 ////			Scheduler::OnFrameAsync(AntiCheat::QuickCodeScanner2);
 ////#endif
 ////
-			Command::Add("mp_QuickMessage", [](Command::Params*)
+			Command::Add("mp_QuickMessage", [](const Command::Params*)
 				{
 					Command::Execute("openmenu quickmessage");
 				});

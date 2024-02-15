@@ -1007,7 +1007,7 @@ namespace Components
 		}
 
 		Logger::Print(" --------------------------------------------------------------------------------\n");
-		Logger::Print(" IW4x ZoneBuilder - {}\n", REVISION_STR);
+		Logger::Print(" IW4x ZoneBuilder - {}\n", SHORTVERSION);
 		Logger::Print(" Commands:\n");
 		Logger::Print("\t-buildmod [mod name]: Build a mod.ff from the source located in zone_source/mod_name.csv\n");
 		Logger::Print("\t-buildzone [zone]: Builds a zone from a csv located in zone_source\n");

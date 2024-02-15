@@ -149,7 +149,7 @@ namespace Components
 		info.set("gamename", "IW4");
 		info.set("sv_maxclients", std::to_string(maxClientCount));
 		info.set("protocol", std::to_string(PROTOCOL));
-		info.set("version", REVISION_STR);
+		info.set("version", SHORTVERSION);
 		info.set("version", (*Game::version)->current.string);
 		info.set("mapname", (*Game::sv_mapname)->current.string);
 		info.set("isPrivate", *password ? "1" : "0");

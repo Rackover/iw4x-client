@@ -5,6 +5,8 @@
 #include "QuickPatch.hpp"
 #include "TextRenderer.hpp"
 #include "Toast.hpp"
+#include <version.hpp>
+#include "Party.hpp"
 
 namespace Components
 {

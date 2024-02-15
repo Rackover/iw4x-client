@@ -25,6 +25,8 @@ namespace Components
 
 		static std::string GetMotd();
 		static bool IsUsingIw4xProtocol();
+		static std::string GetHostName();
+		static int GetMaxClients();
 
 	private:
 		static std::map<std::uint64_t, Network::Address> LobbyMap;
