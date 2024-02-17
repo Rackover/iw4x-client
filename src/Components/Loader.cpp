@@ -143,7 +143,7 @@ namespace Components
 		Register(new Lean());
 		Register(new Localization());
 		Register(new MapDump());
-		Register(new MapRotation());
+		//Register(new MapRotation());
 		Register(new Maps());
 		Register(new Materials());
 		Register(new Menus());

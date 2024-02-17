@@ -231,7 +231,7 @@ namespace Components
 			const auto cat = static_cast<Game::ImageCategory>(image->category);
 			if (cat == Game::ImageCategory::IMG_CATEGORY_UNKNOWN)
 			{
-				Logger::Warning(Game::CON_CHANNEL_GFX, "Image {} has wrong category IMG_CATEGORY_UNKNOWN, this is an IMPORTANT ISSUE that should be fixed!\n", name);
+				image->category = Game::ImageCategory::IMG_CATEGORY_LOAD_FROM_FILE;
 			}
 		}
 #endif

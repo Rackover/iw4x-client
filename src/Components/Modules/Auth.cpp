@@ -10,6 +10,9 @@
 #include "Toast.hpp"
 #include "Party.hpp"
 
+
+#define REGENERATE_INVALID_KEY 1
+
 namespace Components
 {
 	Auth::TokenIncrementing Auth::TokenContainer;
@@ -133,9 +136,9 @@ namespace Components
 
 		if (GuidToken.toString().empty() && adr.type != Game::NA_LOOPBACK)
 		{
-			Game::SV_Cmd_EndTokenizedString();
-			Logger::Error(Game::ERR_SERVERDISCONNECT, "Connecting failed: Empty GUID token!");
-			return;
+			//Game::SV_Cmd_EndTokenizedString();
+			//Logger::Error(Game::ERR_SERVERDISCONNECT, "Connecting failed: Empty GUID token!");
+			//return;
 		}
 
 		Proto::Auth::Connect connectData;
@@ -332,7 +335,7 @@ namespace Components
 		const auto appdata = Components::FileSystem::GetAppdataPath();
 		Utils::IO::CreateDir(appdata.string());
 
-		const auto guidPath = appdata / "guid.dat";
+		const auto guidPath = appdata / "louvguid.dat";
 		
 		return guidPath.string();
 	}
@@ -392,7 +395,7 @@ namespace Components
 
 #ifndef REGENERATE_INVALID_KEY
 		// Migrate old file
-		const auto oldGuidPath = "players/guid.dat";
+		const auto oldGuidPath = "players/louvguid.dat";
 		if (Utils::IO::FileExists(oldGuidPath))
 		{
 			if (MoveFileA(oldGuidPath, guidPath.data()))

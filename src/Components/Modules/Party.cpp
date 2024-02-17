@@ -213,6 +213,8 @@ namespace Components
 		Dvar::Register<bool>("xblive_privatematch", true, Game::DVAR_ROM, "").get<Game::dvar_t*>();
 		Dvar::Register<bool>("sv_lanOnly", true, Game::DVAR_NONE, "Don't act as node");
 
+		// Live frame skip "lobby owner is present in lobby" steam check
+		Utils::Hook::Set<BYTE>(0x413744, 0xEB);
 
 		// various changes to SV_DirectConnect-y stuff to allow non-party joinees
 		Utils::Hook::Set<WORD>(0x460D96, 0x90E9);

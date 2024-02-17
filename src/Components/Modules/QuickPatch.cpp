@@ -381,6 +381,7 @@ namespace Components
 
 		// splash logo
 		Utils::Hook::Set<const char*>(0x475F9E, BASEGAME "/images/splash.bmp");
+		Utils::Hook::Nop(0x45148B, 5);          // Disable splash screen
 
 		Utils::Hook::Set<const char*>(0x4876C6, "Successfully read stats data\n");
 
