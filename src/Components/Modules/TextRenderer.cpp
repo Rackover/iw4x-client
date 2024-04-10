@@ -22,7 +22,7 @@ namespace Components
 		ColorRgb(255, 255, 255),    // TEXT_COLOR_ALLIES
 		ColorRgb(255, 255, 255),    // TEXT_COLOR_RAINBOW
 		ColorRgb(255, 255, 255),    // TEXT_COLOR_SERVER
-		ColorRgb(255, 255, 255),    // TEXT_COLOR_GAY
+		ColorRgb(255, 255, 255),    // TEXT_COLOR_MULTICOLOR
 	};
 
 	unsigned TextRenderer::colorTableNew[TEXT_COLOR_COUNT]
@@ -39,7 +39,7 @@ namespace Components
 		ColorRgb(255, 255, 255),    // TEXT_COLOR_ALLIES
 		ColorRgb(255, 255, 255),    // TEXT_COLOR_RAINBOW
 		ColorRgb(255, 255, 255),    // TEXT_COLOR_SERVER
-		ColorRgb(255, 255, 255),    // TEXT_COLOR_GAY
+		ColorRgb(255, 255, 255),    // TEXT_COLOR_MULTICOLOR
 	};
 
 	unsigned(*TextRenderer::currentColorTable)[TEXT_COLOR_COUNT];
@@ -1037,7 +1037,7 @@ namespace Components
 			const char* curText = text;
 			auto maxLengthRemaining = maxLength;
 			auto currentColor = color;
-			auto isGay = false;
+			auto isMulticolor = false;
 			auto subtitleAllowGlow = false;
 			auto extraFxChar = 0;
 			auto drawExtraFxChar = false;
@@ -1059,7 +1059,7 @@ namespace Components
 				if (letter == '^' && *curText >= COLOR_FIRST_CHAR && *curText <= COLOR_LAST_CHAR)
 				{
 					const auto colorIndex = ColorIndexForChar(*curText);
-					isGay = (colorIndex == TEXT_COLOR_GAY);
+					isGay = colorIndex == TEXT_COLOR_MULTICOLOR;
 					subtitleAllowGlow = false;
 					if (colorIndex == TEXT_COLOR_DEFAULT)
 					{
@@ -1087,7 +1087,7 @@ namespace Components
 					}
 				}
 
-				if (isGay)
+				if (isMulticolor)
 				{
 					const Game::GfxColor colorTableColor{ HsvToRgb({ static_cast<uint8_t>((Game::Sys_Milliseconds() / 30 + count * 16 + static_cast<uint8_t>(y)) % 256), 255,255 }) };
 					// Swap r and b for whatever reason

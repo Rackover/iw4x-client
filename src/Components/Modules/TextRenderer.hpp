@@ -16,7 +16,8 @@ namespace Components
 		TEXT_COLOR_ALLIES = 9,
 		TEXT_COLOR_RAINBOW = 10,
 		TEXT_COLOR_SERVER = 11, // using that color in infostrings (e.g. your name) fails, ';' is an illegal character!
-		TEXT_COLOR_GAY = 12,
+		TEXT_COLOR_MULTICOLOR = 12,
+
 		TEXT_COLOR_COUNT
 	};
 
