@@ -16,6 +16,10 @@ namespace Components
 
 		static const char* LocalizeMapName(const char* mapName);
 
+		static void GSCr_LocalizeText();
+
+		static void GSCr_LocalizeGametype();
+
 	private:
 		static std::recursive_mutex LocalizeMutex;
 		static std::unordered_map<std::string, Game::LocalizeEntry*> LocalizeMap;

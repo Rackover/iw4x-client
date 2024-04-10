@@ -6,6 +6,8 @@
 #include "StartupMessages.hpp"
 #include "Theatre.hpp"
 #include <Utils/Compression.hpp>
+#include "GSC/Script.hpp"
+#include "GSC/ScriptExtension.hpp"
 
 namespace Components
 {
@@ -14,8 +16,6 @@ namespace Components
 	std::vector<std::pair<std::string, std::string>> Maps::DependencyList;
 	std::vector<std::string> Maps::CurrentDependencies;
 	std::vector<std::string> Maps::FoundCustomMaps;
-
-	Dvar::Var Maps::RListSModels;
 
 	bool Maps::SPMap;
 	std::vector<Maps::DLC> Maps::DlcPacks;
@@ -776,8 +776,9 @@ namespace Components
 	{
 		Scheduler::Once([]
 		{
+				Dvar::Register<bool>("sv_allowVote", false, Game::DVAR_NONE, "allows vote after a game");
+
 			Dvar::Register<bool>("isDlcInstalled_All", false, Game::DVAR_EXTERNAL | Game::DVAR_INIT, "");
-			Maps::RListSModels = Dvar::Register<bool>("r_listSModels", false, Game::DVAR_NONE, "Display a list of visible SModels");
 
 			Maps::AddDlc({ 1, "Stimulus Pack", {"mp_complex", "mp_compact", "mp_storm", "mp_overgrown", "mp_crash"} });
 			Maps::AddDlc({ 2, "Resurgence Pack", {"mp_abandon", "mp_vacant", "mp_trailerpark", "mp_strike", "mp_fuel2"} });
@@ -793,6 +794,9 @@ namespace Components
 
 				Game::ShowMessageBox(Utils::String::VA("DLC %d does not exist!", dlc), "ERROR");
 			});
+
+			
+
 		}, Scheduler::Pipeline::MAIN);
 
 		// disable turrets on CoD:OL 448+ maps for now
@@ -888,35 +892,62 @@ namespace Components
 			return;
 		}
 
-		// Client only
-		Scheduler::Loop([]
-		{
-			auto*& gameWorld = *reinterpret_cast<Game::GfxWorld**>(0x66DEE94);
-			if (!Game::CL_IsCgameInitialized() || !gameWorld || !Maps::RListSModels.get<bool>()) return;
-
-			std::map<std::string, int> models;
-			for (unsigned int i = 0; i < gameWorld->dpvs.smodelCount; ++i)
+		Components::GSC::Script::AddFunction("LOUV_GetMapList", [] // gsc: LOUV_GetMapList()
 			{
-				if (gameWorld->dpvs.smodelVisData[0][i])
+				Game::Scr_MakeArray();
+
+				Game::UI_UpdateArenas();
+				for (int i = 0; i < *Game::arenaCount; ++i)
 				{
-					std::string name = gameWorld->dpvs.smodelDrawInsts[i].model->name;
-
-					if (!models.contains(name)) models[name] = 1;
-					else models[name]++;
+					Game::newMapArena_t* arena = &ArenaLength::NewArenas[i];
+					Game::Scr_AddString(arena->mapName);
+					Game::Scr_AddArray();
 				}
-			}
+			});
 
-			Game::Font_s* font = Game::R_RegisterFont("fonts/smallFont", 0);
-			auto height = Game::R_TextHeight(font);
-			auto scale = 0.75f;
-			float color[4] = {0.0f, 1.0f, 0.0f, 1.0f};
 
-			unsigned int i = 0;
-			for (auto& model : models)
+		Components::GSC::Script::AddFunction("LOUV_GetMapArenaInfo", [] // gsc: LOUV_GetMapArenaInfo(mapName, fieldName)
 			{
-				Game::R_AddCmdDrawText(Utils::String::VA("%d %s", model.second, model.first.data()), std::numeric_limits<int>::max(), font, 15.0f, (height * scale + 1) * (i++ + 1) + 15.0f, scale, scale, 0.0f, color, Game::ITEM_TEXTSTYLE_NORMAL);
-			}
-		}, Scheduler::Pipeline::RENDERER);
+				if (Game::Scr_GetNumParam() != 2)
+				{
+					Game::Scr_Error("LOUV_GetMapArenaInfo: Needs az map name and a field name!");
+					return;
+				}
+
+
+				const std::string mapName = Game::SL_ConvertToString(Game::Scr_GetConstString(0));
+				const std::string fieldName = Game::SL_ConvertToString(Game::Scr_GetConstString(1));
+
+				Game::UI_UpdateArenas();
+				for (int i = 0; i < *Game::arenaCount; ++i)
+				{
+					Game::newMapArena_t* arena = &ArenaLength::NewArenas[i];
+					if (arena->mapName == mapName)
+					{
+						// Found the map!
+						for (std::size_t j = 0; j < std::extent_v<decltype(Game::newMapArena_t::keys)>; ++j)
+						{
+							const auto* key = arena->keys[j];
+							const auto* value = arena->values[j];
+
+							// Foudn the field!
+							if (key == fieldName)
+							{
+								Game::Scr_AddString(value);
+								return;
+							}
+						}
+
+						const std::string error = std::format("Could not find field {} in arena entry for map {}!\n", fieldName, mapName);
+						Game::Scr_Error(error.data());
+						return;
+					}
+				}
+
+				const std::string error = std::format("Map {} has no arena entry!\n", mapName);
+				Game::Scr_Error(error.data());
+			});
+
 	}
 
 	Maps::~Maps()

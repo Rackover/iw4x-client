@@ -94,8 +94,6 @@ namespace Components
 		static std::vector<std::string> CurrentDependencies;
 		static std::vector<std::string> FoundCustomMaps;
 
-		static Dvar::Var RListSModels;
-
 		static void GetBSPName(char* buffer, size_t size, const char* format, const char* mapname);
 		static void LoadAssetRestrict(Game::XAssetType type, Game::XAssetHeader asset, const std::string& name, bool* restrict);
 		static void LoadMapZones(Game::XZoneInfo *zoneInfo, unsigned int zoneCount, int sync);
