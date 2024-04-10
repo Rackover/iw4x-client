@@ -1059,7 +1059,7 @@ namespace Components
 				if (letter == '^' && *curText >= COLOR_FIRST_CHAR && *curText <= COLOR_LAST_CHAR)
 				{
 					const auto colorIndex = ColorIndexForChar(*curText);
-					isGay = colorIndex == TEXT_COLOR_MULTICOLOR;
+					isMulticolor = colorIndex == TEXT_COLOR_MULTICOLOR;
 					subtitleAllowGlow = false;
 					if (colorIndex == TEXT_COLOR_DEFAULT)
 					{
