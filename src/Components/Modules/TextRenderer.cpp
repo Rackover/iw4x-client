@@ -23,6 +23,8 @@ namespace Components
 		ColorRgb(255, 255, 255),    // TEXT_COLOR_RAINBOW
 		ColorRgb(255, 255, 255),    // TEXT_COLOR_SERVER
 		ColorRgb(255, 255, 255),    // TEXT_COLOR_MULTICOLOR
+		ColorRgb(255, 255, 255),    // TEXT_COLOR_SILVER
+		ColorRgb(255, 255, 255),    // TEXT_COLOR_GOLD
 	};
 
 	unsigned TextRenderer::colorTableNew[TEXT_COLOR_COUNT]
@@ -40,6 +42,8 @@ namespace Components
 		ColorRgb(255, 255, 255),    // TEXT_COLOR_RAINBOW
 		ColorRgb(255, 255, 255),    // TEXT_COLOR_SERVER
 		ColorRgb(255, 255, 255),    // TEXT_COLOR_MULTICOLOR
+		ColorRgb(255, 255, 255),    // TEXT_COLOR_SILVER
+		ColorRgb(255, 255, 255),    // TEXT_COLOR_GOLD
 	};
 
 	unsigned(*TextRenderer::currentColorTable)[TEXT_COLOR_COUNT];
@@ -1037,7 +1041,7 @@ namespace Components
 			const char* curText = text;
 			auto maxLengthRemaining = maxLength;
 			auto currentColor = color;
-			auto isMulticolor = false;
+			auto specialColor = -1;
 			auto subtitleAllowGlow = false;
 			auto extraFxChar = 0;
 			auto drawExtraFxChar = false;
@@ -1058,8 +1062,12 @@ namespace Components
 
 				if (letter == '^' && *curText >= COLOR_FIRST_CHAR && *curText <= COLOR_LAST_CHAR)
 				{
-					const auto colorIndex = ColorIndexForChar(*curText);
-					isMulticolor = colorIndex == TEXT_COLOR_MULTICOLOR;
+					auto colorIndex = ColorIndexForChar(*curText);
+					if (*curText >= COLOR_SPECIAL_CHAR)
+					{
+						specialColor = colorIndex;
+						colorIndex -= TEXT_COLOR_MULTICOLOR + TEXT_COLOR_SERVER + 1;
+					}
 					subtitleAllowGlow = false;
 					if (colorIndex == TEXT_COLOR_DEFAULT)
 					{
@@ -1087,9 +1095,33 @@ namespace Components
 					}
 				}
 
-				if (isMulticolor)
+				const auto time{ Game::Sys_Milliseconds() };
+				const int reflection[8]{ 4,12,24,40,40,24,12,4 };
+				const int reflection_period = 30;
+				const int noise[10]{ 0, 5, 9, 9, 5, 0, -5, -9, -9, -5 };
+				const int noise_period = 150;
+				//const int noise[20]{ 0, 3, 5, 8, 9, 10, 9, 8, 5, 3, 0, -3, -5, -8, -9, -10, -9, -8, -5, -3 };
+				int pattern[100]{};
+				for (int i = 0; i < 8; i++) {
+					pattern[i] = reflection[i];
+				};
+				if (specialColor == TEXT_COLOR_MULTICOLOR)
 				{
-					const Game::GfxColor colorTableColor{ HsvToRgb({ static_cast<uint8_t>((Game::Sys_Milliseconds() / 30 + count * 16 + static_cast<uint8_t>(y)) % 256), 255,255 }) };
+					const Game::GfxColor colorTableColor{ HsvToRgb({ static_cast<uint8_t>((time / 30 + count * 16 + static_cast<uint8_t>(y)) % 256), 255,255 }) };
+					// Swap r and b for whatever reason
+					currentColor.packed = ColorRgba(colorTableColor.array[2], colorTableColor.array[1], colorTableColor.array[0], color.array[3]);
+				}
+				else if (specialColor == TEXT_COLOR_SILVER)
+				{
+					auto shade { static_cast<uint8_t>(192 + pattern[static_cast<uint8_t>(time / reflection_period + count) % 100] + noise[static_cast<uint8_t>(time / noise_period + count) % 10]) };
+					const Game::GfxColor colorTableColor{ HsvToRgb({ 0, 0, shade}) };
+					// Swap r and b for whatever reason
+					currentColor.packed = ColorRgba(colorTableColor.array[2], colorTableColor.array[1], colorTableColor.array[0], color.array[3]);
+				}
+				else if (specialColor == TEXT_COLOR_GOLD)
+				{
+					auto shade{ static_cast<uint8_t>(206 + pattern[static_cast<uint8_t>(time / reflection_period + count) % 100] + noise[static_cast<uint8_t>(time / noise_period + count) % 10]) };
+					const Game::GfxColor colorTableColor{ HsvToRgb({ 32, 255, shade}) };
 					// Swap r and b for whatever reason
 					currentColor.packed = ColorRgba(colorTableColor.array[2], colorTableColor.array[1], colorTableColor.array[0], color.array[3]);
 				}

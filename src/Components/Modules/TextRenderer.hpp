@@ -16,7 +16,10 @@ namespace Components
 		TEXT_COLOR_ALLIES = 9,
 		TEXT_COLOR_RAINBOW = 10,
 		TEXT_COLOR_SERVER = 11, // using that color in infostrings (e.g. your name) fails, ';' is an illegal character!
-		TEXT_COLOR_MULTICOLOR = 12,
+
+		TEXT_COLOR_MULTICOLOR = 49,
+		TEXT_COLOR_SILVER = 50,
+		TEXT_COLOR_GOLD = 51,
 
 		TEXT_COLOR_COUNT
 	};
@@ -98,6 +101,7 @@ namespace Components
 
 		static constexpr char COLOR_FIRST_CHAR = '0';
 		static constexpr char COLOR_LAST_CHAR = CharForColorIndex(TEXT_COLOR_COUNT - 1);
+		static constexpr char COLOR_SPECIAL_CHAR = 'a';
 
 		enum FontIconAutocompleteInstance : unsigned
 		{
