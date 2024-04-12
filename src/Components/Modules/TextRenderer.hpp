@@ -100,8 +100,9 @@ namespace Components
 		static constexpr char FONT_ICON_MODIFIER_BIG = 'b';
 
 		static constexpr char COLOR_FIRST_CHAR = '0';
-		static constexpr char COLOR_LAST_CHAR = CharForColorIndex(TEXT_COLOR_COUNT - 1);
-		static constexpr char COLOR_SPECIAL_CHAR = 'a';
+		static constexpr char COLOR_LAST_CHAR = CharForColorIndex(TEXT_COLOR_SERVER - 1);
+		static constexpr char COLOR_FIRST_SPECIAL_CHAR = 'a';
+		static constexpr char COLOR_LAST_SPECIAL_CHAR = CharForColorIndex(TEXT_COLOR_COUNT - 1);
 
 		enum FontIconAutocompleteInstance : unsigned
 		{

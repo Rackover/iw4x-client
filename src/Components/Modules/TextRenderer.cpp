@@ -46,6 +46,18 @@ namespace Components
 		ColorRgb(255, 255, 255),    // TEXT_COLOR_GOLD
 	};
 
+	static int pattern[8]{ 4,12,24,40,40,24,12,4 };
+	static int reflection_period = 600;
+	static float reflection_speed = float(1) / float(50);
+	static int noise[10]{ 0, 5, 9, 8, 5, 0, 5, 7, 8, 5 };
+	static int noise_period = sizeof(noise) / sizeof(int);
+	static float noise_speed = float(1) / float(180);
+	static int reflection(const int index) {
+		extern int pattern[8];
+			if (index >= 0 && index < 8) { return pattern[index]; }
+			else { return 0; }
+	}
+
 	unsigned(*TextRenderer::currentColorTable)[TEXT_COLOR_COUNT];
 	TextRenderer::FontIconAutocompleteContext TextRenderer::autocompleteContextArray[FONT_ICON_ACI_COUNT];
 	std::map<std::string, TextRenderer::FontIconTableEntry> TextRenderer::fontIconLookup;
@@ -1060,10 +1072,10 @@ namespace Components
 
 				auto letter = Game::SEH_ReadCharFromString(&curText, nullptr);
 
-				if (letter == '^' && *curText >= COLOR_FIRST_CHAR && *curText <= COLOR_LAST_CHAR)
+				if (letter == '^' && ((*curText >= COLOR_FIRST_CHAR && *curText <= COLOR_LAST_CHAR) || (*curText >= COLOR_FIRST_SPECIAL_CHAR && *curText <= COLOR_LAST_SPECIAL_CHAR)) )
 				{
 					auto colorIndex = ColorIndexForChar(*curText);
-					if (*curText >= COLOR_SPECIAL_CHAR)
+					if (*curText >= COLOR_FIRST_SPECIAL_CHAR)
 					{
 						specialColor = colorIndex;
 						colorIndex -= TEXT_COLOR_MULTICOLOR + TEXT_COLOR_SERVER + 1;
@@ -1096,15 +1108,10 @@ namespace Components
 				}
 
 				const auto time{ Game::Sys_Milliseconds() };
-				const int reflection[8]{ 4,12,24,40,40,24,12,4 };
-				const int reflection_period = 30;
-				const int noise[10]{ 0, 5, 9, 9, 5, 0, -5, -9, -9, -5 };
-				const int noise_period = 150;
-				//const int noise[20]{ 0, 3, 5, 8, 9, 10, 9, 8, 5, 3, 0, -3, -5, -8, -9, -10, -9, -8, -5, -3 };
-				int pattern[100]{};
-				for (int i = 0; i < 8; i++) {
-					pattern[i] = reflection[i];
-				};
+				auto metal_shade =
+					reflection(static_cast<uint8_t>(time * reflection_speed + count + 7 * static_cast<uint8_t>(y)) % reflection_period)
+					+ noise[static_cast<uint8_t>(time * noise_speed + count) % noise_period];
+
 				if (specialColor == TEXT_COLOR_MULTICOLOR)
 				{
 					const Game::GfxColor colorTableColor{ HsvToRgb({ static_cast<uint8_t>((time / 30 + count * 16 + static_cast<uint8_t>(y)) % 256), 255,255 }) };
@@ -1113,15 +1120,13 @@ namespace Components
 				}
 				else if (specialColor == TEXT_COLOR_SILVER)
 				{
-					auto shade { static_cast<uint8_t>(192 + pattern[static_cast<uint8_t>(time / reflection_period + count) % 100] + noise[static_cast<uint8_t>(time / noise_period + count) % 10]) };
-					const Game::GfxColor colorTableColor{ HsvToRgb({ 0, 0, shade}) };
+					const Game::GfxColor colorTableColor{ HsvToRgb({ 0, 0, static_cast<uint8_t>(192 + metal_shade)}) };
 					// Swap r and b for whatever reason
 					currentColor.packed = ColorRgba(colorTableColor.array[2], colorTableColor.array[1], colorTableColor.array[0], color.array[3]);
 				}
 				else if (specialColor == TEXT_COLOR_GOLD)
 				{
-					auto shade{ static_cast<uint8_t>(206 + pattern[static_cast<uint8_t>(time / reflection_period + count) % 100] + noise[static_cast<uint8_t>(time / noise_period + count) % 10]) };
-					const Game::GfxColor colorTableColor{ HsvToRgb({ 32, 255, shade}) };
+					const Game::GfxColor colorTableColor{ HsvToRgb({ 32, 255, static_cast<uint8_t>(206 + metal_shade)}) };
 					// Swap r and b for whatever reason
 					currentColor.packed = ColorRgba(colorTableColor.array[2], colorTableColor.array[1], colorTableColor.array[0], color.array[3]);
 				}
@@ -1305,7 +1310,7 @@ namespace Components
 			{
 				if (letter == '^' && text)
 				{
-					if (*text >= COLOR_FIRST_CHAR && *text <= COLOR_LAST_CHAR)
+					if ((*text >= COLOR_FIRST_CHAR && *text <= COLOR_LAST_CHAR) || (*text >= COLOR_FIRST_SPECIAL_CHAR && *text <= COLOR_LAST_SPECIAL_CHAR))
 					{
 						++text;
 						continue;
@@ -1542,7 +1547,7 @@ namespace Components
 			const auto c = Game::SEH_ReadCharFromString(&curText, nullptr);
 			lenWithInvisibleTail = len;
 
-			if (c == '^' && *curText >= COLOR_FIRST_CHAR && *curText <= COLOR_LAST_CHAR && !(cursorPos > count && cursorPos < count + 2))
+			if (c == '^' && ((*curText >= COLOR_FIRST_CHAR && *curText <= COLOR_LAST_CHAR) || (*curText >= COLOR_FIRST_SPECIAL_CHAR && *curText <= COLOR_LAST_SPECIAL_CHAR)) && !(cursorPos > count && cursorPos < count + 2))
 			{
 				++curText;
 				++count;
@@ -1555,7 +1560,7 @@ namespace Components
 			++count;
 			++lenWithInvisibleTail;
 		}
-
+		
 		return lenWithInvisibleTail;
 	}
 
@@ -1771,6 +1776,6 @@ namespace Components
 		Utils::Hook(0x4F6694, Message_Key_Stub, HOOK_CALL).install()->quick();
 		Utils::Hook(0x4F684C, Message_Key_Stub, HOOK_CALL).install()->quick();
 
-		PatchColorLimit(COLOR_LAST_CHAR);
+		PatchColorLimit(COLOR_LAST_SPECIAL_CHAR);
 	}
 }
