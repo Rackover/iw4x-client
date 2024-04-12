@@ -157,6 +157,28 @@ namespace Components
 		
 	}
 
+	constexpr unsigned int ColorRgba(const uint8_t r, const uint8_t g, const uint8_t b, const uint8_t a)
+	{
+		return (r) | (g << 8) | (b << 16) | (a << 24);
+	}
+
+	constexpr unsigned int ColorRgb(const uint8_t r, const uint8_t g, const uint8_t b)
+	{
+		return ColorRgba(r, g, b, 0xFF);
+	}
+
+	constexpr char CharForColorIndex(const int colorIndex)
+	{
+		if (colorIndex <= 11) { return static_cast<char>('0' + colorIndex); }
+		else { return static_cast<char>('0' + colorIndex + 37); }
+	}
+
+	constexpr int ColorIndexForChar(const char colorChar)
+	{
+		if (colorChar <= ';') { return colorChar - '0'; }
+		else { return colorChar - '0' - 37; }
+	}
+
 	unsigned TextRenderer::HsvToRgb(HsvColor hsv)
 	{
 		unsigned rgb;
@@ -1053,7 +1075,7 @@ namespace Components
 			const char* curText = text;
 			auto maxLengthRemaining = maxLength;
 			auto currentColor = color;
-			auto specialColor = -1;
+			auto specialIndex = -1;
 			auto subtitleAllowGlow = false;
 			auto extraFxChar = 0;
 			auto drawExtraFxChar = false;
@@ -1075,11 +1097,7 @@ namespace Components
 				if (letter == '^' && ((*curText >= COLOR_FIRST_CHAR && *curText <= COLOR_LAST_CHAR) || (*curText >= COLOR_FIRST_SPECIAL_CHAR && *curText <= COLOR_LAST_SPECIAL_CHAR)) )
 				{
 					auto colorIndex = ColorIndexForChar(*curText);
-					if (*curText >= COLOR_FIRST_SPECIAL_CHAR)
-					{
-						specialColor = colorIndex;
-						colorIndex -= TEXT_COLOR_MULTICOLOR + TEXT_COLOR_SERVER + 1;
-					}
+					if (*curText >= COLOR_FIRST_SPECIAL_CHAR) {specialIndex = colorIndex;}
 					subtitleAllowGlow = false;
 					if (colorIndex == TEXT_COLOR_DEFAULT)
 					{
@@ -1112,19 +1130,19 @@ namespace Components
 					reflection(static_cast<uint8_t>(time * reflection_speed + count + 7 * static_cast<uint8_t>(y)) % reflection_period)
 					+ noise[static_cast<uint8_t>(time * noise_speed + count) % noise_period];
 
-				if (specialColor == TEXT_COLOR_MULTICOLOR)
+				if (specialIndex == TEXT_COLOR_MULTICOLOR)
 				{
 					const Game::GfxColor colorTableColor{ HsvToRgb({ static_cast<uint8_t>((time / 30 + count * 16 + static_cast<uint8_t>(y)) % 256), 255,255 }) };
 					// Swap r and b for whatever reason
 					currentColor.packed = ColorRgba(colorTableColor.array[2], colorTableColor.array[1], colorTableColor.array[0], color.array[3]);
 				}
-				else if (specialColor == TEXT_COLOR_SILVER)
+				else if (specialIndex == TEXT_COLOR_SILVER)
 				{
 					const Game::GfxColor colorTableColor{ HsvToRgb({ 0, 0, static_cast<uint8_t>(192 + metal_shade)}) };
 					// Swap r and b for whatever reason
 					currentColor.packed = ColorRgba(colorTableColor.array[2], colorTableColor.array[1], colorTableColor.array[0], color.array[3]);
 				}
-				else if (specialColor == TEXT_COLOR_GOLD)
+				else if (specialIndex == TEXT_COLOR_GOLD)
 				{
 					const Game::GfxColor colorTableColor{ HsvToRgb({ 32, 255, static_cast<uint8_t>(206 + metal_shade)}) };
 					// Swap r and b for whatever reason
@@ -1777,5 +1795,9 @@ namespace Components
 		Utils::Hook(0x4F684C, Message_Key_Stub, HOOK_CALL).install()->quick();
 
 		PatchColorLimit(COLOR_LAST_SPECIAL_CHAR);
+	}
+	constexpr unsigned int ColorRgba(const uint8_t r, const uint8_t g, const uint8_t b, const uint8_t a)
+	{
+		return (r) | (g << 8) | (b << 16) | (a << 24);
 	}
 }

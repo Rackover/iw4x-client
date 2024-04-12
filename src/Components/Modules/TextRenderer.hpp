@@ -17,32 +17,20 @@ namespace Components
 		TEXT_COLOR_RAINBOW = 10,
 		TEXT_COLOR_SERVER = 11, // using that color in infostrings (e.g. your name) fails, ';' is an illegal character!
 
-		TEXT_COLOR_MULTICOLOR = 49,
-		TEXT_COLOR_SILVER = 50,
-		TEXT_COLOR_GOLD = 51,
+		TEXT_COLOR_MULTICOLOR = 12,
+		TEXT_COLOR_SILVER = 13,
+		TEXT_COLOR_GOLD = 14,
 
 		TEXT_COLOR_COUNT
 	};
 
-	constexpr unsigned int ColorRgba(const uint8_t r, const uint8_t g, const uint8_t b, const uint8_t a)
-	{
-		return (r) | (g << 8) | (b << 16) | (a << 24);
-	}
+	constexpr unsigned int ColorRgba(const uint8_t r, const uint8_t g, const uint8_t b, const uint8_t a);
 
-	constexpr unsigned int ColorRgb(const uint8_t r, const uint8_t g, const uint8_t b)
-	{
-		return ColorRgba(r, g, b, 0xFF);
-	}
+	constexpr unsigned int ColorRgb(const uint8_t r, const uint8_t g, const uint8_t b);
 
-	constexpr char CharForColorIndex(const int colorIndex)
-	{
-		return static_cast<char>('0' + colorIndex);
-	}
+	constexpr char CharForColorIndex(const int colorIndex);
 
-	constexpr int ColorIndexForChar(const char colorChar)
-	{
-		return colorChar - '0';
-	}
+	constexpr int ColorIndexForChar(const char colorChar);
 
 	class TextRenderer : public Component
 	{
