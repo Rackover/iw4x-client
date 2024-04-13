@@ -157,28 +157,6 @@ namespace Components
 		
 	}
 
-	constexpr unsigned int ColorRgba(const uint8_t r, const uint8_t g, const uint8_t b, const uint8_t a)
-	{
-		return (r) | (g << 8) | (b << 16) | (a << 24);
-	}
-
-	constexpr unsigned int ColorRgb(const uint8_t r, const uint8_t g, const uint8_t b)
-	{
-		return ColorRgba(r, g, b, 0xFF);
-	}
-
-	constexpr char CharForColorIndex(const int colorIndex)
-	{
-		if (colorIndex <= 11) { return static_cast<char>('0' + colorIndex); }
-		else { return static_cast<char>('0' + colorIndex + 37); }
-	}
-
-	constexpr int ColorIndexForChar(const char colorChar)
-	{
-		if (colorChar <= ';') { return colorChar - '0'; }
-		else { return colorChar - '0' - 37; }
-	}
-
 	unsigned TextRenderer::HsvToRgb(HsvColor hsv)
 	{
 		unsigned rgb;
@@ -1795,9 +1773,5 @@ namespace Components
 		Utils::Hook(0x4F684C, Message_Key_Stub, HOOK_CALL).install()->quick();
 
 		PatchColorLimit(COLOR_LAST_SPECIAL_CHAR);
-	}
-	constexpr unsigned int ColorRgba(const uint8_t r, const uint8_t g, const uint8_t b, const uint8_t a)
-	{
-		return (r) | (g << 8) | (b << 16) | (a << 24);
 	}
 }

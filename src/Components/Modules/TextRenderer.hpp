@@ -24,13 +24,27 @@ namespace Components
 		TEXT_COLOR_COUNT
 	};
 
-	constexpr unsigned int ColorRgba(const uint8_t r, const uint8_t g, const uint8_t b, const uint8_t a);
+	constexpr unsigned int ColorRgba(const uint8_t r, const uint8_t g, const uint8_t b, const uint8_t a)
+	{
+		return (r) | (g << 8) | (b << 16) | (a << 24);
+	}
 
-	constexpr unsigned int ColorRgb(const uint8_t r, const uint8_t g, const uint8_t b);
+	constexpr unsigned int ColorRgb(const uint8_t r, const uint8_t g, const uint8_t b)
+	{
+		return ColorRgba(r, g, b, 0xFF);
+	}
 
-	constexpr char CharForColorIndex(const int colorIndex);
+	constexpr char CharForColorIndex(const int colorIndex)
+	{
+		if (colorIndex <= 11) { return static_cast<char>('0' + colorIndex); }
+		else { return static_cast<char>('0' + colorIndex + 37); }
+	}
 
-	constexpr int ColorIndexForChar(const char colorChar);
+	constexpr int ColorIndexForChar(const char colorChar)
+	{
+		if (colorChar <= ';') { return colorChar - '0'; }
+		else { return colorChar - '0' - 37; }
+	}
 
 	class TextRenderer : public Component
 	{
