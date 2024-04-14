@@ -46,23 +46,11 @@ namespace Components
 		ColorRgb(255, 255, 255),    // TEXT_COLOR_GOLD
 	};
 
-	static int pattern[8]{ 4,12,24,40,40,24,12,4 };
-	static int reflection_period = 600;
-	static float reflection_speed = float(1) / float(50);
-	static int noise[10]{ 0, 5, 9, 8, 5, 0, 5, 7, 8, 5 };
-	static int noise_period = sizeof(noise) / sizeof(int);
-	static float noise_speed = float(1) / float(180);
-	static int reflection(const int index) {
-		extern int pattern[8];
-			if (index >= 0 && index < 8) { return pattern[index]; }
-			else { return 0; }
-	}
-
 	unsigned(*TextRenderer::currentColorTable)[TEXT_COLOR_COUNT];
 	TextRenderer::FontIconAutocompleteContext TextRenderer::autocompleteContextArray[FONT_ICON_ACI_COUNT];
 	std::map<std::string, TextRenderer::FontIconTableEntry> TextRenderer::fontIconLookup;
 	std::vector<TextRenderer::FontIconTableEntry> TextRenderer::fontIconList;
-	
+
 	TextRenderer::BufferedLocalizedString TextRenderer::stringHintAutoComplete(REFERENCE_HINT_AUTO_COMPLETE, STRING_BUFFER_SIZE_SMALL);
 	TextRenderer::BufferedLocalizedString TextRenderer::stringHintModifier(REFERENCE_HINT_MODIFIER, STRING_BUFFER_SIZE_SMALL);
 	TextRenderer::BufferedLocalizedString TextRenderer::stringListHeader(REFERENCE_MODIFIER_LIST_HEADER, STRING_BUFFER_SIZE_SMALL);
@@ -83,9 +71,9 @@ namespace Components
 		: stringReference(reference),
 		stringBuffer(std::make_unique<char[]>(bufferSize)),
 		stringBufferSize(bufferSize),
-		stringWidth{-1}
+		stringWidth{ -1 }
 	{
-		
+
 	}
 
 	void TextRenderer::BufferedLocalizedString::Cache()
@@ -154,7 +142,7 @@ namespace Components
 		maxMaterialNameWidth(0.0f),
 		stringSearchStartWith(REFERENCE_SEARCH_START_WITH, STRING_BUFFER_SIZE_BIG)
 	{
-		
+
 	}
 
 	unsigned TextRenderer::HsvToRgb(HsvColor hsv)
@@ -246,7 +234,7 @@ namespace Components
 		context.resultCount = 0;
 		context.hasMoreResults = false;
 		context.lastResultOffset = context.resultOffset;
-		
+
 		auto skipCount = context.resultOffset;
 
 		const auto queryLen = context.lastQuery.size();
@@ -354,7 +342,7 @@ namespace Components
 		{
 			context.resultOffset = context.selectedOffset;
 		}
-		else if(context.selectedOffset >= context.resultOffset + FontIconAutocompleteContext::MAX_RESULTS)
+		else if (context.selectedOffset >= context.resultOffset + FontIconAutocompleteContext::MAX_RESULTS)
 		{
 			context.resultOffset = context.selectedOffset - (FontIconAutocompleteContext::MAX_RESULTS - 1);
 		}
@@ -438,7 +426,7 @@ namespace Components
 
 		// Check which is the longest string to be able to calculate how big the box needs to be
 		auto longestStringLength = context.stringSearchStartWith.GetWidth(instance, font);
-		if(hintEnabled)
+		if (hintEnabled)
 			longestStringLength = std::max(std::max(longestStringLength, stringHintAutoComplete.GetWidth(instance, font)), stringHintModifier.GetWidth(instance, font));
 
 		const auto colSpacing = FONT_ICON_AUTOCOMPLETE_COL_SPACING * textXScale;
@@ -449,8 +437,8 @@ namespace Components
 		const auto totalLines = 1u + context.resultCount + (hintEnabled ? 2u : 0u);
 		const auto arrowPadding = context.resultOffset > 0 || context.hasMoreResults ? FONT_ICON_AUTOCOMPLETE_ARROW_SIZE : 0.0f;
 		DrawAutocompleteBox(context,
-			x - FONT_ICON_AUTOCOMPLETE_BOX_PADDING, 
-			y - FONT_ICON_AUTOCOMPLETE_BOX_PADDING, 
+			x - FONT_ICON_AUTOCOMPLETE_BOX_PADDING,
+			y - FONT_ICON_AUTOCOMPLETE_BOX_PADDING,
 			boxWidth + FONT_ICON_AUTOCOMPLETE_BOX_PADDING * 2 + arrowPadding,
 			static_cast<float>(totalLines) * lineHeight + FONT_ICON_AUTOCOMPLETE_BOX_PADDING * 2,
 			(*con_inputBoxColor)->current.vector);
@@ -589,7 +577,7 @@ namespace Components
 
 		const std::string moveData(&edit->buffer[edit->cursor]);
 
-		const auto remainingBufferCharacters = std::extent_v<decltype(Game::field_t::buffer)> - edit->cursor - moveData.size() - 1;
+		const auto remainingBufferCharacters = std::extent_v<decltype(Game::field_t::buffer)> -edit->cursor - moveData.size() - 1;
 		if (remainingFillData.size() > remainingBufferCharacters)
 		{
 			remainingFillData = remainingFillData.erase(remainingBufferCharacters);
@@ -599,7 +587,7 @@ namespace Components
 		{
 			strncpy(&edit->buffer[edit->cursor], remainingFillData.c_str(), remainingFillData.size());
 			strncpy(&edit->buffer[edit->cursor + remainingFillData.size()], moveData.c_str(), moveData.size());
-			edit->buffer[std::extent_v<decltype(Game::field_t::buffer)> - 1] = '\0';
+			edit->buffer[std::extent_v<decltype(Game::field_t::buffer)> -1] = '\0';
 			edit->cursor += static_cast<int>(remainingFillData.size());
 			Game::Field_AdjustScroll(scrPlace, edit);
 		}
@@ -621,7 +609,7 @@ namespace Components
 
 		case Game::K_ENTER:
 		case Game::K_KP_ENTER:
-			if(context.resultCount > 0)
+			if (context.resultCount > 0)
 			{
 				AutocompleteFill(context, scrPlace, edit, true);
 				return true;
@@ -689,17 +677,17 @@ namespace Components
 			push edi
 			call ChatHandleKeyDown
 			add esp, 0x8
-			test al,al
+			test al, al
 			jnz skipHandling
 
 			popad
 			call Message_Key
 			ret
 
-		skipHandling:
+			skipHandling :
 			popad
-			mov al, 1
-			ret
+				mov al, 1
+				ret
 		}
 	}
 
@@ -732,7 +720,7 @@ namespace Components
 	unsigned TextRenderer::R_FontGetRandomLetter(const int seed)
 	{
 		static constexpr char RANDOM_CHARACTERS[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890";
-		return RANDOM_CHARACTERS[seed % (std::extent_v<decltype(RANDOM_CHARACTERS)> - 1)];
+		return RANDOM_CHARACTERS[seed % (std::extent_v<decltype(RANDOM_CHARACTERS)> -1)];
 	}
 
 	void TextRenderer::DrawTextFxExtraCharacter(Game::Material* material, const int charIndex, const float x, const float y, const float w, const float h, const float sinAngle, const float cosAngle, const unsigned color)
@@ -761,14 +749,14 @@ namespace Components
 			curPos++;
 
 		const auto* nameEnd = curPos;
-		
+
 		if (*curPos == FONT_ICON_MODIFIER_SEPARATOR_CHARACTER)
 		{
 			auto breakArgs = false;
 			while (!breakArgs)
 			{
 				curPos++;
-				switch(*curPos)
+				switch (*curPos)
 				{
 				case FONT_ICON_MODIFIER_FLIP_HORIZONTALLY:
 					fontIcon.flipHorizontal = true;
@@ -990,11 +978,67 @@ namespace Components
 		*outY = (y - pivotY) * cosAngle + pivotY + (x - pivotX) * sinAngle;
 	}
 
+	int GetMetallicReflectionShade(int delta, uint8_t offset)
+	{
+		constexpr int PATTERN[8]{ 4,12,24,40,40,24,12,4 };
+
+		constexpr int REFLECTION_PERIOD = 600;
+		constexpr float REFLECTION_SPEED = 1.f / 50.f;
+
+		constexpr int NOISE[10]{ 0, 5, 9, 8, 5, 0, 5, 7, 8, 5 };
+		constexpr int NOISE_PERIOD = sizeof(NOISE) / sizeof(int);
+		constexpr float NOISE_SPEED = 1.f / 180.f;
+
+		const auto reflection = [PATTERN](const int index)
+			{
+				if (index >= 0 && index < ARRAYSIZE(PATTERN))
+				{
+					return PATTERN[index];
+				}
+				else {
+					return 0;
+				}
+			};
+
+		const auto time{ Game::Sys_Milliseconds() };
+
+		auto metalShade =
+			reflection(static_cast<uint8_t>(time * REFLECTION_SPEED + delta + 7 * offset) % REFLECTION_PERIOD)
+			+ NOISE[static_cast<uint8_t>(time * NOISE_SPEED + delta) % NOISE_PERIOD];
+
+		return metalShade;
+	}
+
+	Game::GfxColor TextRenderer::GetRainbowShade(int count, uint8_t offset)
+	{
+		const auto time = Game::Sys_Milliseconds();
+		const uint8_t hue = static_cast<uint8_t>((time / 30 + count * 16 + static_cast<uint8_t>(offset)) % 256);
+		const Game::GfxColor shadeColor{ HsvToRgb({ hue, 255, 255 }) };
+
+		return shadeColor;
+	}
+
+	Game::GfxColor TextRenderer::GetGoldenShade(int count, uint8_t offset)
+	{
+		const uint8_t value = static_cast<uint8_t>(206 + GetMetallicReflectionShade(count, offset));
+		const Game::GfxColor shadeColor{ HsvToRgb({32, 255, value }) };
+
+		return shadeColor;
+	}
+
+	Game::GfxColor TextRenderer::GetSilverShade(int count, uint8_t offset)
+	{
+		const uint8_t value = static_cast<uint8_t>(192 + GetMetallicReflectionShade(count, offset));
+		const Game::GfxColor shadeColor{ HsvToRgb({0,0, value }) };
+
+		return shadeColor;
+	}
+
 	void TextRenderer::DrawText2D(const char* text, float x, float y, Game::Font_s* font, float xScale, float yScale, float sinAngle, float cosAngle, Game::GfxColor color, int maxLength, int renderFlags, int cursorPos, char cursorLetter, float padding, Game::GfxColor glowForcedColor, int fxBirthTime, int fxLetterTime, int fxDecayStartTime, int fxDecayDuration, Game::Material* fxMaterial, Game::Material* fxMaterialGlow)
 	{
 		UpdateColorTable();
 
-		Game::GfxColor dropShadowColor{0};
+		Game::GfxColor dropShadowColor{ 0 };
 		dropShadowColor.array[3] = color.array[3];
 
 		int randSeed = 1;
@@ -1006,7 +1050,7 @@ namespace Components
 
 		bool decaying;
 		int decayTimeElapsed;
-		if(renderFlags & Game::TEXT_RENDERFLAG_FX_DECODE)
+		if (renderFlags & Game::TEXT_RENDERFLAG_FX_DECODE)
 		{
 			if (!Game::SetupPulseFXVars(text, maxLength, fxBirthTime, fxLetterTime, fxDecayStartTime, fxDecayDuration, &drawRandomCharAtEnd, &randSeed, &maxLength, &decaying, &decayTimeElapsed))
 				return;
@@ -1022,9 +1066,9 @@ namespace Components
 		Game::FontPassType passes[Game::FONTPASS_COUNT];
 		unsigned passCount = 0;
 
-		if(renderFlags & Game::TEXT_RENDERFLAG_OUTLINE)
+		if (renderFlags & Game::TEXT_RENDERFLAG_OUTLINE)
 		{
-			if(renderFlags & Game::TEXT_RENDERFLAG_GLOW)
+			if (renderFlags & Game::TEXT_RENDERFLAG_GLOW)
 			{
 				glowMaterial = font->glowMaterial;
 				passes[passCount++] = Game::FONTPASS_GLOW;
@@ -1049,11 +1093,12 @@ namespace Components
 
 		for (auto passIndex = 0u; passIndex < passCount; passIndex++)
 		{
+			std::optional<TextColor> colorIndex{};
+
 			float xRot, yRot;
 			const char* curText = text;
 			auto maxLengthRemaining = maxLength;
 			auto currentColor = color;
-			auto specialIndex = -1;
 			auto subtitleAllowGlow = false;
 			auto extraFxChar = 0;
 			auto drawExtraFxChar = false;
@@ -1072,14 +1117,15 @@ namespace Components
 
 				auto letter = Game::SEH_ReadCharFromString(&curText, nullptr);
 
-				if (letter == '^' && ((*curText >= COLOR_FIRST_CHAR && *curText <= COLOR_LAST_CHAR) || (*curText >= COLOR_FIRST_SPECIAL_CHAR && *curText <= COLOR_LAST_SPECIAL_CHAR)) )
+				if (letter == '^' && IsCharColorCode(*curText))
 				{
-					auto colorIndex = ColorIndexForChar(*curText);
-					if (*curText >= COLOR_FIRST_SPECIAL_CHAR) {specialIndex = colorIndex;}
+					colorIndex = ColorIndexForChar(*curText);
+
 					subtitleAllowGlow = false;
 					if (colorIndex == TEXT_COLOR_DEFAULT)
 					{
 						currentColor = color;
+						colorIndex.reset();
 					}
 					else if (renderFlags & Game::TEXT_RENDERFLAG_SUBTITLETEXT && colorIndex == TEXT_COLOR_GREEN)
 					{
@@ -1090,7 +1136,9 @@ namespace Components
 					}
 					else
 					{
-						const Game::GfxColor colorTableColor{ (*currentColorTable)[colorIndex] };
+						assert(colorIndex.has_value());
+
+						const Game::GfxColor colorTableColor{ (*currentColorTable)[colorIndex.value()] };
 						// Swap r and b for whatever reason
 						currentColor.packed = ColorRgba(colorTableColor.array[2], colorTableColor.array[1], colorTableColor.array[0], color.array[3]);
 					}
@@ -1103,29 +1151,35 @@ namespace Components
 					}
 				}
 
-				const auto time{ Game::Sys_Milliseconds() };
-				auto metal_shade =
-					reflection(static_cast<uint8_t>(time * reflection_speed + count + 7 * static_cast<uint8_t>(y)) % reflection_period)
-					+ noise[static_cast<uint8_t>(time * noise_speed + count) % noise_period];
+				if (colorIndex.has_value()) {
+					std::optional<Game::GfxColor> colorOverride{};
 
-				if (specialIndex == TEXT_COLOR_MULTICOLOR)
-				{
-					const Game::GfxColor colorTableColor{ HsvToRgb({ static_cast<uint8_t>((time / 30 + count * 16 + static_cast<uint8_t>(y)) % 256), 255,255 }) };
-					// Swap r and b for whatever reason
-					currentColor.packed = ColorRgba(colorTableColor.array[2], colorTableColor.array[1], colorTableColor.array[0], color.array[3]);
+					switch (colorIndex.value())
+					{
+					case TEXT_COLOR_MULTICOLOR:
+						colorOverride = GetRainbowShade(count, static_cast<uint8_t>(y));
+						break;
+
+					case TEXT_COLOR_SILVER:
+						colorOverride = GetSilverShade(count, static_cast<uint8_t>(y));
+						break;
+
+					case TEXT_COLOR_GOLD:
+						colorOverride = GetGoldenShade(count, static_cast<uint8_t>(y));
+						break;
+					}
+
+					if (colorOverride.has_value()) {
+						// channel swap for BGRA
+						currentColor.packed = ColorRgba(
+							colorOverride.value().array[2],
+							colorOverride.value().array[1],
+							colorOverride.value().array[0],
+							currentColor.array[3]
+						);
+					}
 				}
-				else if (specialIndex == TEXT_COLOR_SILVER)
-				{
-					const Game::GfxColor colorTableColor{ HsvToRgb({ 0, 0, static_cast<uint8_t>(192 + metal_shade)}) };
-					// Swap r and b for whatever reason
-					currentColor.packed = ColorRgba(colorTableColor.array[2], colorTableColor.array[1], colorTableColor.array[0], color.array[3]);
-				}
-				else if (specialIndex == TEXT_COLOR_GOLD)
-				{
-					const Game::GfxColor colorTableColor{ HsvToRgb({ 32, 255, static_cast<uint8_t>(206 + metal_shade)}) };
-					// Swap r and b for whatever reason
-					currentColor.packed = ColorRgba(colorTableColor.array[2], colorTableColor.array[1], colorTableColor.array[0], color.array[3]);
-				}
+
 				auto finalColor = currentColor;
 
 				if (letter == '^' && (*curText == '\x01' || *curText == '\x02'))
@@ -1148,7 +1202,7 @@ namespace Components
 					{
 						RotateXY(cosAngle, sinAngle, startX, startY, xa, xy, &xRot, &yRot);
 
-						if(passes[passIndex] == Game::FONTPASS_NORMAL)
+						if (passes[passIndex] == Game::FONTPASS_NORMAL)
 							xa += DrawFontIcon(fontIconInfo, xRot, yRot, sinAngle, cosAngle, font, xScale, yScale, ColorRgba(255, 255, 255, finalColor.array[3]));
 						else
 							xa += GetFontIconWidth(fontIconInfo, font, xScale);
@@ -1166,7 +1220,7 @@ namespace Components
 				{
 					letter = R_FontGetRandomLetter(Game::RandWithSeed(&passRandSeed));
 
-					if(Game::RandWithSeed(&passRandSeed) % 2)
+					if (Game::RandWithSeed(&passRandSeed) % 2)
 					{
 						drawExtraFxChar = true;
 						letter = 'O';
@@ -1244,7 +1298,7 @@ namespace Components
 								Game::RB_DrawChar(material, xRot, yRot, static_cast<float>(glyph->pixelWidth) * xScale, static_cast<float>(glyph->pixelHeight) * yScale, sinAngle, cosAngle, glyph, dropShadowColor.packed);
 						}
 					}
-					else if(passes[passIndex] == Game::FONTPASS_GLOW && ((renderFlags & Game::TEXT_RENDERFLAG_SUBTITLETEXT) == 0 || subtitleAllowGlow))
+					else if (passes[passIndex] == Game::FONTPASS_GLOW && ((renderFlags & Game::TEXT_RENDERFLAG_SUBTITLETEXT) == 0 || subtitleAllowGlow))
 					{
 						GlowColor(&finalColor, finalColor, glowForcedColor, renderFlags);
 
@@ -1306,7 +1360,7 @@ namespace Components
 			{
 				if (letter == '^' && text)
 				{
-					if ((*text >= COLOR_FIRST_CHAR && *text <= COLOR_LAST_CHAR) || (*text >= COLOR_FIRST_SPECIAL_CHAR && *text <= COLOR_LAST_SPECIAL_CHAR))
+					if (IsCharColorCode(*text))
 					{
 						++text;
 						continue;
@@ -1503,7 +1557,7 @@ namespace Components
 			{
 				const auto* fontIconEndPos = &in[1];
 				FontIconInfo fontIcon{};
-				if(IsFontIcon(fontIconEndPos, fontIcon))
+				if (IsFontIcon(fontIconEndPos, fontIcon))
 				{
 					in = fontIconEndPos;
 					continue;
@@ -1538,17 +1592,17 @@ namespace Components
 		auto lenWithInvisibleTail = 0;
 		auto count = 0;
 		const auto* curText = string;
-		while(*curText)
+		while (*curText)
 		{
 			const auto c = Game::SEH_ReadCharFromString(&curText, nullptr);
 			lenWithInvisibleTail = len;
 
-			if (c == '^' && ((*curText >= COLOR_FIRST_CHAR && *curText <= COLOR_LAST_CHAR) || (*curText >= COLOR_FIRST_SPECIAL_CHAR && *curText <= COLOR_LAST_SPECIAL_CHAR)) && !(cursorPos > count && cursorPos < count + 2))
+			if (c == '^' && IsCharColorCode(*curText) && !(cursorPos > count && cursorPos < count + 2))
 			{
 				++curText;
 				++count;
 			}
-			else if(c != '\r' && c != '\n')
+			else if (c != '\r' && c != '\n')
 			{
 				++len;
 			}
@@ -1556,7 +1610,7 @@ namespace Components
 			++count;
 			++lenWithInvisibleTail;
 		}
-		
+
 		return lenWithInvisibleTail;
 	}
 
@@ -1568,10 +1622,10 @@ namespace Components
 			pushad
 
 			push esi
-			push [esp + 0x8 + 0x24]
+			push[esp + 0x8 + 0x24]
 			call SEH_PrintStrlenWithCursor
 			add esp, 0x8
-			mov [esp + 0x20], eax
+			mov[esp + 0x20], eax
 
 			popad
 			pop eax
@@ -1592,7 +1646,7 @@ namespace Components
 		Utils::Hook::Set<char>(0x5815DB, limit); // No idea
 		Utils::Hook::Set<char>(0x592ED0, limit); // No idea
 		Utils::Hook::Set<char>(0x5A2E2E, limit); // No idea
-			
+
 		Utils::Hook::Set<char>(0x5A2733, static_cast<char>(ColorIndexForChar(limit))); // No idea
 	}
 
@@ -1631,8 +1685,8 @@ namespace Components
 	{
 		__asm
 		{
-			push [esp + 8h]
-			push [esp + 8h]
+			push[esp + 8h]
+			push[esp + 8h]
 			call TextRenderer::Dvar_GetUnpackedColorByName
 			add esp, 8h
 
@@ -1641,11 +1695,11 @@ namespace Components
 
 			retn
 
-		continue:
+			continue:
 			push edi
-			mov edi, [esp + 8h]
-			push 406535h
-			retn
+				mov edi, [esp + 8h]
+				push 406535h
+				retn
 		}
 	}
 
@@ -1692,7 +1746,7 @@ namespace Components
 		{
 			const auto* columns = &fontIconTable->values[rowIndex * fontIconTable->columnCount];
 
-			if(columns[0].string == nullptr || columns[1].string == nullptr)
+			if (columns[0].string == nullptr || columns[1].string == nullptr)
 				continue;
 
 			if (columns[0].string[0] == '\0' || columns[1].string[1] == '\0')
@@ -1713,9 +1767,9 @@ namespace Components
 		}
 
 		std::ranges::sort(fontIconList, [](const FontIconTableEntry& a, const FontIconTableEntry& b) -> bool
-		{
-			return a.iconName < b.iconName;
-		});
+			{
+				return a.iconName < b.iconName;
+			});
 	}
 
 	void TextRenderer::UI_Init_Hk(const int localClientNum)
@@ -1729,7 +1783,7 @@ namespace Components
 	TextRenderer::TextRenderer()
 	{
 		currentColorTable = &colorTableDefault;
-		
+
 		cg_newColors = Dvar::Register<bool>("cg_newColors", true, Game::DVAR_ARCHIVE, "Use Warfare 2 color code style.");
 		cg_fontIconAutocomplete = Dvar::Register<bool>("cg_fontIconAutocomplete", true, Game::DVAR_ARCHIVE, "Show autocomplete for fonticons when typing.");
 		cg_fontIconAutocompleteHint = Dvar::Register<bool>("cg_fontIconAutocompleteHint", true, Game::DVAR_ARCHIVE, "Show hint text in autocomplete for fonticons.");
@@ -1772,6 +1826,6 @@ namespace Components
 		Utils::Hook(0x4F6694, Message_Key_Stub, HOOK_CALL).install()->quick();
 		Utils::Hook(0x4F684C, Message_Key_Stub, HOOK_CALL).install()->quick();
 
-		PatchColorLimit(COLOR_LAST_SPECIAL_CHAR);
+		PatchColorLimit(COLOR_LAST_CHAR);
 	}
 }
