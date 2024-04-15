@@ -219,7 +219,7 @@ namespace Components
 
 				CheckChatLineEnd(text, p, len, chatHeight, chatWidth, lastSpace, lastFontIcon, lastColor);
 			}
-			else if (text[0] == '^' && text[1] != 0 && text[1] >= TextRenderer::COLOR_FIRST_CHAR && text[1] <= TextRenderer::COLOR_LAST_CHAR)
+			else if (text[0] == '^' && text[1] != 0 && IsCharColorCode(text[1]))
 			{
 				p[0] = '^';
 				p[1] = text[1];

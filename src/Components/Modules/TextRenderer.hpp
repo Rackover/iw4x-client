@@ -4,6 +4,7 @@ namespace Components
 {
 	enum TextColor : int
 	{
+
 		TEXT_COLOR_BLACK = 0,
 		TEXT_COLOR_RED = 1,
 		TEXT_COLOR_GREEN = 2,
@@ -16,9 +17,19 @@ namespace Components
 		TEXT_COLOR_ALLIES = 9,
 		TEXT_COLOR_RAINBOW = 10,
 		TEXT_COLOR_SERVER = 11, // using that color in infostrings (e.g. your name) fails, ';' is an illegal character!
-		TEXT_COLOR_MULTICOLOR = 12,
 
-		TEXT_COLOR_COUNT
+		TEXT_COLOR_MULTICOLOR = 12,
+		TEXT_COLOR_SILVER = 13,
+		TEXT_COLOR_GOLD = 14,
+
+		TEXT_COLOR_COUNT,
+
+		TEXT_COLOR_ORIGINAL_RANGE_BEGIN = TEXT_COLOR_BLACK,
+		TEXT_COLOR_ORIGINAL_RANGE_END = TEXT_COLOR_SERVER,
+
+		TEXT_COLOR_NEW_RANGE_BEGIN = TEXT_COLOR_MULTICOLOR,
+		TEXT_COLOR_NEW_RANGE_END = TEXT_COLOR_GOLD,
+
 	};
 
 	constexpr unsigned int ColorRgba(const uint8_t r, const uint8_t g, const uint8_t b, const uint8_t a)
@@ -31,15 +42,63 @@ namespace Components
 		return ColorRgba(r, g, b, 0xFF);
 	}
 
-	constexpr char CharForColorIndex(const int colorIndex)
+	static constexpr char COLOR_FIRST_ORIGINAL_RANGE_CHAR = '0';
+	static constexpr char COLOR_FIRST_NEW_RANGE_CHAR = 'a';
+
+	static constexpr char CharForColorIndex(const int colorIndex)
 	{
-		return static_cast<char>('0' + colorIndex);
+		uint8_t offset = 0;
+		if (colorIndex <= TEXT_COLOR_ORIGINAL_RANGE_END)
+		{
+			offset = COLOR_FIRST_ORIGINAL_RANGE_CHAR - TEXT_COLOR_ORIGINAL_RANGE_BEGIN;
+		}
+		else
+		{
+			offset = COLOR_FIRST_NEW_RANGE_CHAR - TEXT_COLOR_NEW_RANGE_BEGIN;
+		}
+
+		return static_cast<char>(colorIndex + offset);
+	};
+
+	static constexpr char COLOR_LAST_ORIGINAL_RANGE_CHAR = CharForColorIndex(TEXT_COLOR_ORIGINAL_RANGE_END);
+	static constexpr char COLOR_LAST_NEW_RANGE_CHAR = CharForColorIndex(TEXT_COLOR_NEW_RANGE_END);
+	
+	static constexpr char COLOR_FIRST_CHAR = std::min(COLOR_FIRST_ORIGINAL_RANGE_CHAR, COLOR_FIRST_NEW_RANGE_CHAR);
+	static constexpr char COLOR_LAST_CHAR = std::max(COLOR_LAST_ORIGINAL_RANGE_CHAR, COLOR_LAST_NEW_RANGE_CHAR);
+
+	static constexpr int IsCharColorCode(const char chr)
+	{
+		if (COLOR_FIRST_CHAR <= chr && COLOR_LAST_CHAR >= chr)
+		{
+			if (chr <= COLOR_LAST_ORIGINAL_RANGE_CHAR)
+			{
+				return true;
+			}
+
+			if (chr >= COLOR_FIRST_NEW_RANGE_CHAR)
+			{
+				return true;
+			}
+		}
+
+		return false;
 	}
 
-	constexpr int ColorIndexForChar(const char colorChar)
+	static constexpr TextColor ColorIndexForChar(const char colorChar)
 	{
-		return colorChar - '0';
-	}
+		uint8_t offset = 0;
+		if (colorChar <= COLOR_LAST_ORIGINAL_RANGE_CHAR)
+		{
+			offset = COLOR_FIRST_ORIGINAL_RANGE_CHAR - TEXT_COLOR_ORIGINAL_RANGE_BEGIN;
+		}
+		else
+		{
+			offset = COLOR_FIRST_NEW_RANGE_CHAR - TEXT_COLOR_NEW_RANGE_BEGIN;
+		}
+
+		return static_cast<TextColor>(colorChar - offset);
+	};
+
 
 	class TextRenderer : public Component
 	{
@@ -95,9 +154,6 @@ namespace Components
 		static constexpr char FONT_ICON_MODIFIER_FLIP_HORIZONTALLY = 'h';
 		static constexpr char FONT_ICON_MODIFIER_FLIP_VERTICALLY = 'v';
 		static constexpr char FONT_ICON_MODIFIER_BIG = 'b';
-
-		static constexpr char COLOR_FIRST_CHAR = '0';
-		static constexpr char COLOR_LAST_CHAR = CharForColorIndex(TEXT_COLOR_COUNT - 1);
 
 		enum FontIconAutocompleteInstance : unsigned
 		{
@@ -254,6 +310,11 @@ namespace Components
 		static void DrawTextFxExtraCharacter(Game::Material* material, int charIndex, float x, float y, float w, float h, float sinAngle, float cosAngle, unsigned color);
 		static float DrawHudIcon(const char*& text, float x, float y, float sinAngle, float cosAngle, const Game::Font_s* font, float xScale, float yScale, unsigned color);
 		static void RotateXY(float cosAngle, float sinAngle, float pivotX, float pivotY, float x, float y, float* outX, float* outY);
+
+		static Game::GfxColor GetRainbowShade(int count, uint8_t offset);
+		static Game::GfxColor GetGoldenShade(int count, uint8_t offset);
+		static Game::GfxColor GetSilverShade(int count, uint8_t offset);
+
 		static void UpdateColorTable();
 
 		static void InitFontIconStrings();
