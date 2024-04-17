@@ -747,7 +747,7 @@ namespace Components
 		Utils::Hook::Nop(0x4EBF1A, 5);
 #endif
 
-		if (Flags::HasFlag("nointro"))
+		if (/*Flags::HasFlag("nointro")*/true)
 		{
 			Utils::Hook::Set<BYTE>(0x60BECF, 0xEB);
 		}
