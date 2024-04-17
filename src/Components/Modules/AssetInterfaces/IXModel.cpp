@@ -39,6 +39,11 @@ namespace Assets
 				Components::AssetHandler::StoreTemporaryAsset(Game::XAssetType::ASSET_TYPE_XMODEL_SURFS, { info.modelSurfs });
 			}
 		}
+
+		if (!header->model)
+		{
+			assert(false);
+		}
 	}
 
 	void IXModel::mark(Game::XAssetHeader header, Components::ZoneBuilder::Zone* builder)
