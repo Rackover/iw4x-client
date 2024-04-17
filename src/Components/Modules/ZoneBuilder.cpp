@@ -551,21 +551,23 @@ namespace Components
 	// Add branding asset
 	void ZoneBuilder::Zone::addBranding()
 	{
-		const auto now = std::chrono::system_clock::now();
-
-		auto zoneBranding = std::format("Built using the IW4x ZoneBuilder! {:%d-%m-%Y %H:%M:%OS}", now);
-		auto brandingLen = zoneBranding.size(); // + 1 is added by the save code
-
-		this->branding = { this->zoneName.data(), 0, static_cast<int>(brandingLen), getAllocator()->duplicateString(zoneBranding) };
-
-		if (this->findAsset(Game::ASSET_TYPE_RAWFILE, this->branding.name) != -1)
+		if (this->findAsset(Game::ASSET_TYPE_RAWFILE, this->zoneName) != -1)
 		{
-			Logger::Error(Game::ERR_FATAL, "Unable to add branding. Asset '{}' already exists!", this->branding.name);
+			Logger::Warning(Game::CON_CHANNEL_CLIENT, "Unable to add branding - Asset '{}' already exists!", this->branding.name);
 		}
+		else {
+			const auto now = std::chrono::system_clock::now();
 
-		Game::XAssetHeader header = { &this->branding };
-		Game::XAsset brandingAsset = { Game::ASSET_TYPE_RAWFILE, header };
-		this->loadedAssets.push_back(brandingAsset);
+			auto zoneBranding = std::format("Built using the IW4x ZoneBuilder! {:%d-%m-%Y %H:%M:%OS}", now);
+			auto brandingLen = zoneBranding.size(); // + 1 is added by the save code
+
+			this->branding = { this->zoneName.data(), 0, static_cast<int>(brandingLen), getAllocator()->duplicateString(zoneBranding) };
+
+
+			Game::XAssetHeader header = { &this->branding };
+			Game::XAsset brandingAsset = { Game::ASSET_TYPE_RAWFILE, header };
+			this->loadedAssets.push_back(brandingAsset);
+		}
 	}
 
 	// Check if the given pointer has already been mapped
@@ -1335,17 +1337,17 @@ namespace Components
 
 				switch (static_cast<AssetCategory>(i))
 				{
-					case AssetCategory::EXPLICIT:
-						break;
-					case AssetCategory::IMPLICIT:
-						csv << "\n### The following assets are implicitly built with previous assets:\n";
-						break;
-					case AssetCategory::NOT_SUPPORTED:
-						csv << "\n### The following assets are not supported for dumping:\n";
-						break;
-					case AssetCategory::DISAPPEARED:
-						csv << "\n### The following assets disappeared while dumping but are mentioned in the zone:\n";
-						break;
+				case AssetCategory::EXPLICIT:
+					break;
+				case AssetCategory::IMPLICIT:
+					csv << "\n### The following assets are implicitly built with previous assets:\n";
+					break;
+				case AssetCategory::NOT_SUPPORTED:
+					csv << "\n### The following assets are not supported for dumping:\n";
+					break;
+				case AssetCategory::DISAPPEARED:
+					csv << "\n### The following assets disappeared while dumping but are mentioned in the zone:\n";
+					break;
 				}
 
 				for (const auto& asset : assetsToList[i])
@@ -1619,8 +1621,8 @@ namespace Components
 #endif
 							}
 						}
-				}
-		});
+					}
+				});
 
 			Command::Add("listassets", [](const Command::Params* params)
 				{
@@ -1636,8 +1638,8 @@ namespace Components
 							}, &type, false);
 					}
 				});
+		}
 	}
-}
 
 	ZoneBuilder::~ZoneBuilder()
 	{
