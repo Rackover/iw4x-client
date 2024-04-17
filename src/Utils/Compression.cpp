@@ -16,11 +16,7 @@ namespace Utils::Compression
 
 		auto* buffer = allocator.allocateArray<char>(length);
 
-#ifdef _DEBUG
-		constexpr auto compression = Z_NO_COMPRESSION;
-#else
 		constexpr auto compression = Z_BEST_COMPRESSION;
-#endif
 
 		if (compress2((Bytef*)(buffer), &length, (const Bytef*)(data.data()), data.size(), compression) != Z_OK)
 		{
