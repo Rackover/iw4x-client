@@ -20,7 +20,7 @@ namespace Components
 	bool Maps::SPMap;
 	std::vector<Maps::DLC> Maps::DlcPacks;
 	std::vector<const char*> Maps::MapPatches = {
-		"louv_patch_sounds",
+		"louv_additional_fluff",
 		"louv_ui_mp"
 	};
 

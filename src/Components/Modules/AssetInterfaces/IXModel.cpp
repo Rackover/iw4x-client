@@ -985,12 +985,12 @@ namespace Assets
 				auto stowedRear = GetIndexOfBone(model, "tag_stowed_hip_rear");
 				if (stowedRear == UCHAR_MAX)
 				{
-					stowedBack = InsertBone(model, "tag_stowed_hip_rear", "pelvis", allocator);
+					stowedRear = InsertBone(model, "tag_stowed_hip_rear", "pelvis", allocator);
 				}
 
 				SetBoneTrans(model, stowedRear, false, -0.75f, -6.45f, -4.99f);
 				SetBoneQuaternion(model, stowedRear, false, -0.553f, -0.062f, -0.049f, 0.830f);
-				SetBoneTrans(model, stowedBack, true, -9.866f, -4.989f, 36.315f);
+				SetBoneTrans(model, stowedRear, true, -9.866f, -4.989f, 36.315f);
 				SetBoneQuaternion(model, stowedRear, true, -0.054f, -0.025f, -0.975f, 0.214f);
 
 
