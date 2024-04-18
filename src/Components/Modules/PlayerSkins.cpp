@@ -148,7 +148,7 @@ namespace Components
 		"body_prague_civ_male_fff",
 		"body_russian_president",
 		"body_forest_tf141_ghost",
-		"russian_presidents_daughter_body",
+		"", // available
 		"body_chemwar_russian_assault_cc",
 		"body_chemwar_russian_assault_c",
 		"body_russian_naval_assault_ff",
@@ -161,6 +161,7 @@ namespace Components
 	Dvar::Var PlayerSkins::localEnableHeadDvar;
 	Dvar::Var PlayerSkins::localEnableBodyDvar;
 	Dvar::Var PlayerSkins::skinTryOut;
+	Dvar::Var PlayerSkins::sv_allowSkins;
 
 	Skin PlayerSkins::currentSkin;
 
@@ -240,6 +241,8 @@ namespace Components
 
 			skinTryOut = Dvar::Register("skin_tryout", false, static_cast<uint16_t>(Game::DVAR_CODINFO), "enable skin tryout mode (refresh skins every second)");
 
+			sv_allowSkins = Dvar::Register("sv_allow_skins", true, static_cast<uint16_t>(Game::DVAR_SAVED | Game::DVAR_ARCHIVE), "allow skins on the server");
+
 			RefreshPlayerSkinFromDvars();
 
 			});
@@ -265,38 +268,42 @@ namespace Components
 				const auto client = &Game::svs_clients[partyIndex];
 				Skin skin{};
 
-				if (client->header.state == Game::CS_ACTIVE)
+				// global server override
+				if (sv_allowSkins.get<bool>() || skinTryOut.get<bool>())
 				{
-					// skin tryout mode - does NOT replicate!!
-					if (skinTryOut.get<bool>() && partyIndex == 0)
+					if (client->header.state == Game::CS_ACTIVE)
 					{
-						RefreshPlayerSkinFromDvars();
-						skin = currentSkin;
+						// skin tryout mode - does NOT replicate!!
+						if (skinTryOut.get<bool>() && partyIndex == 0)
+						{
+							RefreshPlayerSkinFromDvars();
+							skin = currentSkin;
+						}
+						else
+						{
+							const auto strSkinInteger = Game::Info_ValueForKey(client->userinfo, USERINFO_KEY);
+
+							if (std::strlen(strSkinInteger) > 0) {
+								skin.intValue = std::stoi(strSkinInteger);
+							}
+
+							SanitizeSkin(skin);
+						}
 					}
 					else
 					{
-						const auto strSkinInteger = Game::Info_ValueForKey(client->userinfo, USERINFO_KEY);
-
-						if (std::strlen(strSkinInteger) > 0) {
-							skin.intValue = std::stoi(strSkinInteger);
-						}
-
-						SanitizeSkin(skin);
+						// Still loading or something
 					}
+
+					// Returned the array with head first and body last
+					Game::Scr_MakeArray();
+
+					Game::Scr_AddString((skin.enableHead ? heads[skin.headIndex] : heads[0]).data());
+					Game::Scr_AddArray();
+
+					Game::Scr_AddString((skin.enableBody ? bodies[skin.bodyIndex] : bodies[0]).data());
+					Game::Scr_AddArray();
 				}
-				else
-				{
-					// Still loading or something
-				}
-
-				// Returned the array with head first and body last
-				Game::Scr_MakeArray();
-
-				Game::Scr_AddString((skin.enableHead ? heads[skin.headIndex] : heads[0]).data());
-				Game::Scr_AddArray();
-
-				Game::Scr_AddString((skin.enableBody ? bodies[skin.bodyIndex] : bodies[0]).data());
-				Game::Scr_AddArray();
 			}
 		}
 		else

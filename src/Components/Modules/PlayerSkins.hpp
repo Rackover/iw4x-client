@@ -35,6 +35,7 @@ namespace Components
 		static Dvar::Var localEnableHeadDvar;
 		static Dvar::Var localEnableBodyDvar;
 		static Dvar::Var skinTryOut;
+		static Dvar::Var sv_allowSkins;
 
 		static uint32_t GetTrueSkillForGametype(int localClientIndex, char* gametype);
 		static void RefreshPlayerSkinFromDvars();
