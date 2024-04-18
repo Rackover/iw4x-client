@@ -22,6 +22,20 @@ namespace Assets
 				Assets::IXModel::ConvertPlayerModelFromSingleplayerToMultiplayer(header->model, *builder->getAllocator());
 			}
 
+			// Fix hit location for shield
+			// thanks to Killera
+			for (size_t i = 0; i < header->model->numBones; i++)
+			{
+				const auto boneName = header->model->boneNames[i];
+				const auto strName = Game::SL_ConvertToString(boneName);
+
+				// check for tags that should have the HITLOC_SHIELD hit location
+				if (strName == "tag_weapon_left"s || strName == "tag_shield_back"s)
+				{
+					header->model->partClassification[i] = Game::HITLOC_SHIELD;
+				}
+			}
+
 			// ???
 			if (header->model->physCollmap)
 			{
@@ -38,6 +52,11 @@ namespace Assets
 				const auto& info = header->model->lodInfo[i];
 				Components::AssetHandler::StoreTemporaryAsset(Game::XAssetType::ASSET_TYPE_XMODEL_SURFS, { info.modelSurfs });
 			}
+		}
+
+		if (!header->model)
+		{
+			assert(false);
 		}
 	}
 
@@ -980,12 +999,12 @@ namespace Assets
 				auto stowedRear = GetIndexOfBone(model, "tag_stowed_hip_rear");
 				if (stowedRear == UCHAR_MAX)
 				{
-					stowedBack = InsertBone(model, "tag_stowed_hip_rear", "pelvis", allocator);
+					stowedRear = InsertBone(model, "tag_stowed_hip_rear", "pelvis", allocator);
 				}
 
 				SetBoneTrans(model, stowedRear, false, -0.75f, -6.45f, -4.99f);
 				SetBoneQuaternion(model, stowedRear, false, -0.553f, -0.062f, -0.049f, 0.830f);
-				SetBoneTrans(model, stowedBack, true, -9.866f, -4.989f, 36.315f);
+				SetBoneTrans(model, stowedRear, true, -9.866f, -4.989f, 36.315f);
 				SetBoneQuaternion(model, stowedRear, true, -0.054f, -0.025f, -0.975f, 0.214f);
 
 

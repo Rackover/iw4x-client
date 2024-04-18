@@ -554,25 +554,25 @@ namespace Components
 		sv_randomBotNames = Game::Dvar_RegisterBool("sv_randomBotNames", false, Game::DVAR_NONE, "Randomize the bots' names");
 		sv_replaceBots = Game::Dvar_RegisterBool("sv_replaceBots", false, Game::DVAR_NONE, "Test clients will be replaced by connecting players when the server is full.");
 
-		Scheduler::OnGameInitialized(UpdateBotNames, Scheduler::Pipeline::MAIN);
+		//Scheduler::OnGameInitialized(UpdateBotNames, Scheduler::Pipeline::MAIN);
 
-		Network::OnClientPacket("getbotsResponse", [](const Network::Address& address, const std::string& data)
-		{
-			const auto masterPort = (*Game::com_masterPort)->current.integer;
-			const auto* masterServerName = (*Game::com_masterServerName)->current.string;
+		//Network::OnClientPacket("getbotsResponse", [](const Network::Address& address, const std::string& data)
+		//{
+		//	const auto masterPort = (*Game::com_masterPort)->current.integer;
+		//	const auto* masterServerName = (*Game::com_masterServerName)->current.string;
 
-			Network::Address master(Utils::String::VA("%s:%u", masterServerName, masterPort));
-			if (master == address)
-			{
-				auto botNames = Utils::String::Split(data, '\n');
-				Logger::Print("Got {} names from the master server\n", botNames.size());
+		//	Network::Address master(Utils::String::VA("%s:%u", masterServerName, masterPort));
+		//	if (master == address)
+		//	{
+		//		auto botNames = Utils::String::Split(data, '\n');
+		//		Logger::Print("Got {} names from the master server\n", botNames.size());
 
-				for (const auto& entry : botNames)
-				{
-					RemoteBotNames.emplace_back(entry, "BOT");
-				}
-			}
-		});
+		//		for (const auto& entry : botNames)
+		//		{
+		//			RemoteBotNames.emplace_back(entry, "BOT");
+		//		}
+		//	}
+		//});
 
 		// Reset BotMovementInfo.active when client is dropped
 		Events::OnClientDisconnect([](const int clientNum) -> void

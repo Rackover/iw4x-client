@@ -39,6 +39,7 @@
 #include "Modules/News.hpp"
 #include "Modules/Node.hpp"
 #include "Modules/Party.hpp"
+#include "Modules/PlayerSkins.hpp"
 #include "Modules/PlayerMovement.hpp"
 #include "Modules/PlayerName.hpp"
 #include "Modules/Playlist.hpp"
@@ -154,6 +155,7 @@ namespace Components
 		Register(new News());
 		Register(new Node());
 		Register(new Party());
+		Register(new PlayerSkins());
 		Register(new PlayerMovement());
 		Register(new PlayerName());
 		Register(new Playlist());

@@ -97,28 +97,7 @@ namespace Components
 		{
 			return EXCEPTION_CONTINUE_EXECUTION;
 		}
-
-		const char* error;
-		if (ExceptionInfo->ExceptionRecord->ExceptionCode == EXCEPTION_STACK_OVERFLOW)
-		{
-			error = "Termination because of a stack overflow.\nCopy exception address to clipboard?";
-		}
-		else
-		{
-			error = Utils::String::VA("Fatal error (0x%08X) at 0x%08X.\nCopy exception address to clipboard?", ExceptionInfo->ExceptionRecord->ExceptionCode, ExceptionInfo->ExceptionRecord->ExceptionAddress);
-		}
-
-		// Message should be copied to the keyboard if no button is pressed
-		if (MessageBoxA(nullptr, error, nullptr, MB_YESNO | MB_ICONERROR) == IDYES)
-		{
-			CopyMessageToClipboard(Utils::String::VA("0x%08X", ExceptionInfo->ExceptionRecord->ExceptionAddress));
-		}
-
-		if (Flags::HasFlag("bigminidumps"))
-		{
-			SetMiniDumpType(true, false);
-		}
-
+		
 		// Current executable name
 		char exeFileName[MAX_PATH];
 		GetModuleFileNameA(nullptr, exeFileName, MAX_PATH);
@@ -133,10 +112,38 @@ namespace Components
 		_localtime64_s(&ltime, &time);
 		strftime(filenameFriendlyTime, sizeof(filenameFriendlyTime) - 1, "%Y%m%d%H%M%S", &ltime);
 
+		const auto fileDumpName = std::format("{}-{}.dmp", exeFileName, filenameFriendlyTime);
+
+		const char* error;
+		if (ExceptionInfo->ExceptionRecord->ExceptionCode == EXCEPTION_STACK_OVERFLOW)
+		{
+			error = "Termination because of a stack overflow.\nCopy exception address to clipboard?";
+		}
+		else
+		{
+			error = Utils::String::VA(
+				"Fatal error (0x%08X) at 0x%08X.\nA dump file will be created, please send it to me! :)\nYou will find it at '%s'",
+				ExceptionInfo->ExceptionRecord->ExceptionCode,
+				ExceptionInfo->ExceptionRecord->ExceptionAddress,
+				fileDumpName.data()
+			);
+		}
+
+		// Message should be copied to the keyboard if no button is pressed
+		if (MessageBoxA(nullptr, error, nullptr, MB_OK | MB_ICONERROR) == IDOK)
+		{
+			CopyMessageToClipboard(Utils::String::VA("0x%08X", ExceptionInfo->ExceptionRecord->ExceptionAddress));
+		}
+
+		if (Flags::HasFlag("bigminidumps"))
+		{
+			SetMiniDumpType(true, false);
+		}
+
 		// Combine with queued MinidumpsFolder
 		char filename[MAX_PATH]{};
 		CreateDirectoryA("minidumps", nullptr);
-		PathCombineA(filename, "minidumps\\", Utils::String::VA("%s-" VERSION "-%s.dmp", exeFileName, filenameFriendlyTime));
+		PathCombineA(filename, "minidumps\\", fileDumpName.data());
 
 		constexpr auto fileShare = FILE_SHARE_READ | FILE_SHARE_WRITE;
 		HANDLE hFile = CreateFileA(filename, GENERIC_WRITE | GENERIC_READ, fileShare, nullptr, (fileShare & FILE_SHARE_WRITE) > 0 ? OPEN_ALWAYS : OPEN_EXISTING, NULL, nullptr);
