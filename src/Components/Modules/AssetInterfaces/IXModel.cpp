@@ -22,6 +22,19 @@ namespace Assets
 				Assets::IXModel::ConvertPlayerModelFromSingleplayerToMultiplayer(header->model, *builder->getAllocator());
 			}
 
+			// Fix hit location for shield
+			for (size_t i = 0; i < header->model->numBones; i++)
+			{
+				const auto name = header->model->boneNames[i];
+				const auto strName = Game::SL_ConvertToString(name);
+				// check for tags that should have the HITLOC_SHIELD hit location
+				// thanks to Killera
+				if (strName == "tag_weapon_left"s || strName == "tag_shield_back"s)
+				{
+					header->model->partClassification[i] = Game::HITLOC_SHIELD;
+				}
+			}
+
 			// ???
 			if (header->model->physCollmap)
 			{
