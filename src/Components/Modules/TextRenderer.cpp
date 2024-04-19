@@ -1422,9 +1422,7 @@ namespace Components
 
 	unsigned int TextRenderer::ColorIndex(const char index)
 	{
-		auto result = index - '0';
-		if (static_cast<unsigned int>(result) >= TEXT_COLOR_COUNT || result < 0) result = 7;
-		return result;
+		return ColorIndexForChar(index);
 	}
 
 	void TextRenderer::StripColors(const char* in, char* out, std::size_t max)
@@ -1436,7 +1434,7 @@ namespace Components
 		while (*in != 0 && current < max)
 		{
 			const char index = *(in + 1);
-			if (*in == '^' && (ColorIndex(index) != 7 || index == '7'))
+			if (*in == '^' && (ColorIndexForChar(index) != TEXT_COLOR_DEFAULT || index == CharForColorIndex(TEXT_COLOR_DEFAULT)))
 			{
 				++in;
 			}
