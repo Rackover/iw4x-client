@@ -62,41 +62,53 @@ namespace Components
 
 	static constexpr char COLOR_LAST_ORIGINAL_RANGE_CHAR = CharForColorIndex(TEXT_COLOR_ORIGINAL_RANGE_END);
 	static constexpr char COLOR_LAST_NEW_RANGE_CHAR = CharForColorIndex(TEXT_COLOR_NEW_RANGE_END);
-	
+
 	static constexpr char COLOR_FIRST_CHAR = std::min(COLOR_FIRST_ORIGINAL_RANGE_CHAR, COLOR_FIRST_NEW_RANGE_CHAR);
 	static constexpr char COLOR_LAST_CHAR = std::max(COLOR_LAST_ORIGINAL_RANGE_CHAR, COLOR_LAST_NEW_RANGE_CHAR);
 
-	static constexpr int IsCharColorCode(const char chr)
+	static constexpr bool IsCharColorCodeOriginal(const char chr)
 	{
-		if (COLOR_FIRST_CHAR <= chr && COLOR_LAST_CHAR >= chr)
+		if (COLOR_FIRST_ORIGINAL_RANGE_CHAR <= chr && COLOR_LAST_ORIGINAL_RANGE_CHAR >= chr)
 		{
-			if (chr <= COLOR_LAST_ORIGINAL_RANGE_CHAR)
-			{
-				return true;
-			}
-
-			if (chr >= COLOR_FIRST_NEW_RANGE_CHAR)
-			{
-				return true;
-			}
+			return true;
 		}
+		else
+		{
+			return false;
+		}
+	}
 
-		return false;
+	static constexpr bool IsCharColorCodeNew(const char chr)
+	{
+		if (COLOR_FIRST_NEW_RANGE_CHAR <= chr && COLOR_LAST_NEW_RANGE_CHAR >= chr)
+		{
+			return true;
+		}
+		else
+		{
+			return false;
+		}
+	}
+
+	static constexpr bool IsCharColorCode(const char chr)
+	{
+		return (IsCharColorCodeOriginal(chr) || IsCharColorCodeNew(chr));
 	}
 
 	static constexpr TextColor ColorIndexForChar(const char colorChar)
 	{
 		uint8_t offset = 0;
-		if (colorChar <= COLOR_LAST_ORIGINAL_RANGE_CHAR)
+		if (IsCharColorCodeOriginal(colorChar))
 		{
 			offset = COLOR_FIRST_ORIGINAL_RANGE_CHAR - TEXT_COLOR_ORIGINAL_RANGE_BEGIN;
+			return static_cast<TextColor>(colorChar - offset);
 		}
-		else
+		else if (IsCharColorCodeNew(colorChar))
 		{
 			offset = COLOR_FIRST_NEW_RANGE_CHAR - TEXT_COLOR_NEW_RANGE_BEGIN;
+			return static_cast<TextColor>(colorChar - offset);
 		}
-
-		return static_cast<TextColor>(colorChar - offset);
+		else { return TextColor::TEXT_COLOR_DEFAULT; }
 	};
 
 
