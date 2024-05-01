@@ -379,7 +379,7 @@ namespace Steam
 	{
 #ifdef DISABLE_STEAM
 		return false;
-#endif // DISABLE_STEAM
+#else
 
 		const auto directoy = Proxy::GetSteamDirectory();
 		if (directoy.empty()) return false;
@@ -443,6 +443,7 @@ namespace Steam
 		if (!Proxy::SteamUser_) return false;
 
 		return true;
+#endif // DISABLE_STEAM
 	}
 
 	void Proxy::Uninititalize()

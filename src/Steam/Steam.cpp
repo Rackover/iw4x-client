@@ -107,7 +107,7 @@ namespace Steam
 	{
 #ifdef DISABLE_STEAM
 		return false;
-#endif
+#else
 
 		static std::optional<bool> flag;
 
@@ -117,6 +117,7 @@ namespace Steam
 		}
 
 		return !flag.value();
+#endif
 	}
 
 	extern "C"

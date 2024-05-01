@@ -162,6 +162,7 @@ namespace Components
 	Dvar::Var PlayerSkins::localEnableBodyDvar;
 	Dvar::Var PlayerSkins::skinTryOut;
 	Dvar::Var PlayerSkins::sv_allowSkins;
+	Dvar::Var PlayerSkins::sv_overrideTeamSkins;
 
 	Skin PlayerSkins::currentSkin;
 
@@ -205,6 +206,77 @@ namespace Components
 		Utils::Hook::Call<void(const char*, const char*, const char*)>(0x4AE560)(infoString, USERINFO_KEY, skinStr.c_str());
 	}
 
+	bool PlayerSkins::HasAuthorizedBoneCount(const Skin& skin, std::string& err)
+	{
+		Game::XModel* body = nullptr;
+		Game::XModel* head = nullptr;
+
+		const auto bodyName = GetBodyName(skin);
+
+		if (strnlen(bodyName, 1))
+		{
+			const auto bodyAsset = Game::DB_FindXAssetHeader(Game::ASSET_TYPE_XMODEL, bodyName);
+
+			if (bodyAsset.data == nullptr)
+			{
+				err = std::format("Missing body '{}' ??", bodyName);
+				return false;
+			}
+			else
+			{
+				body = bodyAsset.model;
+			}
+		}
+		else
+		{
+			// No body set
+			return true;
+		}
+
+		const auto headName = GetHeadName(skin);
+
+		if (strnlen(headName, 1))
+		{
+			const auto headAsset = Game::DB_FindXAssetHeader(Game::ASSET_TYPE_XMODEL, headName);
+
+			if (headAsset.data == nullptr)
+			{
+				err = std::format("Missing head '{}' ??", headName);
+				return false;
+			}
+			else
+			{
+				head = headAsset.model;
+			}
+		}
+		else
+		{
+			// No head set
+			return true;
+		}
+
+		const auto totalBoneCount = body->numBones + head->numBones;
+
+		if (totalBoneCount < 192) // 192 Is max bone count
+		{
+			return true;
+		}
+		else
+		{
+			err = std::format("Could not apply skin head {} - too many bones! ({}). {} ({}) + {} ({}) > 192", headName, totalBoneCount, bodyName, body->numBones, headName, head->numBones);
+		}
+	}
+
+	const char* PlayerSkins::GetHeadName(const Skin& skin)
+	{
+		return (skin.enableHead ? heads[skin.headIndex] : heads[0]).data();
+	}
+
+	const char* PlayerSkins::GetBodyName(const Skin& skin)
+	{
+		return (skin.enableBody ? bodies[skin.bodyIndex] : bodies[0]).data();
+	}
+
 
 	PlayerSkins::PlayerSkins()
 	{
@@ -242,16 +314,16 @@ namespace Components
 			skinTryOut = Dvar::Register("skin_tryout", false, static_cast<uint16_t>(Game::DVAR_CODINFO), "enable skin tryout mode (refresh skins every second)");
 
 			sv_allowSkins = Dvar::Register("sv_allow_skins", true, static_cast<uint16_t>(Game::DVAR_SAVED | Game::DVAR_ARCHIVE), "allow skins on the server");
+			sv_overrideTeamSkins = Dvar::Register("sv_allow_override_team_skins", false, static_cast<uint16_t>(Game::DVAR_SAVED | Game::DVAR_ARCHIVE), "allow body skins in team based gamemodes");
 
 			RefreshPlayerSkinFromDvars();
 
-			});
+		});
 
 		Components::GSC::Script::AddMethod("LOUV_GetPlayerSkin", [](const Game::scr_entref_t entref) {
-
 			const auto entity = Game::GetEntity(entref);
 			PlayerSkins::GScr_GetPlayerSkin(entity);
-			});
+		});
 	}
 
 	void PlayerSkins::GScr_GetPlayerSkin(Game::gentity_s* entRef)
@@ -298,10 +370,26 @@ namespace Components
 					// Returned the array with head first and body last
 					Game::Scr_MakeArray();
 
-					Game::Scr_AddString((skin.enableHead ? heads[skin.headIndex] : heads[0]).data());
+					std::string errMsg{};
+					if (HasAuthorizedBoneCount(skin, errMsg))
+					{
+						Game::Scr_AddString(GetHeadName(skin));
+					}
+					else
+					{
+						// Do not put head (too many bones)
+						Game::Scr_AddString("");
+
+						if (!errMsg.empty())
+						{
+							Components::Logger::Error(Game::ERR_SCRIPT, errMsg);
+						}
+
+					}
+
 					Game::Scr_AddArray();
 
-					Game::Scr_AddString((skin.enableBody ? bodies[skin.bodyIndex] : bodies[0]).data());
+					Game::Scr_AddString(GetBodyName(skin));
 					Game::Scr_AddArray();
 				}
 			}

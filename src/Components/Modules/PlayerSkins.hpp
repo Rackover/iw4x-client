@@ -36,12 +36,17 @@ namespace Components
 		static Dvar::Var localEnableBodyDvar;
 		static Dvar::Var skinTryOut;
 		static Dvar::Var sv_allowSkins;
+		static Dvar::Var sv_overrideTeamSkins;
 
 		static uint32_t GetTrueSkillForGametype(int localClientIndex, char* gametype);
 		static void RefreshPlayerSkinFromDvars();
 		static void SanitizeSkin(Skin& skin);
 
 		static void Info_SetValueForKey(const char* infoString, const char* key, const char* data);
+
+		static bool HasAuthorizedBoneCount(const Skin& skin, std::string& err);
+		static const char* GetHeadName(const Skin& skin);
+		static const char* GetBodyName(const Skin& skin);
 
 		static Skin currentSkin;
 	};
