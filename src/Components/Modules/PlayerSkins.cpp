@@ -264,6 +264,8 @@ namespace Components
 		else
 		{
 			err = std::format("Could not apply skin head {} - too many bones! ({}). {} ({}) + {} ({}) > 192", headName, totalBoneCount, bodyName, body->numBones, headName, head->numBones);
+			
+			return false;
 		}
 	}
 
