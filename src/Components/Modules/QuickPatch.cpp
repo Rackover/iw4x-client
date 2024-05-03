@@ -528,6 +528,12 @@ namespace Components
 		});
 
 		Scheduler::Once ([]() {
+			
+			// who the FUCK put that to 1000 ??
+			// restore all of those to default values
+			Command::Execute("sv_network_fps 50");
+			Command::Execute("cl_maxpackets 30");
+
 			// UI version string
 			static std::string menuVersionString = VERSION"\n";
 

@@ -164,6 +164,8 @@ namespace Components
 	Dvar::Var PlayerSkins::sv_allowSkins;
 	Dvar::Var PlayerSkins::sv_overrideTeamSkins;
 
+	std::unordered_set<int> PlayerSkins::forbiddenHeadBodyCombinations;
+
 	Skin PlayerSkins::currentSkin;
 
 	// We hook cdecl so no need to write assembly code
@@ -177,6 +179,82 @@ namespace Components
 		RefreshPlayerSkinFromDvars();
 
 		return currentSkin.intValue;
+	}
+
+	void PlayerSkins::CheckForbiddenHeadBodyCombinations()
+	{
+		forbiddenHeadBodyCombinations.clear();
+
+		uint16_t headBonesCount[ARRAYSIZE(heads)]{};
+		uint16_t bodyBonesCount[ARRAYSIZE(bodies)]{};
+
+		for (size_t i = 0; i < ARRAYSIZE(heads); i++)
+		{
+			if (!heads[i].empty())
+			{
+				const auto entry = Game::DB_FindXAssetEntry(Game::XAssetType::ASSET_TYPE_XMODEL, heads[i].data());
+				if (entry && entry->asset.header.data)
+				{
+					headBonesCount[i] = entry->asset.header.model->numBones;
+				}
+				else
+				{
+					Logger::Error(Game::ERR_SCRIPT, "Head {} is nowhere to be found!\n", heads[i]);
+				}
+			}
+		}
+
+		for (size_t i = 0; i < ARRAYSIZE(bodies); i++)
+		{
+			if (!bodies[i].empty())
+			{
+				const auto entry = Game::DB_FindXAssetEntry(Game::XAssetType::ASSET_TYPE_XMODEL, bodies[i].data());
+				if (entry && entry->asset.header.data)
+				{
+					bodyBonesCount[i] = entry->asset.header.model->numBones;
+				}
+				else
+				{
+					Logger::Error(Game::ERR_SCRIPT, "Body {} is nowhere to be found!\n", bodies[i]);
+				}
+			}
+		}
+
+		// Trying every combination
+		for (size_t bodyIndex = 0; bodyIndex < ARRAYSIZE(bodies); bodyIndex++)
+		{
+			const auto bodyBoneCount = bodyBonesCount[bodyIndex];
+
+			for (size_t headIndex = 0; headIndex < ARRAYSIZE(heads); headIndex++)
+			{
+				const auto headBoneCount = headBonesCount[headIndex];
+
+				if (headBoneCount + bodyBoneCount >= 192)
+				{
+					Logger::Print(
+						"Notice: Skin {} + {} will not be allowed ({} + {}= {} bones total)\n",
+						heads[headIndex],
+						bodies[bodyIndex],
+						headBoneCount,
+						bodyBoneCount,
+						headBoneCount + bodyBoneCount
+					);
+
+					forbiddenHeadBodyCombinations.emplace((headIndex << 8) | bodyIndex);
+				}
+				else
+				{
+					Logger::Print(
+						"Notice: Skin {} + {} is allowed ({} + {}= {} bones total)\n",
+						heads[headIndex],
+						bodies[bodyIndex],
+						headBoneCount,
+						bodyBoneCount,
+						headBoneCount + bodyBoneCount
+					);
+				}
+			}
+		}
 	}
 
 	void PlayerSkins::RefreshPlayerSkinFromDvars()
@@ -264,7 +342,7 @@ namespace Components
 		else
 		{
 			err = std::format("Could not apply skin head {} - too many bones! ({}). {} ({}) + {} ({}) > 192", headName, totalBoneCount, bodyName, body->numBones, headName, head->numBones);
-			
+
 			return false;
 		}
 	}
@@ -289,6 +367,15 @@ namespace Components
 		Utils::Hook(0x41D376, Info_SetValueForKey, HOOK_CALL).install()->quick();
 
 		Utils::Hook(0x4F33D0, GetTrueSkillForGametype, HOOK_JUMP).install()->quick();
+
+#if DEBUG
+		Components::Scheduler::OnGameInitialized([]() {
+
+				CheckForbiddenHeadBodyCombinations();
+				RefreshPlayerSkinFromDvars();
+			}, Components::Scheduler::Pipeline::SERVER
+		);
+#endif
 
 		Components::Events::OnDvarInit([]() {
 
@@ -317,15 +404,14 @@ namespace Components
 
 			sv_allowSkins = Dvar::Register("sv_allow_skins", true, static_cast<uint16_t>(Game::DVAR_SAVED | Game::DVAR_ARCHIVE), "allow skins on the server");
 			sv_overrideTeamSkins = Dvar::Register("sv_allow_override_team_skins", false, static_cast<uint16_t>(Game::DVAR_SAVED | Game::DVAR_ARCHIVE), "allow body skins in team based gamemodes");
-
+		
 			RefreshPlayerSkinFromDvars();
-
 		});
 
 		Components::GSC::Script::AddMethod("LOUV_GetPlayerSkin", [](const Game::scr_entref_t entref) {
 			const auto entity = Game::GetEntity(entref);
 			PlayerSkins::GScr_GetPlayerSkin(entity);
-		});
+			});
 	}
 
 	void PlayerSkins::GScr_GetPlayerSkin(Game::gentity_s* entRef)

@@ -37,10 +37,13 @@ namespace Components
 		static Dvar::Var skinTryOut;
 		static Dvar::Var sv_allowSkins;
 		static Dvar::Var sv_overrideTeamSkins;
+		
+		static std::unordered_set<int> forbiddenHeadBodyCombinations;
 
 		static uint32_t GetTrueSkillForGametype(int localClientIndex, char* gametype);
 		static void RefreshPlayerSkinFromDvars();
 		static void SanitizeSkin(Skin& skin);
+		static void CheckForbiddenHeadBodyCombinations();
 
 		static void Info_SetValueForKey(const char* infoString, const char* key, const char* data);
 
