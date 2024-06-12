@@ -10,6 +10,7 @@
 namespace Components
 {
 	constexpr auto USERINFO_KEY = "skin";
+	constexpr auto MAX_ALLOWED_BONES = 140;
 
 	const std::string PlayerSkins::heads[] = {
 		"",
@@ -156,6 +157,9 @@ namespace Components
 		"body_doctor"
 	};
 
+	Game::scr_string_t PlayerSkins::headsScriptStrings[ARRAYSIZE(PlayerSkins::heads)]{};
+	Game::scr_string_t PlayerSkins::bodiesScriptStrings[ARRAYSIZE(PlayerSkins::bodies)]{};
+
 	Dvar::Var PlayerSkins::localHeadIndexDvar;
 	Dvar::Var PlayerSkins::localBodyIndexDvar;
 	Dvar::Var PlayerSkins::localEnableHeadDvar;
@@ -179,6 +183,23 @@ namespace Components
 		RefreshPlayerSkinFromDvars();
 
 		return currentSkin.intValue;
+	}
+
+	void PlayerSkins::RegisterConstantStrings()
+	{
+		for (size_t i = 0; i < ARRAYSIZE(heads); i++)
+		{
+			headsScriptStrings[i] =  static_cast<Game::scr_string_t>(Game::SL_GetString(heads[i].data(), 0));
+
+			Components::Logger::Print("head #{} registered to string index [{}] ({})\n", i, headsScriptStrings[i], heads[i]);
+		}
+
+		for (size_t i = 0; i < ARRAYSIZE(bodies); i++)
+		{
+			bodiesScriptStrings[i] = static_cast<Game::scr_string_t>(Game::SL_GetString(bodies[i].data(), 0));
+
+			Components::Logger::Print("body #{} registered to string index [{}] ({})\n", i, bodiesScriptStrings[i], bodies[i]);
+		}
 	}
 
 	void PlayerSkins::CheckForbiddenHeadBodyCombinations()
@@ -229,7 +250,7 @@ namespace Components
 			{
 				const auto headBoneCount = headBonesCount[headIndex];
 
-				if (headBoneCount + bodyBoneCount >= 192)
+				if (headBoneCount + bodyBoneCount >= MAX_ALLOWED_BONES)
 				{
 					Logger::Print(
 						"Notice: Skin {} + {} will not be allowed ({} + {}= {} bones total)\n",
@@ -291,18 +312,28 @@ namespace Components
 
 		const auto bodyName = GetBodyName(skin);
 
-		if (strnlen(bodyName, 1))
+		if (bodyName)
 		{
-			const auto bodyAsset = Game::DB_FindXAssetHeader(Game::ASSET_TYPE_XMODEL, bodyName);
+			const auto str = Game::SL_ConvertToString(bodyName);
 
-			if (bodyAsset.data == nullptr)
+			if (str)
 			{
-				err = std::format("Missing body '{}' ??", bodyName);
-				return false;
+				const auto bodyAsset = Game::DB_FindXAssetHeader(Game::ASSET_TYPE_XMODEL, Game::SL_ConvertToString(bodyName));
+
+				if (bodyAsset.data == nullptr)
+				{
+					err = std::format("Missing body '{}' ??", bodyName);
+					return false;
+				}
+				else
+				{
+					body = bodyAsset.model;
+				}
 			}
 			else
 			{
-				body = bodyAsset.model;
+				err = std::format("NULL string ref on skin body '{}' !!", skin.bodyIndex);
+				return false;
 			}
 		}
 		else
@@ -313,18 +344,28 @@ namespace Components
 
 		const auto headName = GetHeadName(skin);
 
-		if (strnlen(headName, 1))
+		if (headName)
 		{
-			const auto headAsset = Game::DB_FindXAssetHeader(Game::ASSET_TYPE_XMODEL, headName);
+			const auto str = Game::SL_ConvertToString(headName);
 
-			if (headAsset.data == nullptr)
+			if (str)
 			{
-				err = std::format("Missing head '{}' ??", headName);
-				return false;
+				const auto headAsset = Game::DB_FindXAssetHeader(Game::ASSET_TYPE_XMODEL, str);
+
+				if (headAsset.data == nullptr)
+				{
+					err = std::format("Missing head '{}' ??", headName);
+					return false;
+				}
+				else
+				{
+					head = headAsset.model;
+				}
 			}
 			else
 			{
-				head = headAsset.model;
+				err = std::format("NULL string ref on skin head '{}' !!", skin.headIndex);
+				return false;
 			}
 		}
 		else
@@ -335,26 +376,26 @@ namespace Components
 
 		const auto totalBoneCount = body->numBones + head->numBones;
 
-		if (totalBoneCount < 192) // 192 Is max bone count
+		if (totalBoneCount < MAX_ALLOWED_BONES) // 192 Is max bone count
 		{
 			return true;
 		}
 		else
 		{
-			err = std::format("Could not apply skin head {} - too many bones! ({}). {} ({}) + {} ({}) > 192", headName, totalBoneCount, bodyName, body->numBones, headName, head->numBones);
+			err = std::format("Could not apply skin head {} - too many bones! ({}). {} ({}) + {} ({}) > {}", headName, totalBoneCount, bodyName, body->numBones, headName, head->numBones, MAX_ALLOWED_BONES);
 
 			return false;
 		}
 	}
 
-	const char* PlayerSkins::GetHeadName(const Skin& skin)
+	Game::scr_string_t PlayerSkins::GetHeadName(const Skin& skin)
 	{
-		return (skin.enableHead ? heads[skin.headIndex] : heads[0]).data();
+		return skin.enableHead ? headsScriptStrings[skin.headIndex] : 0;
 	}
 
-	const char* PlayerSkins::GetBodyName(const Skin& skin)
+	Game::scr_string_t PlayerSkins::GetBodyName(const Skin& skin)
 	{
-		return (skin.enableBody ? bodies[skin.bodyIndex] : bodies[0]).data();
+		return skin.enableBody ? bodiesScriptStrings[skin.bodyIndex] : 0;
 	}
 
 
@@ -368,14 +409,13 @@ namespace Components
 
 		Utils::Hook(0x4F33D0, GetTrueSkillForGametype, HOOK_JUMP).install()->quick();
 
-#if DEBUG
 		Components::Scheduler::OnGameInitialized([]() {
 
-				CheckForbiddenHeadBodyCombinations();
-				RefreshPlayerSkinFromDvars();
+			CheckForbiddenHeadBodyCombinations();
+			RegisterConstantStrings();
+			RefreshPlayerSkinFromDvars();
 			}, Components::Scheduler::Pipeline::SERVER
 		);
-#endif
 
 		Components::Events::OnDvarInit([]() {
 
@@ -404,9 +444,9 @@ namespace Components
 
 			sv_allowSkins = Dvar::Register("sv_allow_skins", true, static_cast<uint16_t>(Game::DVAR_SAVED | Game::DVAR_ARCHIVE), "allow skins on the server");
 			sv_overrideTeamSkins = Dvar::Register("sv_allow_override_team_skins", false, static_cast<uint16_t>(Game::DVAR_SAVED | Game::DVAR_ARCHIVE), "allow body skins in team based gamemodes");
-		
+
 			RefreshPlayerSkinFromDvars();
-		});
+			});
 
 		Components::GSC::Script::AddMethod("LOUV_GetPlayerSkin", [](const Game::scr_entref_t entref) {
 			const auto entity = Game::GetEntity(entref);
@@ -461,7 +501,7 @@ namespace Components
 					std::string errMsg{};
 					if (HasAuthorizedBoneCount(skin, errMsg))
 					{
-						Game::Scr_AddString(GetHeadName(skin));
+						Game::Scr_AddConstString(GetHeadName(skin));
 					}
 					else
 					{
@@ -477,7 +517,7 @@ namespace Components
 
 					Game::Scr_AddArray();
 
-					Game::Scr_AddString(GetBodyName(skin));
+					Game::Scr_AddConstString(GetBodyName(skin));
 					Game::Scr_AddArray();
 				}
 			}

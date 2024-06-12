@@ -29,6 +29,8 @@ namespace Components
 	private:
 		static const std::string heads[];
 		static const std::string bodies[];
+		static Game::scr_string_t headsScriptStrings[];
+		static Game::scr_string_t bodiesScriptStrings[];
 
 		static Dvar::Var localHeadIndexDvar;
 		static Dvar::Var localBodyIndexDvar;
@@ -37,19 +39,20 @@ namespace Components
 		static Dvar::Var skinTryOut;
 		static Dvar::Var sv_allowSkins;
 		static Dvar::Var sv_overrideTeamSkins;
-		
+
 		static std::unordered_set<int> forbiddenHeadBodyCombinations;
 
 		static uint32_t GetTrueSkillForGametype(int localClientIndex, char* gametype);
 		static void RefreshPlayerSkinFromDvars();
 		static void SanitizeSkin(Skin& skin);
 		static void CheckForbiddenHeadBodyCombinations();
+		static void RegisterConstantStrings();
 
 		static void Info_SetValueForKey(const char* infoString, const char* key, const char* data);
 
 		static bool HasAuthorizedBoneCount(const Skin& skin, std::string& err);
-		static const char* GetHeadName(const Skin& skin);
-		static const char* GetBodyName(const Skin& skin);
+		static Game::scr_string_t GetHeadName(const Skin& skin);
+		static Game::scr_string_t GetBodyName(const Skin& skin);
 
 		static Skin currentSkin;
 	};
