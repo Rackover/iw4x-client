@@ -191,6 +191,7 @@ newaction {
 		versionHeader:write("#define SHORTVERSION " .. cstrquote("IW4X-LOUV-" .. revNumber) .. "\n")
 		versionHeader:write("#define PROGRAM_NAME " .. cstrquote("Call of Duty: Modern Warfare 2") .. "\n")
 		versionHeader:write("#define COMPANY_NAME " .. cstrquote("IW4x team") .. "\n")
+		versionHeader:write("#define REVISION_STR VERSION\n")
 		versionHeader:close()
 		local versionHeader = assert(io.open(wks.location .. "/src/version.hpp", "w"))
 		versionHeader:write("/*\n")

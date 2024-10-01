@@ -390,12 +390,12 @@ namespace Components
 
 	Game::scr_string_t PlayerSkins::GetHeadName(const Skin& skin)
 	{
-		return skin.enableHead ? headsScriptStrings[skin.headIndex] : 0;
+		return skin.enableHead ? headsScriptStrings[skin.headIndex] : headsScriptStrings[0];
 	}
 
 	Game::scr_string_t PlayerSkins::GetBodyName(const Skin& skin)
 	{
-		return skin.enableBody ? bodiesScriptStrings[skin.bodyIndex] : 0;
+		return skin.enableBody ? bodiesScriptStrings[skin.bodyIndex] : bodiesScriptStrings[0];
 	}
 
 

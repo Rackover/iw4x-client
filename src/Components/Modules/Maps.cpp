@@ -806,27 +806,6 @@ namespace Components
 
 	Maps::Maps()
 	{
-		Scheduler::Once([]
-(??)		{
-(??)			Dvar::Register<bool>("isDlcInstalled_All", false, Game::DVAR_EXTERNAL | Game::DVAR_INIT, "");
-(??)			Maps::RListSModels = Dvar::Register<bool>("r_listSModels", false, Game::DVAR_NONE, "Display a list of visible SModels");
-
-				Maps::AddDlc({ 1, "Stimulus Pack", {"mp_complex", "mp_compact", "mp_storm", "mp_overgrown", "mp_crash"} });
-				Maps::AddDlc({ 2, "Resurgence Pack", {"mp_abandon", "mp_vacant", "mp_trailerpark", "mp_strike", "mp_fuel2"} });
-				Maps::AddDlc({ 3, "IW4x Classics", {"mp_nuked", "mp_cross_fire", "mp_cargoship", "mp_bloc", "mp_killhouse", "mp_bog_sh", "mp_cargoship_sh", "mp_shipment", "mp_shipment_long", "mp_rust_long", "mp_firingrange", "mp_bloc_sh", "mp_crash_tropical", "mp_estate_tropical", "mp_fav_tropical", "mp_storm_spring"} });
-				Maps::AddDlc({ 4, "Call Of Duty 4 Pack", {"mp_farm", "mp_backlot", "mp_pipeline", "mp_countdown", "mp_crash_snow", "mp_carentan", "mp_broadcast", "mp_showdown", "mp_convoy", "mp_citystreets"} });
-				Maps::AddDlc({ 5, "Modern Warfare 3 Pack", {"mp_dome", "mp_hardhat", "mp_paris", "mp_seatown", "mp_bravo", "mp_underground", "mp_plaza2", "mp_village", "mp_alpha"} });
-
-				Maps::UpdateDlcStatus();
-
-				UIScript::Add("downloadDLC", []([[maybe_unused]] const UIScript::Token& token, [[maybe_unused]] const Game::uiInfo_s* info)
-					{
-						const auto dlc = token.get<int>();
-
-(??)				Game::ShowMessageBox(Utils::String::VA("DLC %d does not exist!", dlc), "ERROR");
-(??)			});
-(??)		}, Scheduler::Pipeline::MAIN);
-
 		// disable turrets on CoD:OL 448+ maps for now
 		Utils::Hook(0x5EE577, Maps::G_SpawnTurretHook, HOOK_CALL).install()->quick();
 		Utils::Hook(0x44A4D5, Maps::G_SpawnTurretHook, HOOK_CALL).install()->quick();
@@ -904,14 +883,6 @@ namespace Components
 		// Load usermap arena file
 		Utils::Hook(0x630A88, Maps::LoadArenaFileStub, HOOK_CALL).install()->quick();
 
-(??)		// Always refresh arena when loading or unloading a zone
-(??)		Utils::Hook::Nop(0x485017, 2);
-(??)		Utils::Hook::Nop(0x4FD8C7, 2); // Gametypes
-(??)		Utils::Hook::Nop(0x4BDFB7, 2); // Unknown
-(??)		Utils::Hook::Nop(0x45ED6F, 2); // loadGameInfo
-(??)		Utils::Hook::Nop(0x4A5888, 2); // UI_InitOnceForAllClients
-(??)		
-(??)
 		// Allow hiding specific smodels
 		Utils::Hook(0x50E67C, Maps::HideModelStub, HOOK_CALL).install()->quick();
 
@@ -920,34 +891,62 @@ namespace Components
 			return;
 		}
 
-(??)		// Client only
-(??)		Scheduler::Loop([]
+		Components::GSC::Script::AddFunction("LOUV_GetMapList", [] // gsc: LOUV_GetMapList()
 			{
-(??)			auto*& gameWorld = *reinterpret_cast<Game::GfxWorld**>(0x66DEE94);
-(??)			if (!Game::CL_IsCgameInitialized() || !gameWorld || !Maps::RListSModels.get<bool>()) return;
+				Game::Scr_MakeArray();
 
-(??)			std::map<std::string, int> models;
-(??)			for (unsigned int i = 0; i < gameWorld->dpvs.smodelCount; ++i)
-(??)			{
-(??)				if (gameWorld->dpvs.smodelVisData[0][i])
+				Game::UI_UpdateArenas();
+				for (int i = 0; i < *Game::arenaCount; ++i)
 				{
-(??)					std::string name = gameWorld->dpvs.smodelDrawInsts[i].model->name;
+					Game::newMapArena_t* arena = &ArenaLength::NewArenas[i];
+					Game::Scr_AddString(arena->mapName);
+					Game::Scr_AddArray();
+				}
+			});
 
-(??)					if (!models.contains(name)) models[name] = 1;
-(??)					else models[name]++;
+
+		Components::GSC::Script::AddFunction("LOUV_GetMapArenaInfo", [] // gsc: LOUV_GetMapArenaInfo(mapName, fieldName)
+			{
+				if (Game::Scr_GetNumParam() != 2)
+				{
+					Game::Scr_Error("LOUV_GetMapArenaInfo: Needs az map name and a field name!");
+					return;
 				}
 
-(??)			Game::Font_s* font = Game::R_RegisterFont("fonts/smallFont", 0);
-(??)			auto height = Game::R_TextHeight(font);
-(??)			auto scale = 0.75f;
-(??)			float color[4] = {0.0f, 1.0f, 0.0f, 1.0f};
 
-(??)			unsigned int i = 0;
-(??)			for (auto& model : models)
-(??)			{
-(??)				Game::R_AddCmdDrawText(Utils::String::VA("%d %s", model.second, model.first.data()), std::numeric_limits<int>::max(), font, 15.0f, (height * scale + 1) * (i++ + 1) + 15.0f, scale, scale, 0.0f, color, Game::ITEM_TEXTSTYLE_NORMAL);
-(??)			}
-(??)		}, Scheduler::Pipeline::RENDERER);
+				const std::string mapName = Game::SL_ConvertToString(Game::Scr_GetConstString(0));
+				const std::string fieldName = Game::SL_ConvertToString(Game::Scr_GetConstString(1));
+
+				Game::UI_UpdateArenas();
+				for (int i = 0; i < *Game::arenaCount; ++i)
+				{
+					Game::newMapArena_t* arena = &ArenaLength::NewArenas[i];
+					if (arena->mapName == mapName)
+					{
+						// Found the map!
+						for (std::size_t j = 0; j < std::extent_v<decltype(Game::newMapArena_t::keys)>; ++j)
+						{
+							const auto* key = arena->keys[j];
+							const auto* value = arena->values[j];
+
+							// Foudn the field!
+							if (key == fieldName)
+							{
+								Game::Scr_AddString(value);
+								return;
+							}
+						}
+
+						const std::string error = std::format("Could not find field {} in arena entry for map {}!\n", fieldName, mapName);
+						Game::Scr_Error(error.data());
+						return;
+					}
+				}
+
+				const std::string error = std::format("Map {} has no arena entry!\n", mapName);
+				Game::Scr_Error(error.data());
+			});
+
 	}
 
 	Maps::~Maps()

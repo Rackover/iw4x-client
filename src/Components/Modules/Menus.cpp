@@ -228,7 +228,6 @@ namespace Components
 		{
 			DebugPrint("Reallocating menu {} ({:X})...", menu->window.name, (unsigned int)(menu));
 
-
 			menu->window.name = Allocator.duplicateString(menu->window.name);
 
 			for (int i = 0; i < menu->itemCount; i++)
@@ -254,11 +253,11 @@ namespace Components
 			DUPLICATE_STRING_IF_EXISTS(menu, font);
 			DUPLICATE_STRING_IF_EXISTS(menu, allowedBinding);
 			DUPLICATE_STRING_IF_EXISTS(menu, soundName);
+			
+			UpdateSupportingDataContents();
 
 			if (menu->expressionData)
 			{
-				UpdateSupportingDataContents();
-
 				assert(menu->expressionData == Game::menuSupportingData);
 				menu->expressionData = Menus::SupportingData;
 			}
