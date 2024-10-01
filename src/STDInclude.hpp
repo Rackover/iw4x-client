@@ -10,19 +10,19 @@
 #define DISABLE_STEAM 1
 #define DISABLE_BINARY_CHECK 1 
 
-#include <Windows.h>
-#include <WinSock2.h>
-#include <ShlObj.h>
+#include <windows.h>
+#include <winsock2.h>
+#include <shlobj.h>
 #include <timeapi.h>
 #include <shellapi.h>
 #include <wininet.h>
 #include <d3d9.h>
-#include <AclAPI.h>
-#include <Psapi.h>
-#include <TlHelp32.h>
-#include <Shlwapi.h>
+#include <aclapi.h>
+#include <psapi.h>
+#include <tlhelp32.h>
+#include <shlwapi.h>
 
-#include <DbgHelp.h>
+#include <dbghelp.h>
 
 #include <algorithm>
 #include <cctype>
@@ -109,6 +109,7 @@ using namespace std::literals;
 #include "Utils/CSV.hpp"
 #include "Utils/Entities.hpp"
 #include "Utils/Hooking.hpp"
+#include "Utils/Huffman.hpp"
 #include "Utils/IO.hpp"
 #include "Utils/Library.hpp"
 #include "Utils/Maths.hpp"

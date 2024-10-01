@@ -12,6 +12,8 @@ namespace Game
 
 	CopyStringInternal_t CopyStringInternal = CopyStringInternal_t(0x4F3C80);
 
+	CG_LocationalTrace_t CG_LocationalTrace = CG_LocationalTrace_t(0x48B1D0);
+	CG_WorldTrace_t CG_WorldTrace = CG_WorldTrace_t(0x501F00);
 	CG_DrawDisconnect_t CG_DrawDisconnect = CG_DrawDisconnect_t(0x454A70);
 	CG_NextWeapon_f_t CG_NextWeapon_f = CG_NextWeapon_f_t(0x449DE0);
 	CG_GetClientNum_t CG_GetClientNum = CG_GetClientNum_t(0x433700);
@@ -271,6 +273,8 @@ namespace Game
 	float* cgameFOVSensitivityScale = reinterpret_cast<float*>(0xB2F884);
 
 	UiContext* uiContext = reinterpret_cast<UiContext*>(0x62E2858);
+	UiContext* cgDC = reinterpret_cast<Game::UiContext*>(0x7DEDB8);
+	const ExpressionSupportingData* menuSupportingData = reinterpret_cast<Game::ExpressionSupportingData*>(0x62D2270);
 
 	int* arenaCount = reinterpret_cast<int*>(0x62E6930);
 	mapArena_t* arenas = reinterpret_cast<mapArena_t*>(0x62E6934);
@@ -900,6 +904,20 @@ namespace Game
 
 			popad
 			retn
+		}
+	}
+
+	void Menu_FreeItem(itemDef_s* item)
+	{
+		__asm
+		{
+			pushad
+
+			mov edi, item
+			mov ebx, 0x63D880 // Original function address
+			call ebx
+
+			popad
 		}
 	}
 

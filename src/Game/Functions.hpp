@@ -24,6 +24,12 @@ namespace Game
 	typedef void(*CG_DrawDisconnect_t)(int localClientNum);
 	extern CG_DrawDisconnect_t CG_DrawDisconnect;
 
+	typedef void(*CG_LocationalTrace_t)(trace_t *results, const float *start, const float *end, int passEntityNum, int contentMask);
+	extern  CG_LocationalTrace_t CG_LocationalTrace;
+
+	typedef void(*CG_WorldTrace_t)(trace_t *results, const float *start, const float *end, Bounds *bounds, int brushmask);
+	extern  CG_WorldTrace_t CG_WorldTrace;
+
 	typedef void(*CG_NextWeapon_f_t)();
 	extern CG_NextWeapon_f_t CG_NextWeapon_f;
 
@@ -616,6 +622,8 @@ namespace Game
 	extern source_s** sourceFiles;
 
 	extern UiContext* uiContext;
+	extern UiContext* cgDC;
+	extern const ExpressionSupportingData* menuSupportingData;
 
 	extern int* arenaCount;
 	extern mapArena_t* arenas;
@@ -752,6 +760,7 @@ namespace Game
 
 	void UI_FilterStringForButtonAnimation(char* str, unsigned int strMaxSize);
 
+	void Menu_FreeItem(itemDef_s* item);
 	void Menu_SetNextCursorItem(UiContext* ctx, menuDef_t* currentMenu, int unk = 1);
 	void Menu_SetPrevCursorItem(UiContext* ctx, menuDef_t* currentMenu, int unk = 1);
 	const char* TableLookup(StringTable* stringtable, int row, int column);

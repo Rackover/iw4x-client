@@ -1,6 +1,6 @@
 #pragma once
 
-#define PROTOCOL 0x97
+#define PROTOCOL 0x98
 #define NUM_CUSTOM_CLASSES 15
 #define FX_ELEM_FIELD_COUNT 90
 
@@ -1139,11 +1139,11 @@ namespace Game
 		unsigned __int16 triCount;
 		XSurfaceCollisionTree* collisionTree;
 	};
-	
+
 	struct DObjSkelMat
 	{
-	  float axis[3][4];
-	  float origin[4];
+		float axis[3][4];
+		float origin[4];
 	};
 
 	struct XSurface
@@ -1820,7 +1820,7 @@ namespace Game
 		int stunTime;
 	};
 
-	static_assert(sizeof(playerState_s) == 0x311C);
+	static_assert(sizeof(playerState_s) == 0x311C); // Confirmed
 
 	enum LocSelInputState
 	{
@@ -1939,6 +1939,8 @@ namespace Game
 		unsigned int playerCardNameplate;
 	};
 
+	static_assert(sizeof(clientState_s) == 0x7C);
+
 	enum PlayerCardClientLookupType
 	{
 		PLAYERCARD_LOOKUP_SCRIPTSLOT = 0x0,
@@ -1984,6 +1986,7 @@ namespace Game
 		CMD_BUTTON_FRAG = 1 << 14,
 		CMD_BUTTON_OFFHAND_SECONDARY = 1 << 15,
 		CMD_BUTTON_THROW = 1 << 19,
+		CMD_BUTTON_REMOTE = 1 << 20,
 	};
 
 	struct usercmd_s
@@ -2431,7 +2434,7 @@ namespace Game
 		float scale;
 		unsigned int noScalePartBits[6];
 		unsigned __int16* boneNames;
-		unsigned char *parentList;
+		unsigned char* parentList;
 		short* quats;
 		float* trans;
 		unsigned char* partClassification;
@@ -4026,7 +4029,7 @@ namespace Game
 		GfxSurfaceBounds* surfacesBounds;
 		GfxStaticModelDrawInst* smodelDrawInsts;
 		GfxDrawSurf* surfaceMaterials;
-		unsigned int*  surfaceCastsSunShadow;
+		unsigned int* surfaceCastsSunShadow;
 		volatile int usageCount;
 	};
 
@@ -4037,7 +4040,7 @@ namespace Game
 		unsigned __int16 materialSortedIndex : 12;
 		unsigned __int16 visDataRefCountLessOne : 4;
 	};
-	
+
 	union GfxSModelSurfHeader
 	{
 		GfxSModelSurfHeaderFields fields;
@@ -4563,6 +4566,18 @@ namespace Game
 		Operand lastResult;
 	};
 
+	enum EventType
+	{
+		EVENT_UNCONDITIONAL = 0x0,
+		EVENT_IF = 0x1,
+		EVENT_ELSE = 0x2,
+		EVENT_SET_LOCAL_VAR_BOOL = 0x3,
+		EVENT_SET_LOCAL_VAR_INT = 0x4,
+		EVENT_SET_LOCAL_VAR_FLOAT = 0x5,
+		EVENT_SET_LOCAL_VAR_STRING = 0x6,
+		EVENT_COUNT = 0x7,
+	};
+
 	struct ConditionalScript
 	{
 		MenuEventHandlerSet* eventHandlerSet;
@@ -4579,7 +4594,7 @@ namespace Game
 	{
 		const char* unconditionalScript;
 		ConditionalScript* conditionalScript;
-		MenuEventHandlerSet* elseScript;
+		struct MenuEventHandlerSet* elseScript;
 		SetLocalVarData* setLocalVarData;
 	};
 
@@ -4681,6 +4696,34 @@ namespace Game
 	{
 		int target;
 		Statement_s* expression;
+	};
+
+	enum ItemDefType
+	{
+		ITEM_TYPE_TEXT = 0x0,
+		ITEM_TYPE_BUTTON = 0x1,
+		ITEM_TYPE_RADIOBUTTON = 0x2,
+		ITEM_TYPE_CHECKBOX = 0x3,
+		ITEM_TYPE_EDITFIELD = 0x4,
+		ITEM_TYPE_COMBO = 0x5,
+		ITEM_TYPE_LISTBOX = 0x6,
+		ITEM_TYPE_MODEL = 0x7,
+		ITEM_TYPE_OWNERDRAW = 0x8,
+		ITEM_TYPE_NUMERICFIELD = 0x9,
+		ITEM_TYPE_SLIDER = 0xA,
+		ITEM_TYPE_YESNO = 0xB,
+		ITEM_TYPE_MULTI = 0xC,
+		ITEM_TYPE_DVARENUM = 0xD,
+		ITEM_TYPE_BIND = 0xE,
+		ITEM_TYPE_MENUMODEL = 0xF,
+		ITEM_TYPE_VALIDFILEFIELD = 0x10,
+		ITEM_TYPE_DECIMALFIELD = 0x11,
+		ITEM_TYPE_UPREDITFIELD = 0x12,
+		ITEM_TYPE_GAME_MESSAGE_WINDOW = 0x13,
+		ITEM_TYPE_NEWS_TICKER = 0x14,
+		ITEM_TYPE_TEXT_SCROLL = 0x15,
+		ITEM_TYPE_EMAILFIELD = 0x16,
+		ITEM_TYPE_PASSWORDFIELD = 0x17,
 	};
 
 	struct itemDef_s
@@ -5524,6 +5567,32 @@ namespace Game
 		StructuredDataEnumEntry* entries;
 	};
 
+	enum LookupResultDataType
+	{
+		LOOKUP_RESULT_INT = 0x0,
+		LOOKUP_RESULT_BOOL = 0x1,
+		LOOKUP_RESULT_STRING = 0x2,
+		LOOKUP_RESULT_FLOAT = 0x3,
+		LOOKUP_RESULT_SHORT = 0x4,
+	};
+
+	enum LookupState
+	{
+		LOOKUP_IN_PROGRESS = 0x0,
+		LOOKUP_FINISHED = 0x1,
+		LOOKUP_ERROR = 0x2,
+	};
+
+	enum LookupError
+	{
+		LOOKUP_ERROR_NONE = 0x0,
+		LOOKUP_ERROR_WRONG_DATA_TYPE = 0x1,
+		LOOKUP_ERROR_INDEX_OUTSIDE_BOUNDS = 0x2,
+		LOOKUP_ERROR_INVALID_STRUCT_PROPERTY = 0x3,
+		LOOKUP_ERROR_INVALID_ENUM_VALUE = 0x4,
+		LOOKUP_ERROR_COUNT = 0x5,
+	};
+
 	enum StructuredDataTypeCategory
 	{
 		DATA_INT = 0x0,
@@ -5597,6 +5666,15 @@ namespace Game
 		StructuredDataEnumedArray* enumedArrays;
 		StructuredDataType rootType;
 		unsigned int size;
+	};
+
+
+	struct StructuredDataLookup
+	{
+		StructuredDataDef* def;
+		StructuredDataType* type;
+		unsigned int offset;
+		LookupError error;
 	};
 
 	struct StructuredDataDefSet
@@ -6484,6 +6562,11 @@ namespace Game
 	struct scr_animtree_t
 	{
 		XAnim_s* anims;
+	};
+
+	struct scrMemTreePub_t
+	{
+		char* mt_buffer;
 	};
 
 	struct scrAnimPub_t
@@ -7937,8 +8020,8 @@ namespace Game
 
 	struct GfxCmdBufContext
 	{
-		GfxCmdBufSourceState *source;
-		GfxCmdBufState *state;
+		GfxCmdBufSourceState* source;
+		GfxCmdBufState* state;
 	};
 
 	struct GfxDrawGroupSetupFields
@@ -8390,18 +8473,18 @@ namespace Game
 		int timeStamp;
 		DObjAnimMat* mat;
 	};
-	
+
 	struct bitarray
 	{
-	  int array[6];
+		int array[6];
 	};
 
 	/* 1923 */
 	struct XAnimCalcAnimInfo
 	{
-	  DObjAnimMat rotTransArray[1152];
-	  bitarray animPartBits;
-	  bitarray ignorePartBits;
+		DObjAnimMat rotTransArray[1152];
+		bitarray animPartBits;
+		bitarray ignorePartBits;
 	};
 
 
@@ -9042,6 +9125,14 @@ namespace Game
 		CEntFx fx;
 	};
 
+	struct GfxSkinCacheEntry
+	{
+		unsigned int frameCount;
+		int skinnedCachedOffset;
+		unsigned __int16 numSkinnedVerts;
+		unsigned __int16 ageCount;
+	};
+
 	struct cpose_t
 	{
 		unsigned __int16 lightingHandle;
@@ -9054,10 +9145,11 @@ namespace Game
 		int physObjId;
 		float origin[3];
 		float angles[3];
+		Game::GfxSkinCacheEntry skinCacheEntry;
 		$79C409BC84BCEABA56F6D25E37F2711D ___u10;
 	};
 
-	static_assert(sizeof(cpose_t) == 0x60);
+	static_assert(sizeof(cpose_t) == 0x6C); // Why was this 0x60? This is not Xbox! On computer, we have a model cache, so this is 6C
 
 	struct centity_s
 	{
@@ -9074,7 +9166,8 @@ namespace Game
 		centity_s* updateDelayedNext;
 	};
 
-	static_assert(sizeof(centity_s) == 0x1F4);
+	static_assert(sizeof(entityState_s) == 0x100);
+	static_assert(sizeof(centity_s) == 0x200);
 
 	struct playerEntity_t
 	{
@@ -9118,6 +9211,42 @@ namespace Game
 		int serverCommandSequence;
 	};
 
+	static_assert(sizeof(snapshot_s) == 0x339EC);
+
+	struct RefdefView
+	{
+		float tanHalfFovX;
+		float tanHalfFovY;
+		float org[3];
+		float axis[3][3];
+		float zNear;
+	};
+
+	struct refdef_t
+	{
+		unsigned int x;
+		unsigned int y;
+		unsigned int width;
+		unsigned int height;
+		RefdefView view;
+		float viewOffset[3];
+		int time;
+		float blurRadius;
+		GfxDepthOfField dof;
+		GfxFilm film;
+		GfxGlow glow;
+		GfxLightScale charPrimaryLightScale;
+		GfxCompositeFx waterSheetingFx;
+		GfxLight primaryLights[248];
+		GfxViewport scissorViewport;
+		bool useScissorViewport;
+		bool viewModelHasDistortion;
+		char forceSunShadowsGenerate;
+		bool halfResParticles;
+		bool playerTeleported;
+		int localClientNum;
+	};
+
 	struct cg_s
 	{
 		playerState_s predictedPlayerState;
@@ -9133,7 +9262,7 @@ namespace Game
 		int renderScreen;
 		int latestSnapshotNum;
 		int latestSnapshotTime;
-		char pad0[16];
+		char pad0[4];
 		snapshot_s* snap;
 		snapshot_s* nextSnap;
 		snapshot_s activeSnapshots[2];
@@ -9142,7 +9271,26 @@ namespace Game
 		int time;
 		int oldTime;
 		int physicalsTime;
-		char _pad2[0x9600]; // + 0x6A758
+		int mapRestart;
+		int renderingThirdPerson;
+		float landChange;
+		int landTime;
+		float heightToCeiling;
+		refdef_t refdef;
+		float refdefViewAngles[3];
+		float baseGunAngles[3];
+		float aimAssistEyeOrigin[3];
+		float aimAssistViewOrigin[3];
+		float aimAssistViewAngles[3];
+		float thirdPersonGunPitch;
+		float thirdPersonGunYaw;
+		float thirdPersonAdsLerp;
+		float swayViewAngles[3];
+		float swayAngles[3];
+		float swayOffset[3];
+		float recoilAngles[3];
+		float recoilSpeed[3];
+		char _pad2[22024];; // + 0x6A758
 		float compassMapWorldSize[2]; // + 0x73D64
 		char _pad3[0x74]; // + 0x73D6C
 		float selectedLocation[2]; // + 0x73DE0
@@ -9154,7 +9302,14 @@ namespace Game
 	};
 
 	static_assert(sizeof(cg_s) == 0xFD540);
-	static_assert(offsetof(cg_s, frametime) == 0x6A754);
+	static_assert(offsetof(cg_s, predictedPlayerEntity) == 0x311C);
+	static_assert(offsetof(cg_s, playerEntity) == 0x331C);
+	static_assert(offsetof(cg_s, cubemapShot) == 0x3358);
+	static_assert(offsetof(cg_s, nextSnap) == 0x3374); // CONFIRMED CORRECT
+	static_assert(offsetof(cg_s, frameInterpolation) == 0x6A750);
+	static_assert(offsetof(cg_s, refdef) == 0x6A778); // CONFIRMED CORRECT
+	static_assert(offsetof(cg_s, refdefViewAngles) == 0x6E6D8);
+	static_assert(offsetof(cg_s, compassMapWorldSize) == 0x73D64);
 	static_assert(offsetof(cg_s, selectedLocation) == 0x73DE0);
 
 	static constexpr auto MAX_GPAD_COUNT = 1;
@@ -11025,12 +11180,41 @@ namespace Game
 		GfxParticleCloud cloud;
 	};
 
+	struct SkyOverride
+	{
+		int isActive;
+		float refPos[3];
+		float ambientColor[3];
+	};
+
+	union PackedLightingCoords
+	{
+		unsigned int packed;
+		char array[4];
+	};
+
+	struct GfxSModelCachedVertex
+	{
+		float xyz[3];
+		GfxColor color;
+		PackedTexCoords texCoord;
+		PackedUnitVec normal;
+		PackedUnitVec tangent;
+		PackedLightingCoords baseLighting;
+	};
+
 	struct GfxBackEndData
 	{
 		char sceneLightTechType[13][256];
 		GfxSparkSurf sparkSurfs[64];
 		GfxViewParms viewParms[4];
 		GfxMeshData mesh[5];
+		GfxSModelCachedVertex smcPatchVerts[8192];
+		unsigned __int16 smcPatchList[256];
+		unsigned int smcPatchCount;
+		unsigned int smcPatchVertsUsed;
+		volatile int modelLightingPatchCount;
+		SkyOverride skyOverride;
 		int localClientNum;
 		GfxBackEndPrimitiveData prim;
 		volatile int bspSurfDataUsed;
@@ -11089,7 +11273,464 @@ namespace Game
 		GfxLight sceneLights[253];
 	};
 
+	struct GfxSModelCachePageUsage
+	{
+		unsigned int pageCount;
+		unsigned int leftOverVerts;
+	};
 
+	struct GfxSModelCacheRowUsage
+	{
+		unsigned int bucketsUsed[6][25];
+		GfxSModelCachePageUsage pageUsage[6];
+	};
+
+	struct SModelCacheLeafList
+	{
+		unsigned __int16 nextIndex;
+		unsigned __int16 prevIndex;
+	};
+
+	struct SModelCachePageList
+	{
+		SModelCachePageList* next;
+		SModelCachePageList* prev;
+	};
+
+	struct SModelCachePage
+	{
+		SModelCachePageList mru;
+		unsigned int rootDivisor;
+		unsigned int activeSurfCount;
+		unsigned int usedFrameCount;
+	};
+
+	struct SModelCacheBucketStats
+	{
+		unsigned __int16 lodCount;
+		unsigned __int16 surfCount;
+	};
+
+	struct $A998929642405B21ECC27F960A6EC9DC
+	{
+		unsigned __int16 smodelIndex;
+		char lodIndex;
+		char bucketIndex;
+	};
+
+	union GfxCachedSModelSurfId
+	{
+		$A998929642405B21ECC27F960A6EC9DC fields;
+		unsigned int packed;
+	};
+
+	struct GfxCachedSModelSurf
+	{
+		GfxCachedSModelSurfId id;
+		unsigned int baseVertIndex;
+	};
+
+	struct SModelCacheGlobals
+	{
+		GfxCachedSModelSurf cachedSurfs[24576];
+		unsigned int lastUsedFrame[24576];
+		SModelCacheLeafList leafList[24876];
+		SModelCachePage pages[192];
+		SModelCachePageList mruList[6];
+		unsigned int ranGarbageCollectorFrame[6][25];
+		unsigned int bucketLimit[6][25];
+		int isTooFull[6];
+		SModelCacheBucketStats bucketStats[6][25];
+	};
+
+	enum
+	{
+		THREAD_VALUE_PROF_STACK = 0x0,
+		THREAD_VALUE_VA = 0x1,
+		THREAD_VALUE_COM_ERROR = 0x2,
+		THREAD_VALUE_TRACE = 0x3,
+		THREAD_VALUE_COUNT = 0x4,
+	};
+
+	struct va_info_t
+	{
+		char va_string[2][1024];
+		int index;
+	};
+
+	struct ProfileAtom
+	{
+		unsigned int value[1];
+	};
+
+	volatile struct ProfileReadable
+	{
+		unsigned int hits;
+		ProfileAtom total;
+		ProfileAtom self;
+	};
+
+	struct ProfileWritable
+	{
+		int nesting;
+		unsigned int hits;
+		ProfileAtom start[3];
+		ProfileAtom total;
+		ProfileAtom child;
+	};
+
+	struct profile_t
+	{
+		ProfileWritable write;
+		ProfileReadable read;
+	};
+
+	struct profile_guard_t
+	{
+		int id;
+		profile_t** ppStack;
+	};
+
+	struct ProfileStack
+	{
+		profile_t prof_root;
+		profile_t* prof_pStack[16384];
+		profile_t** prof_ppStack;
+		profile_t prof_array[443];
+		ProfileAtom prof_overhead_internal;
+		ProfileAtom prof_overhead_external;
+		profile_guard_t prof_guardstack[32];
+		int prof_guardpos;
+		float prof_timescale;
+	};
+
+	struct bgs_t
+	{
+		unsigned char __pad0[0x82950];
+	};
+
+	static_assert(sizeof(bgs_t) == 0x82950);
+
+	struct ZipInfo
+	{
+		int offsetCount;
+		int offsets[128];
+		int size;
+		char* buffer;
+	};
+
+	struct Sys_File
+	{
+		HANDLE handle;
+	};
+
+	struct FxCamera
+	{
+		float origin[3];
+		volatile int isValid;
+		float frustum[6][4];
+		float axis[3][3];
+		unsigned int frustumPlaneCount;
+		float viewOffset[3];
+		bool thermal;
+		unsigned int pad[2];
+	};
+
+	struct r_double_index_t
+	{
+		unsigned __int16 value[2];
+	};
+
+	struct FxSpriteInfo
+	{
+		r_double_index_t* indices;
+		unsigned int indexCount;
+		Material* material;
+		const char* name;
+	};
+
+	struct FxVisBlocker
+	{
+		float origin[3];
+		unsigned __int16 radius;
+		unsigned __int16 visibility;
+	};
+
+	struct FxVisState
+	{
+		FxVisBlocker blocker[256];
+		volatile int blockerCount;
+		unsigned int pad[3];
+	};
+
+	struct FxElem
+	{
+		char defIndex;
+		char sequence;
+		char atRestFraction;
+		char emitResidual;
+		unsigned __int16 nextElemHandleInEffect;
+		unsigned __int16 prevElemHandleInEffect;
+		int msecBegin;
+		float baseVel[3];
+		union
+		{
+			int physObjId;
+			float origin[3];
+		} ___u8;
+		union
+		{
+			unsigned __int16 lightingHandle;
+			unsigned __int16 sparkCloudHandle;
+			unsigned __int16 sparkFountainHandle;
+		} u;
+	};
+
+	struct FxSystem
+	{
+		FxCamera camera;
+		FxCamera cameraPrev;
+		FxSpriteInfo sprite;
+		FxEffect* effects;
+		FxElem* elems;
+		void* trails;
+		void* trailElems;
+		void* bolts;
+		void* sparkClouds;
+		void* sparkFountains;
+		void* sparkFountainClusters;
+		unsigned __int16* deferredElems;
+		volatile int firstFreeElem;
+		volatile int firstFreeTrailElem;
+		volatile int firstFreeTrail;
+		volatile int firstFreeBolt;
+		volatile int firstFreeSparkCloud;
+		volatile int firstFreeSparkFountain;
+		volatile int firstFreeSparkFountainCluster;
+		volatile int deferredElemCount;
+		volatile int activeElemCount;
+		volatile int activeTrailElemCount;
+		volatile int activeTrailCount;
+		volatile int activeBoltCount;
+		volatile int activeSparkCloudCount;
+		volatile int activeSparkFountainCount;
+		volatile int activeSparkFountainClusterCount;
+		volatile int gfxCloudCount;
+		FxVisState* visState;
+		FxVisState* visStateBufferRead;
+		FxVisState* visStateBufferWrite;
+		volatile int firstActiveEffect;
+		volatile int firstNewEffect;
+		volatile int firstFreeEffect;
+		unsigned __int16 allEffectHandles[1024];
+		volatile int activeSpotLightEffectCount;
+		volatile int activeSpotLightElemCount;
+		unsigned __int16 activeSpotLightEffectHandle;
+		unsigned __int16 activeSpotLightElemHandle;
+		__int16 activeSpotLightBoltDobj;
+		volatile int iteratorCount;
+		int msecNow;
+		volatile int msecDraw;
+		int frameCount;
+		bool isInitialized;
+		bool needsGarbageCollection;
+		bool isArchiving;
+		char localClientNum;
+		unsigned int restartList[32];
+		FxEffect** restartEffectsList;
+		unsigned int restartCount;
+		unsigned int pad1[14];
+	};
+
+	struct ClientEntSound
+	{
+		float origin[3];
+		snd_alias_list_t* aliasList;
+	};
+
+	struct nodetype
+	{
+		nodetype* left;
+		nodetype* right;
+		nodetype* parent;
+		int weight;
+		int symbol;
+	};
+
+	struct huff_t
+	{
+		int blocNode;
+		int blocPtrs;
+		nodetype* tree;
+		nodetype* loc[257];
+		nodetype** freelist;
+		nodetype nodeList[768];
+		nodetype* nodePtrs[768];
+	};
+
+	struct huffman_t
+	{
+		huff_t compressDecompress;
+	};
+
+	enum FF_DIR
+	{
+		FFD_DEFAULT = 0x0,
+		FFD_MOD_DIR = 0x1,
+		FFD_USER_MAP = 0x2,
+	};
+
+	struct ASISTAGE
+	{
+		int(__stdcall* ASI_stream_open)(unsigned int, int(__stdcall*)(unsigned int, void*, int, int), unsigned int);
+		int(__stdcall* ASI_stream_process)(int, void*, int);
+		int(__stdcall* ASI_stream_seek)(int, int);
+		int(__stdcall* ASI_stream_close)(int);
+		int(__stdcall* ASI_stream_property)(int, unsigned int, void*, const void*, void*);
+		unsigned int INPUT_BIT_RATE;
+		unsigned int INPUT_SAMPLE_RATE;
+		unsigned int INPUT_BITS;
+		unsigned int INPUT_CHANNELS;
+		unsigned int OUTPUT_BIT_RATE;
+		unsigned int OUTPUT_SAMPLE_RATE;
+		unsigned int OUTPUT_BITS;
+		unsigned int OUTPUT_CHANNELS;
+		unsigned int OUTPUT_RESERVOIR;
+		unsigned int POSITION;
+		unsigned int PERCENT_DONE;
+		unsigned int MIN_INPUT_BLOCK_SIZE;
+		unsigned int RAW_RATE;
+		unsigned int RAW_BITS;
+		unsigned int RAW_CHANNELS;
+		unsigned int REQUESTED_RATE;
+		unsigned int REQUESTED_BITS;
+		unsigned int REQUESTED_CHANS;
+		unsigned int STREAM_SEEK_POS;
+		unsigned int DATA_START_OFFSET;
+		unsigned int DATA_LEN;
+		int stream;
+	};
+
+	struct _STREAM
+	{
+		int block_oriented;
+		int using_ASI;
+		ASISTAGE* ASI;
+		void* samp;
+		unsigned int fileh;
+		char* bufs[3];
+		unsigned int bufsizes[3];
+		int reset_ASI[3];
+		int reset_seek_pos[3];
+		int bufstart[3];
+		void* asyncs[3];
+		int loadedbufstart[2];
+		int loadedorder[2];
+		int loadorder;
+		int bufsize;
+		int readsize;
+		unsigned int buf1;
+		int size1;
+		unsigned int buf2;
+		int size2;
+		unsigned int buf3;
+		int size3;
+		unsigned int datarate;
+		int filerate;
+		int filetype;
+		unsigned int fileflags;
+		int totallen;
+		int substart;
+		int sublen;
+		int subpadding;
+		unsigned int blocksize;
+		int padding;
+		int padded;
+		int loadedsome;
+		unsigned int startpos;
+		unsigned int totalread;
+		unsigned int loopsleft;
+		unsigned int error;
+		int preload;
+		unsigned int preloadpos;
+		int noback;
+		int alldone;
+		int primeamount;
+		int readatleast;
+		int playcontrol;
+		void(__stdcall* callback)(_STREAM*);
+		int user_data[8];
+		void* next;
+		int autostreaming;
+		int docallback;
+	};
+
+	enum SND_EQTYPE
+	{
+		SND_EQTYPE_FIRST = 0x0,
+		SND_EQTYPE_LOWPASS = 0x0,
+		SND_EQTYPE_HIGHPASS = 0x1,
+		SND_EQTYPE_LOWSHELF = 0x2,
+		SND_EQTYPE_HIGHSHELF = 0x3,
+		SND_EQTYPE_BELL = 0x4,
+		SND_EQTYPE_LAST = 0x4,
+		SND_EQTYPE_COUNT = 0x5,
+		SND_EQTYPE_INVALID = 0x5,
+	};
+
+	struct __declspec(align(4)) SndEqParams
+	{
+		SND_EQTYPE type;
+		float gain;
+		float freq;
+		float q;
+		bool enabled;
+	};
+
+	struct MssEqInfo
+	{
+		SndEqParams params[3][64];
+	};
+
+	struct MssFileHandle
+	{
+		unsigned int id;
+		MssFileHandle* next;
+		int handle;
+		char fileName[128];
+		unsigned int hashCode;
+		int offset;
+		int fileOffset;
+		int fileLength;
+	};
+
+	struct __declspec(align(4)) MssStreamReadInfo
+	{
+		char path[256];
+		int timeshift;
+		float fraction;
+		int startDelay;
+		_STREAM* handle;
+		bool readError;
+	};
+
+	struct MssLocal
+	{
+		struct _DIG_DRIVER* driver;
+		struct _SAMPLE* handle_sample[40];
+		_STREAM* handle_stream[12];
+		bool voiceEqDisabled[52];
+		MssEqInfo eq[2];
+		float eqLerp;
+		unsigned int eqFilter;
+		int currentRoomtype;
+		MssFileHandle fileHandle[12];
+		MssFileHandle* freeFileHandle;
+		bool isMultiChannel;
+		float realVolume[12];
+		int playbackRate[52];
+		MssStreamReadInfo streamReadInfo[12];
+	};
 
 
 #pragma endregion

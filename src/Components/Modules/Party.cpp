@@ -202,6 +202,15 @@ namespace Components
 		return PartyEnable.get<bool>();
 	}
 
+	__declspec(naked) void PartyMigrate_HandlePacket()
+	{
+		__asm
+		{
+			mov eax, 0;
+			retn;
+		}
+	}
+
 	Party::Party()
 	{
 		if (ZoneBuilder::IsEnabled())
@@ -215,6 +224,9 @@ namespace Components
 
 		// Live frame skip "lobby owner is present in lobby" steam check
 		Utils::Hook::Set<BYTE>(0x413744, 0xEB);
+
+		// Kill the party migrate handler - it's not necessary and has apparently been used in the past for trickery?
+		Utils::Hook(0x46AB70, PartyMigrate_HandlePacket, HOOK_JUMP).install()->quick();
 
 		// various changes to SV_DirectConnect-y stuff to allow non-party joinees
 		Utils::Hook::Set<WORD>(0x460D96, 0x90E9);

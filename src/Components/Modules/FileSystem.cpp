@@ -2,6 +2,10 @@
 
 namespace Components
 {
+	// patch max file amount returned by Sys_ListFiles
+	constexpr auto FILE_COUNT_MULTIPLIER = 8;
+	constexpr auto NEW_MAX_FILES_LISTED = 8191 * FILE_COUNT_MULTIPLIER;
+
 	std::mutex FileSystem::Mutex;
 	std::recursive_mutex FileSystem::FSMutex;
 	Utils::Memory::Allocator FileSystem::MemAllocator;
@@ -156,12 +160,12 @@ namespace Components
 		return std::filesystem::path(path) / "iw4x";
 	}
 
-	std::vector<std::string> FileSystem::GetFileList(const std::string& path, const std::string& extension)
+	std::vector<std::string> FileSystem::GetFileList(const std::string& path, const std::string& extension,  Game::FsListBehavior_e behaviour)
 	{
 		std::vector<std::string> fileList;
 
 		auto numFiles = 0;
-		const auto** files = Game::FS_ListFiles(path.data(), extension.data(), Game::FS_LIST_PURE_ONLY, &numFiles, 10);
+		const auto** files = Game::FS_ListFiles(path.data(), extension.data(), behaviour, &numFiles);
 
 		if (files)
 		{
@@ -369,6 +373,12 @@ namespace Components
 		return Sys_DefaultInstallPath_Hk();
 	}
 
+	Game::HunkUser* Hunk_UserCreate_Stub(int maxSize, const char* name, bool fixed, int type)
+	{
+		maxSize *= FILE_COUNT_MULTIPLIER;
+		return Utils::Hook::Call<Game::HunkUser*(int, const char*, bool, int)>(0x430E90)(maxSize, name, fixed, type);
+	}
+
 	FileSystem::FileSystem()
 	{
 		// Thread safe file system interaction
@@ -421,8 +431,8 @@ namespace Components
 		Utils::Hook(0x406D26, FS_FileOpenReadText_Hk, HOOK_CALL).install()->quick();
 
 		// Make the exe run from a folder other than the game folder 
-		Utils::Hook::Nop(0x4290D8, 5); // FS_IsBasePathValid
-		Utils::Hook::Set<uint8_t>(0x4290DF, 0xEB);
+		Utils::Hook::Nop(0x4290D8, 5); // FS_IsBasePathValid  
+		Utils::Hook::Set<uint8_t>(0x4290DF, 0xEB);				
 		// ^^ This check by the game above is super redundant, IW4x has other checks in place to make sure we
 		// are running from a properly installed directory. This only breaks the containerized patch and we don't need it
 
@@ -431,6 +441,22 @@ namespace Components
 		Utils::Hook(0x643232, Sys_HomePath_Hk, HOOK_CALL).install()->quick();
 		Utils::Hook(0x6431B6, Sys_Cwd_Hk, HOOK_CALL).install()->quick();
 		Utils::Hook(0x51C29A, Sys_Cwd_Hk, HOOK_CALL).install()->quick();
+		
+		// patch max file amount returned by Sys_ListFiles
+		Utils::Hook::Set<std::uint32_t>(0x45A66B, (NEW_MAX_FILES_LISTED + FILE_COUNT_MULTIPLIER) * 4);
+		Utils::Hook::Set<std::uint32_t>(0x64AF78, NEW_MAX_FILES_LISTED);
+		Utils::Hook::Set<std::uint32_t>(0x64B04F, NEW_MAX_FILES_LISTED);
+		Utils::Hook::Set<std::uint32_t>(0x45A8CE, NEW_MAX_FILES_LISTED);
+
+		// Sys_ListFiles
+		Utils::Hook(0x45A806, Hunk_UserCreate_Stub, HOOK_CALL).install()->quick();
+		Utils::Hook(0x45A6A0, Hunk_UserCreate_Stub, HOOK_CALL).install()->quick();
+
+		// FS_ListFilteredFiles
+		Utils::Hook(0x4FCE82,  Hunk_UserCreate_Stub, HOOK_CALL).install()->quick();
+		Utils::Hook::Set<std::uint32_t>(0x6427F0 + 2, NEW_MAX_FILES_LISTED);
+		Utils::Hook::Set<uint32_t>(0X4FCE8B + 1, (NEW_MAX_FILES_LISTED + FILE_COUNT_MULTIPLIER) * 4 + 4);
+
 	}
 
 	FileSystem::~FileSystem()

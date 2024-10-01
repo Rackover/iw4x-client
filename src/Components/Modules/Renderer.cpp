@@ -128,7 +128,14 @@ namespace Components
 	void Renderer::R_TextureFromCodeError(const char* sampler, Game::GfxCmdBufState* state, int samplerCode)
 	{
 		Logger::Error(Game::ERR_FATAL, "Tried to use sampler '{}' ({}) at the wrong time! Additional info:\nMaterial: '{}'\nTechnique '{}'\nTechnique slot: {}\nTechnique flags: {}\nPass: {}\nPixel shader: '{}'\n",
-			samplerCode, sampler, state->material->info.name, state->technique->name, static_cast<int>(state->techType), state->technique->flags, state->passIndex, state->pixelShader->name
+			samplerCode,
+			sampler,
+			state->material && state->material->info.name ? state->material->info.name : "NULL",
+			state->technique && state->technique->name ? state->technique->name : "NULL",
+			static_cast<int>(state->techType),
+			(state->technique) ? state->technique->flags : 0,
+			state->passIndex,
+			state->pixelShader && state->pixelShader->name ? state->pixelShader->name : "NULL"
 		);
 	}
 
@@ -287,8 +294,8 @@ namespace Components
 
 		auto world = gfxAsset->asset.header.gfxWorld;
 
-		auto drawDistance = r_playerDrawDebugDistance.get<int>();
-		auto sqrDist = drawDistance * drawDistance;
+		auto drawDistance = static_cast<float>(r_playerDrawDebugDistance.get<int>());
+		float sqrDist = drawDistance * static_cast<float>(drawDistance);
 
 		switch (val) 
 		{
@@ -381,7 +388,7 @@ namespace Components
 
 		auto world = gfxAsset->asset.header.gfxWorld;
 
-		auto drawDistance = r_playerDrawDebugDistance.get<int>();
+		auto drawDistance = static_cast<float>(r_playerDrawDebugDistance.get<int>());
 		auto sqrDist = drawDistance * static_cast<float>(drawDistance);
 
 		switch (val)
