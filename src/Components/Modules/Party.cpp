@@ -5,6 +5,7 @@
 #include "Download.hpp"
 #include "Friends.hpp"
 #include "Gamepad.hpp"
+#include "ModList.hpp"
 #include "Node.hpp"
 #include "Party.hpp"
 #include "ServerList.hpp"
@@ -463,8 +464,10 @@ namespace Components
 						info.set("matchtype", "0");
 					}
 
-					info.set("wwwDownload", (Dvar::Var("sv_wwwDownload").get<bool>() ? "1" : "0"));
-					info.set("wwwUrl", Dvar::Var("sv_wwwBaseUrl").get<std::string>());
+						if (ModList::cl_modVidRestart.get<bool>())
+						{
+							Command::Execute("vid_restart", false);
+						}
 
 					Network::SendCommand(address, "infoResponse", "\\" + info.build());
 				});

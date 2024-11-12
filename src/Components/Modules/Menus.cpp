@@ -256,6 +256,10 @@ namespace Components
 			
 			UpdateSupportingDataContents();
 
+			// Sometimes it requries updating even if the menu _itself_ does not have any
+			// Because it might have items that did update it
+			UpdateSupportingDataContents();
+
 			if (menu->expressionData)
 			{
 				assert(menu->expressionData == Game::menuSupportingData);

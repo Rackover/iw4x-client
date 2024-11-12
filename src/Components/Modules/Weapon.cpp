@@ -6,11 +6,84 @@
 namespace Components
 {
 	const Game::dvar_t* Weapon::BGWeaponOffHandFix;
+	const Game::dvar_t* Weapon::CGRecoilMultiplier;
 
 	Game::WeaponCompleteDef* Weapon::LoadWeaponCompleteDef(const char* name)
 	{
 		if (auto* rawWeaponFile = Game::BG_LoadWeaponCompleteDefInternal("mp", name))
 		{
+			// Fix for rumbles being wrong in the raw files.. This should not happen normally
+			// But in effect, it happens very often, so we need to fix it to avoid rumble errors
+			{
+				if (rawWeaponFile->weapDef->notetrackRumbleMapKeys &&
+					rawWeaponFile->weapDef->notetrackRumbleMapKeys[0] == rawWeaponFile->weapDef->notetrackSoundMapKeys[0])
+				{
+					// This means it's wrong and the dump is bad (it gave sound names as rumble names, which is not possible)
+					// The zone has it right so let's take it from there
+					const auto zoneWeapon = Game::DB_FindXAssetHeader(Game::ASSET_TYPE_WEAPON, name).weapon;
+
+					if (zoneWeapon)
+					{
+						// Restore rumble from zone
+						std::memcpy(rawWeaponFile->weapDef->notetrackRumbleMapKeys, zoneWeapon->weapDef->notetrackRumbleMapKeys, 16 * sizeof(unsigned short));
+						std::memcpy(rawWeaponFile->weapDef->notetrackRumbleMapValues, zoneWeapon->weapDef->notetrackRumbleMapValues, 16 * sizeof(unsigned short));
+
+						rawWeaponFile->weapDef->fireRumble = zoneWeapon->weapDef->fireRumble;
+						rawWeaponFile->weapDef->meleeImpactRumble = zoneWeapon->weapDef->meleeImpactRumble;
+						rawWeaponFile->weapDef->turretBarrelSpinRumble = zoneWeapon->weapDef->turretBarrelSpinRumble;
+					}
+
+
+					// Oh well. You'll have to fix your weapon file :)
+#define VALIDATE(weap, rumble)\
+	if (weap->weapDef->rumble && *weap->weapDef->rumble)\
+	{\
+		std::string path = std::format("rumble/{}", weap->weapDef->rumble);\
+		const auto rawfile = Game::DB_FindXAssetHeader(Game::XAssetType::ASSET_TYPE_RAWFILE, path.c_str());\
+		if (rawfile.data == nullptr)\
+		{\
+			Logger::Warning(Game::CON_CHANNEL_FILES, "Weapon {} has INVALID RUMBLE {} '{}'! Remove or replace it.\n", weap->szInternalName, #rumble, weap->weapDef->rumble);\
+			weap->weapDef->rumble = nullptr;\
+		}\
+	}
+					VALIDATE(rawWeaponFile, fireRumble);
+					VALIDATE(rawWeaponFile, meleeImpactRumble);
+					VALIDATE(rawWeaponFile, turretBarrelSpinRumble);
+
+					for (auto i = 0; i < 16; ++i)
+					{
+						if (!rawWeaponFile->weapDef->notetrackRumbleMapKeys[i])
+							break;
+
+						auto noteTrackRumbleMap = rawWeaponFile->weapDef->notetrackRumbleMapValues;
+						if (noteTrackRumbleMap[i])
+						{
+							auto str = Game::SL_ConvertToString(noteTrackRumbleMap[i]);
+							if (str && *str)
+							{
+								std::string path = std::format("rumble/{}", str); 
+								const auto rawfile = Game::DB_FindXAssetHeader(Game::XAssetType::ASSET_TYPE_RAWFILE, path.c_str()); 
+								if (rawfile.data == nullptr || !strnlen(rawfile.rawfile->buffer, 1))
+								{
+									// Void it and warn the user
+									noteTrackRumbleMap[i] = 0;
+									rawWeaponFile->weapDef->notetrackRumbleMapKeys[i] = 0;
+
+									Logger::Warning(
+										Game::CON_CHANNEL_FILES,
+										"Weapon {} has INVALID RUMBLE {} notetrackRumbleMap #'{}'! Remove or replace it.\n",
+										rawWeaponFile->szInternalName,
+										str,
+										i
+									);
+								}
+							}
+						}
+					}
+#undef VALIDATE
+				}
+			}
+
 			return rawWeaponFile;
 		}
 
@@ -30,6 +103,27 @@ namespace Components
 			}
 		}
 	}
+
+	void Weapon::PatchHintStrings()
+	{
+		static Game::Material* hintMaterials[WEAPON_LIMIT + 4];
+
+		// CG_RegisterWeapon
+		Utils::Hook::Set(0x4EF619, &hintMaterials[4]);
+
+		Utils::Hook::Set(0x58D003, hintMaterials); // CG_DrawCursorhint (All hints related to crosshair, like pickup hints)
+		Utils::Hook::Set(0x58969A, &hintMaterials[3]); // hint_health in CG_RegisterGraphics
+		Utils::Hook::Set(0x5896AB, &hintMaterials[4]); // hint_friendly in CG_RegisterGraphics
+
+		Utils::Hook::Set<uint32_t>(0x58D01C + 1, ARRAYSIZE(hintMaterials));
+
+		// Has to do with fx, but somehow lies within the material array
+		// EDIT: Those are unrelated (PlayFX OnTag, with FX Id, which is also in cg_media but not related to hint materials)
+		//Utils::Hook::Set(0x402069, &unknownMaterialArray[32]);
+		//Utils::Hook::Set(0x4E05D9, &unknownMaterialArray[32]);
+
+	}
+
 	void Weapon::PatchLimit()
 	{
 		Utils::Hook::Set<DWORD>(0x403783, WEAPON_LIMIT);
@@ -179,15 +273,7 @@ namespace Components
 		Utils::Hook::Set(0x59C095, cg_weaponsStaticArray);
 		Utils::Hook::Set(0x59C09D, cg_weaponsStaticArray);
 
-		static int unknownMaterialArray[WEAPON_LIMIT + 4];
-		Utils::Hook::Set(0x58D003, unknownMaterialArray);
-		Utils::Hook::Set(0x58969A, &unknownMaterialArray[3]);
-		Utils::Hook::Set(0x4EF619, &unknownMaterialArray[4]);
-		Utils::Hook::Set(0x5896AB, &unknownMaterialArray[4]);
-
-		// Has to do with fx, but somehow lies within the material array
-		//Utils::Hook::Set(0x402069, &unknownMaterialArray[32]);
-		//Utils::Hook::Set(0x4E05D9, &unknownMaterialArray[32]);
+		PatchHintStrings();
 
 		// Patch bg_weaponDefs on the stack
 		Utils::Hook::Set<DWORD>(0x40C31D, sizeof(bg_weaponDefs));
@@ -253,9 +339,9 @@ namespace Components
 			push 0x59E349
 			retn
 
-		null:
+			null :
 			mov al, 1
-			ret
+				ret
 		}
 	}
 
@@ -274,9 +360,9 @@ namespace Components
 			push 0x48BB2D
 			ret
 
-		null:
+			null :
 			push 0x48BB1F // Exit function
-			ret
+				ret
 		}
 	}
 
@@ -286,27 +372,27 @@ namespace Components
 
 		__asm
 		{
-			cmp dword ptr [esp + 0x8], 0x0
+			cmp dword ptr[esp + 0x8], 0x0
 			jz touched
 
 			push 0x56E82C
 			ret
 
-		touched:
-			test dword ptr [edi + 0x2BC], PWF_DISABLE_WEAPON_PICKUP
-			jnz exit_func
+			touched :
+			test dword ptr[edi + 0x2BC], PWF_DISABLE_WEAPON_PICKUP
+				jnz exit_func
 
-			// Game code
-			test eax, eax
-			jz continue_func
+				// Game code
+				test eax, eax
+				jz continue_func
 
-		exit_func:
+				exit_func :
 			xor eax, eax
-			ret
+				ret
 
-		continue_func:
+				continue_func :
 			push 0x56E84C
-			ret
+				ret
 		}
 	}
 
@@ -320,18 +406,45 @@ namespace Components
 
 			push eax
 			mov eax, BGWeaponOffHandFix
-			cmp byte ptr [eax + 0x10], 1
+			cmp byte ptr[eax + 0x10], 1
 			pop eax
 
 			jne safeReturn
 
-			mov dword ptr [esi + 0x34], 0 // playerState_s.grenadeTimeLeft
+			mov dword ptr[esi + 0x34], 0 // playerState_s.grenadeTimeLeft
 
-		safeReturn:
+			safeReturn:
 			pop edi
-			pop esi
-			pop ebx
-			ret
+				pop esi
+				pop ebx
+				ret
+		}
+	}
+
+	void Weapon::BG_WeaponFireRecoil_Stub(
+		void* ps,
+		float* recoilSpeed,
+		float* kickAVel,
+		unsigned int* holdrand,
+		Game::PlayerHandIndex hand
+	)
+	{
+		float adjustedRecoilSpeed[3]{};
+		float adjustedKick[3]{};
+
+
+		Utils::Hook::Call<void(void*, float*, float*, unsigned int*, Game::PlayerHandIndex)>(0x4A5FE0)(
+			ps,
+			adjustedRecoilSpeed,
+			adjustedKick,
+			holdrand,
+			hand
+		);
+
+		for (size_t axis = 0; axis < 3; axis++)
+		{
+			recoilSpeed [axis] = adjustedRecoilSpeed[axis] * CGRecoilMultiplier->current.value;
+			kickAVel [axis] = adjustedKick[axis] * CGRecoilMultiplier->current.value;
 		}
 	}
 
@@ -384,25 +497,25 @@ namespace Components
 	void Weapon::AddScriptMethods()
 	{
 		GSC::Script::AddMethod("DisableWeaponPickup", [](const Game::scr_entref_t entref)
-		{
-			const auto* ent = GSC::Script::Scr_GetPlayerEntity(entref);
+			{
+				const auto* ent = GSC::Script::Scr_GetPlayerEntity(entref);
 
-			ent->client->ps.weapCommon.weapFlags |= Game::PWF_DISABLE_WEAPON_PICKUP;
-		});
+				ent->client->ps.weapCommon.weapFlags |= Game::PWF_DISABLE_WEAPON_PICKUP;
+			});
 
 		GSC::Script::AddMethod("EnableWeaponPickup", [](const Game::scr_entref_t entref)
-		{
-			const auto* ent = GSC::Script::Scr_GetPlayerEntity(entref);
+			{
+				const auto* ent = GSC::Script::Scr_GetPlayerEntity(entref);
 
-			ent->client->ps.weapCommon.weapFlags &= ~Game::PWF_DISABLE_WEAPON_PICKUP;
-		});
+				ent->client->ps.weapCommon.weapFlags &= ~Game::PWF_DISABLE_WEAPON_PICKUP;
+			});
 
 		// PlayerCmd_AreControlsFrozen GSC function from Black Ops 2
 		GSC::Script::AddMethod("AreControlsFrozen", [](Game::scr_entref_t entref) // Usage: self AreControlsFrozen();
-		{
-			const auto* ent = GSC::Script::Scr_GetPlayerEntity(entref);
-			Game::Scr_AddBool((ent->client->flags & Game::CF_BIT_FROZEN) != 0);
-		});
+			{
+				const auto* ent = GSC::Script::Scr_GetPlayerEntity(entref);
+				Game::Scr_AddBool((ent->client->flags & Game::CF_BIT_FROZEN) != 0);
+			});
 
 		GSC::Script::AddMethod("InitialWeaponRaise", PlayerCmd_InitialWeaponRaise);
 		GSC::Script::AddMethod("FreezeControlsAllowLook", PlayerCmd_FreezeControlsAllowLook);
@@ -447,6 +560,12 @@ namespace Components
 		AssertOffset(Game::playerState_s, grenadeTimeLeft, 0x34);
 		BGWeaponOffHandFix = Game::Dvar_RegisterBool("bg_weaponOffHandFix", true, Game::DVAR_CODINFO, "Reset grenadeTimeLeft after using off hand weapon");
 		Utils::Hook(0x578F52, JavelinResetHook_Stub, HOOK_JUMP).install()->quick();
+	
+		CGRecoilMultiplier = Game::Dvar_RegisterFloat("cg_recoilMultiplier",
+			1.0f, 0.0f, 1000.0f, Game::DVAR_CHEAT,
+			"The scale applied to the player recoil when firing");
+		Utils::Hook(0x44D90B, BG_WeaponFireRecoil_Stub, HOOK_CALL).install()->quick();
+		Utils::Hook(0x4FB2D7, BG_WeaponFireRecoil_Stub, HOOK_CALL).install()->quick();
 
 		AddScriptMethods();
 	}

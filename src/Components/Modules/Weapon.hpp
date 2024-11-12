@@ -17,6 +17,7 @@ namespace Components
 
 	private:
 		static const Game::dvar_t* BGWeaponOffHandFix;
+		static const Game::dvar_t* CGRecoilMultiplier;
 
 		static Game::WeaponCompleteDef* LoadWeaponCompleteDef(const char* name);
 		static void PatchLimit();
@@ -25,12 +26,16 @@ namespace Components
 
 		static void SaveRegisteredWeapons();
 
+		static void PatchHintStrings();
+
 		static void CG_UpdatePrimaryForAltModeWeapon_Stub();
 		static void CG_SelectWeaponIndex_Stub();
 
 		static void JavelinResetHook_Stub();
 
 		static void WeaponEntCanBeGrabbed_Stub();
+
+		static void BG_WeaponFireRecoil_Stub(void* ps, float* recoilSpeed, float* kickAVel, unsigned int* holdrand, Game::PlayerHandIndex hand);
 
 		static void PlayerCmd_InitialWeaponRaise(Game::scr_entref_t entref);
 		static void PlayerCmd_FreezeControlsAllowLook(Game::scr_entref_t entref);
