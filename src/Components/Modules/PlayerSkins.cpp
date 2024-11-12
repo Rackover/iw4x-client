@@ -446,12 +446,12 @@ namespace Components
 			sv_overrideTeamSkins = Dvar::Register("sv_allow_override_team_skins", false, static_cast<uint16_t>(Game::DVAR_SAVED | Game::DVAR_ARCHIVE), "allow body skins in team based gamemodes");
 
 			RefreshPlayerSkinFromDvars();
-			});
+		});
 
 		Components::GSC::Script::AddMethod("LOUV_GetPlayerSkin", [](const Game::scr_entref_t entref) {
 			const auto entity = Game::GetEntity(entref);
 			PlayerSkins::GScr_GetPlayerSkin(entity);
-			});
+		});
 	}
 
 	void PlayerSkins::GScr_GetPlayerSkin(Game::gentity_s* entRef)
@@ -506,13 +506,13 @@ namespace Components
 					else
 					{
 						// Do not put head (too many bones)
-						Game::Scr_AddString("");
+						assert(heads[0].empty());
+						Game::Scr_AddConstString(headsScriptStrings[0]);
 
 						if (!errMsg.empty())
 						{
 							Components::Logger::Error(Game::ERR_SCRIPT, errMsg);
 						}
-
 					}
 
 					Game::Scr_AddArray();
