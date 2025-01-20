@@ -285,6 +285,8 @@ workspace "iw4x"
 		pchsource "src/STDInclude.cpp" -- real path
 		defines { "_SILENCE_ALL_CXX17_DEPRECATION_WARNINGS", "DISABLE_FRIENDS", "DISABLE_ANTICHEAT", "DISABLE_STEAM" }
 		
+		targetname "steam_api"
+		
 		dependencies.imports()
 
 		-- Pre-build
