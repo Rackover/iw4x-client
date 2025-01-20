@@ -12,6 +12,7 @@
 #include "Stats.hpp"
 #include "TextRenderer.hpp"
 #include "Voice.hpp"
+#include "Events.hpp"
 
 #include <version.hpp>
 
@@ -212,14 +213,28 @@ namespace Components
 		}
 	}
 
+	void SV_SpawnServer_Com_SyncThreads_Hook()
+	{
+		Utils::Hook::Call<void()>(0x464A60)(); // Com_SyncThreads
+
+		// Whenever the game starts a server,
+		// RMsg_SendMessages so that everybody gets the PartyGo message!
+		// (Otherwise Com_Try_Block doesn't send it until we're done loading, which times out some people)
+		Utils::Hook::Call<void()>(0x49CC30)(); 
+	}
+
 	Party::Party()
 	{
 		if (ZoneBuilder::IsEnabled())
 		{
 			return;
 		}
-		static Game::dvar_t* partyEnable = Dvar::Register<bool>("party_enable", IsUsingIw4xProtocol() ? Dedicated::IsEnabled() : true, Game::DVAR_NONE, "Enable party system").get<Game::dvar_t*>();
 
+		// Send reliable messages when wse start the game
+		Utils::Hook(0x4A712A, SV_SpawnServer_Com_SyncThreads_Hook, HOOK_CALL).install()->quick();
+		Utils::Hook(0x5B34D0, SV_SpawnServer_Com_SyncThreads_Hook, HOOK_CALL).install()->quick();
+
+		static Game::dvar_t* partyEnable = Dvar::Register<bool>("party_enable", IsUsingIw4xProtocol() ? Dedicated::IsEnabled() : true, Game::DVAR_NONE, "Enable party system").get<Game::dvar_t*>();
 		Dvar::Register<bool>("xblive_privatematch", true, Game::DVAR_ROM, "").get<Game::dvar_t*>();
 		Dvar::Register<bool>("sv_lanOnly", true, Game::DVAR_NONE, "Don't act as node");
 
@@ -261,7 +276,7 @@ namespace Components
 		Utils::Hook::Set<BYTE>(0x49D007, 0xEB);
 
 		// function checking party heartbeat timeouts, cause random issues
-		Utils::Hook::Nop(0x4E532D, 5); // PartyHost_TimeoutMembers
+		//Utils::Hook::Nop(0x4E532D, 5); // PartyHost_TimeoutMembers
 
 		// Steam_JoinLobby call causes migration
 		Utils::Hook::Nop(0x5AF851, 5);

@@ -336,7 +336,7 @@ namespace Components
 		Utils::IO::CreateDir(appdata.string());
 
 		const auto guidPath = appdata / "louvguid.dat";
-		
+
 		return guidPath.string();
 	}
 
@@ -366,6 +366,12 @@ namespace Components
 
 	void Auth::StoreKey()
 	{
+		if (!Party::IsUsingIw4xProtocol())
+		{
+			// Never store it
+			return;
+		}
+
 		if (!Dedicated::IsEnabled() && !ZoneBuilder::IsEnabled() && GuidKey.isValid())
 		{
 			Proto::Auth::Certificate cert;
@@ -390,6 +396,12 @@ namespace Components
 	{
 		if (Dedicated::IsEnabled() || ZoneBuilder::IsEnabled()) return;
 		if (!force && GuidKey.isValid()) return;
+
+		if (!Party::IsUsingIw4xProtocol())
+		{
+			Auth::GenerateKey();
+			return;
+		}
 
 		const auto guidPath = GetGUIDFilePath();
 
@@ -425,8 +437,8 @@ namespace Components
 			auto machineKey = Utils::Cryptography::ECC::GenerateKey(512, GetMachineEntropy());
 			if (GetKeyHash(machineKey.getPublicKey()) != GetKeyHash())
 			{
-			// kill! The user has changed machine or copied files from another
-			Auth::GenerateKey();
+				// kill! The user has changed machine or copied files from another
+				Auth::GenerateKey();
 			}
 #endif
 			//All good, nothing to do

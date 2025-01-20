@@ -410,7 +410,7 @@ namespace Components
 
 		// Autorecording
 		Utils::Hook(0x5A1D6A, CL_FirstSnapshot_Stub, HOOK_CALL).install()->quick();
-		Utils::Hook(0x4A712A, SV_SpawnServer_Stub, HOOK_CALL).install()->quick();
+		//Utils::Hook(0x4A712A, SV_SpawnServer_Stub, HOOK_CALL).install()->quick();  // This conflicts with Party.cpp for now
 
 		// UIScripts
 		UIScript::Add("loadDemos", LoadDemos);

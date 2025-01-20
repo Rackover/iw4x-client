@@ -252,27 +252,33 @@ namespace Components
 
 				if (headBoneCount + bodyBoneCount >= MAX_ALLOWED_BONES)
 				{
-					Logger::Print(
-						"Notice: Skin {} + {} will not be allowed ({} + {}= {} bones total)\n",
-						heads[headIndex],
-						bodies[bodyIndex],
-						headBoneCount,
-						bodyBoneCount,
-						headBoneCount + bodyBoneCount
-					);
+					if ((*Game::com_developer)->current.value)
+					{
+						Logger::Print(
+							"Notice: Skin {} + {} will not be allowed ({} + {}= {} bones total)\n",
+							heads[headIndex],
+							bodies[bodyIndex],
+							headBoneCount,
+							bodyBoneCount,
+							headBoneCount + bodyBoneCount
+						);
+					}
 
 					forbiddenHeadBodyCombinations.emplace((headIndex << 8) | bodyIndex);
 				}
 				else
 				{
-					Logger::Print(
-						"Notice: Skin {} + {} is allowed ({} + {}= {} bones total)\n",
-						heads[headIndex],
-						bodies[bodyIndex],
-						headBoneCount,
-						bodyBoneCount,
-						headBoneCount + bodyBoneCount
-					);
+					if ((*Game::com_developer)->current.value)
+					{
+						Logger::Print(
+							"Notice: Skin {} + {} is allowed ({} + {}= {} bones total)\n",
+							heads[headIndex],
+							bodies[bodyIndex],
+							headBoneCount,
+							bodyBoneCount,
+							headBoneCount + bodyBoneCount
+						);
+					}
 				}
 			}
 		}
