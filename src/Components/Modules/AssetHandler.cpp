@@ -229,7 +229,7 @@ namespace Components
 		{
 			if (type == Game::XAssetType::ASSET_TYPE_IMAGE && name[0] != ',')
 			{
-				image->category = Game::ImageCategory::IMG_CATEGORY_LOAD_FROM_FILE;
+				asset.image->category = Game::ImageCategory::IMG_CATEGORY_LOAD_FROM_FILE;
 			}
 		}
 
