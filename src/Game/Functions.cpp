@@ -397,7 +397,7 @@ namespace Game
 	bool* s_havePlaylists = reinterpret_cast<bool*>(0x1AD3680);
 
 	huffman_t* msgHuff = reinterpret_cast<huffman_t*>(0x1CB9EC0);
-
+	
 	const char* TableLookup(StringTable* stringtable, int row, int column)
 	{
 		if (!stringtable || !stringtable->values || row >= stringtable->rowCount || column >= stringtable->columnCount) return "";

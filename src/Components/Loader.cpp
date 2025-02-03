@@ -33,6 +33,7 @@
 #include "Modules/MapDump.hpp"
 #include "Modules/MapRotation.hpp"
 #include "Modules/Materials.hpp"
+#include "Modules/Metrics.hpp"
 #include "Modules/ModList.hpp"
 #include "Modules/ModelCache.hpp"
 #include "Modules/ModelSurfs.hpp"
@@ -155,7 +156,7 @@ namespace Components
 		Register(new ModelCache());
 		Register(new ModelSurfs());
 		Register(new NetworkDebug());
-		Register(new News());
+		//Register(new News());
 		Register(new Node());
 		Register(new Party());
 		Register(new PlayerSkins());
