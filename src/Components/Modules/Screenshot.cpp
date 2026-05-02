@@ -11,7 +11,7 @@
 
 namespace Components
 {
-	bool Screenshot::R_GetFrontBufferData(size_t width, size_t height, char* dstPixel)
+	bool Screenshot::R_GetFrontBufferData([[maybe_unused]] size_t width, [[maybe_unused]] size_t height, char* dstPixel)
 	{
 		HRESULT lastError{};
 
@@ -112,7 +112,8 @@ namespace Components
 				return false;
 			}
 
-			const auto device = *Game::dx_ptr;
+			width = description.Width;
+			height = description.Height;
 
 			D3DLOCKED_RECT rectangle{};
 			RECT source{};
@@ -183,9 +184,9 @@ namespace Components
 		header[2] = 2; // True Color RGBA
 
 		header[12] = width & 255;
-		header[13] = width >> 8;
+		header[13] = static_cast<uint8_t>(width >> 8);
 		header[14] = height & 255;
-		header[15] = height >> 8;
+		header[15] = static_cast<uint8_t>(height >> 8);
 		header[16] = 32;
 		header[17] = 0x20;
 
