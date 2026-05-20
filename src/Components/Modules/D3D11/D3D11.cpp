@@ -5,6 +5,8 @@
 #include "D3D11Textures.hpp"
 #include "D3D11Utils.hpp"
 
+D3D11_IGNORE_WARNINGS_START
+
 #pragma region D3D11Query
 D3D11::D3D11Query::D3D11Query(D3D11Context* ctx, D3DQUERYTYPE type) : m_refCount(0), m_d3dCtx(ctx), m_type(type)
 {
@@ -364,12 +366,14 @@ HRESULT D3D11::D3D11Context::UpdateTexture(IDirect3DBaseTexture9* pSourceTexture
 	case D3DRTYPE_TEXTURE:			srcRes = ((D3D11Texture*)pSourceTexture)->GetResource(); break;
 	case D3DRTYPE_VOLUMETEXTURE:	srcRes = ((D3D11VolumeTexture*)pSourceTexture)->GetResource(); break;
 	case D3DRTYPE_CUBETEXTURE:		srcRes = ((D3D11CubeTexture*)pSourceTexture)->GetResource(); break;
+	default: return D3DERR_WRONGTEXTUREFORMAT;
 	}
 	ID3D11Resource* dstRes;
 	switch (pDestinationTexture->GetType()) {
 	case D3DRTYPE_TEXTURE:			dstRes = ((D3D11Texture*)pDestinationTexture)->GetResource(); break;
 	case D3DRTYPE_VOLUMETEXTURE:	dstRes = ((D3D11VolumeTexture*)pDestinationTexture)->GetResource(); break;
 	case D3DRTYPE_CUBETEXTURE:		dstRes = ((D3D11CubeTexture*)pDestinationTexture)->GetResource(); break;
+	default: return D3DERR_WRONGTEXTUREFORMAT;
 	}
 	m_pID3D11DeviceContext->CopySubresourceRegion(dstRes, 0, 0, 0, 0, srcRes, 0, NULL);
 
@@ -430,16 +434,16 @@ HRESULT D3D11::D3D11Context::SetRenderTarget(DWORD RenderTargetIndex, IDirect3DS
 	if (RenderTargetIndex == 0 && m_currentRenderTargets[RenderTargetIndex]) {
 		m_viewport.TopLeftX = 0.5f;
 		m_viewport.TopLeftY = 0.5f;
-		m_viewport.Width = m_currentRenderTargets[0]->GetWidth();
-		m_viewport.Height = m_currentRenderTargets[0]->GetHeight();
+		m_viewport.Width = static_cast<FLOAT>(m_currentRenderTargets[0]->GetWidth());
+		m_viewport.Height = static_cast<FLOAT>(m_currentRenderTargets[0]->GetHeight());
 		m_viewport.MinDepth = 0;
 		m_viewport.MaxDepth = 1;
 		m_viewportDirty = true;
 
 		m_scissor.left = 0;
 		m_scissor.top = 0;
-		m_scissor.right = m_currentRenderTargets[0]->GetWidth();
-		m_scissor.bottom = m_currentRenderTargets[0]->GetHeight();
+		m_scissor.right = static_cast<LONG>(m_currentRenderTargets[0]->GetWidth());
+		m_scissor.bottom = static_cast<LONG>(m_currentRenderTargets[0]->GetHeight());
 		m_scissorDirty = true;
 	}
 
@@ -472,13 +476,13 @@ HRESULT D3D11::D3D11Context::BeginScene()
 	auto m_screenViewport = CD3D11_VIEWPORT(
 		0.5f,
 		0.5f,
-		param.BackBufferWidth,
-		param.BackBufferHeight
+		static_cast<FLOAT>(param.BackBufferWidth),
+		static_cast<FLOAT>(param.BackBufferHeight)
 	);
 	m_pID3D11DeviceContext->RSSetViewports(1, &m_screenViewport);
 
 	D3D11_RECT rect = {
-		0, 0, param.BackBufferWidth, param.BackBufferHeight
+		0, 0, static_cast<LONG>(param.BackBufferWidth), static_cast<LONG>(param.BackBufferHeight)
 	};
 	m_pID3D11DeviceContext->RSSetScissorRects(1, &rect);
 
@@ -515,7 +519,7 @@ HRESULT D3D11::D3D11Context::Clear(DWORD Count, CONST D3DRECT* pRects, DWORD Fla
 		m_pID3D11DeviceContext->ClearRenderTargetView(m_currentRenderTargets[0]->GetRTV(m_sRGBWrite), color);
 	}
 	if ((Flags & (D3DCLEAR_ZBUFFER | D3DCLEAR_STENCIL)) != 0) {
-		m_pID3D11DeviceContext->ClearDepthStencilView(m_currentDepthStencilTarget->GetDSV(), Flags >> 1, Z, Stencil);
+		m_pID3D11DeviceContext->ClearDepthStencilView(m_currentDepthStencilTarget->GetDSV(), Flags >> 1, Z, static_cast<UINT8>(Stencil));
 	}
 
 	return D3D_OK;
@@ -541,8 +545,8 @@ HRESULT D3D11::D3D11Context::SetViewport(CONST D3DVIEWPORT9* pViewport)
 	m_viewport = CD3D11_VIEWPORT(
 		pViewport->X + 0.5f,
 		pViewport->Y + 0.5f,
-		pViewport->Width,
-		pViewport->Height,
+		static_cast<FLOAT>(pViewport->Width),
+		static_cast<FLOAT>(pViewport->Height),
 		pViewport->MinZ,
 		pViewport->MaxZ
 	);
@@ -598,8 +602,6 @@ HRESULT D3D11::D3D11Context::GetClipPlane(DWORD Index, float* pPlane)
 
 HRESULT D3D11::D3D11Context::SetRenderState(D3DRENDERSTATETYPE State, DWORD Value)
 {
-	bool renderTargetsDirty;
-
 #define RAST_BREAK m_currentRasterizerStateDirty = true; break;
 #define DEPTH_BREAK m_currentDSStateDirty = true; break;
 #define BLEND_BREAK m_currentBlendStateDirty = true; break;
@@ -614,13 +616,13 @@ HRESULT D3D11::D3D11Context::SetRenderState(D3DRENDERSTATETYPE State, DWORD Valu
 		case D3DRS_SLOPESCALEDEPTHBIAS:
 			m_currentRasterizerDesc.SlopeScaledDepthBias = ((float&)Value); RAST_BREAK
 		case D3DRS_DEPTHBIAS:
-			m_currentRasterizerDesc.DepthBias = ((float(1 << 24) - 1) * ((float&)Value)); RAST_BREAK
+			m_currentRasterizerDesc.DepthBias = static_cast<INT>(((float(1 << 24) - 1) * ((float&)Value))); RAST_BREAK
 
 		/** Depth Stencil State **/
 		case D3DRS_ZENABLE:
 			m_currentDSDesc.DepthEnable = Value; DEPTH_BREAK
 		case D3DRS_ZWRITEENABLE:
-			m_currentDSDesc.DepthWriteMask = (Value == true) ? D3D11_DEPTH_WRITE_MASK_ALL : D3D11_DEPTH_WRITE_MASK_ZERO; DEPTH_BREAK
+			m_currentDSDesc.DepthWriteMask = (Value == TRUE) ? D3D11_DEPTH_WRITE_MASK_ALL : D3D11_DEPTH_WRITE_MASK_ZERO; DEPTH_BREAK
 		case D3DRS_ZFUNC:
 			m_currentDSDesc.DepthFunc = D3DCMPFUNCToD3D11_COMPARISON_FUNC((D3DCMPFUNC)Value); DEPTH_BREAK
 		case D3DRS_STENCILENABLE:
@@ -659,7 +661,7 @@ HRESULT D3D11::D3D11Context::SetRenderState(D3DRENDERSTATETYPE State, DWORD Valu
 		case D3DRS_ALPHABLENDENABLE:
 			m_currentBlendDesc.RenderTarget[0].BlendEnable = Value; BLEND_BREAK
 		case D3DRS_COLORWRITEENABLE:
-			m_currentBlendDesc.RenderTarget[0].RenderTargetWriteMask = Value; BLEND_BREAK
+			m_currentBlendDesc.RenderTarget[0].RenderTargetWriteMask = static_cast<UINT8>(Value); BLEND_BREAK
 		case D3DRS_BLENDOP:
 			m_currentBlendDesc.RenderTarget[0].BlendOp = D3DBLENDOPToD3D11_BLEND_OP((D3DBLENDOP)Value); BLEND_BREAK
 		case D3DRS_BLENDFACTOR:
@@ -760,8 +762,8 @@ HRESULT D3D11::D3D11Context::GetSamplerState(DWORD Sampler, D3DSAMPLERSTATETYPE 
 HRESULT D3D11::D3D11Context::SetSamplerState(DWORD Sampler, D3DSAMPLERSTATETYPE Type, DWORD Value)
 {
 	if (Type == D3DSAMP_SRGBTEXTURE) {
-		if (m_sRGBTexture[Sampler] != Value) {
-			m_sRGBTexture[Sampler] = Value;
+		if (m_sRGBTexture[Sampler] != static_cast<bool>(Value)) {
+			m_sRGBTexture[Sampler] = Value ? TRUE : FALSE;
 			m_texturesDirty |= (1 << Sampler);
 		}
 		return D3D_OK;
@@ -815,7 +817,7 @@ HRESULT D3D11::D3D11Context::SetSamplerState(DWORD Sampler, D3DSAMPLERSTATETYPE 
 			m_samplersDesc[Sampler].Filter = (D3D11_FILTER)(m_samplersDesc[Sampler].Filter & ~0x01);
 		break;
 	case D3DSAMP_MIPMAPLODBIAS:	m_samplersDesc[Sampler].MipLODBias = std::clamp(((float&)Value), -16.0f, 15.99f); break;
-	case D3DSAMP_MAXMIPLEVEL:	m_samplersDesc[Sampler].MaxLOD = Value; break;
+	case D3DSAMP_MAXMIPLEVEL:	m_samplersDesc[Sampler].MaxLOD = static_cast<FLOAT>(Value); break;
 	case D3DSAMP_MAXANISOTROPY:	m_samplersDesc[Sampler].MaxAnisotropy = std::clamp((UINT)Value, 0u, 16u); break;
 	default: NOT_IMPLEMENTED;
 	}
@@ -1399,3 +1401,5 @@ void D3D11::D3D11Context::ApplyInternalState()
 	}
 }
 #pragma endregion
+
+D3D11_IGNORE_WARNINGS_END

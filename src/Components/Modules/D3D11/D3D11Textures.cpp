@@ -4,19 +4,22 @@
 #include "D3D11Adapters.hpp"
 #include "D3D11Utils.hpp"
 
+D3D11_IGNORE_WARNINGS_START
 #pragma region D3D11Surface
 D3D11::D3D11Surface::D3D11Surface(D3D11Context* ctx, D3D11Texture* parent) : m_refCount(0), m_d3dCtx(ctx), m_parentTexture(parent)
 {
 	auto desc = parent->GetDesc();
 	if ((desc.BindFlags & D3D11_BIND_RENDER_TARGET) != 0) {
-		CD3D11_RENDER_TARGET_VIEW_DESC renderTargetViewDesc(
-			desc.SampleDesc.Count > 1 ? D3D11_RTV_DIMENSION_TEXTURE2DMS : D3D11_RTV_DIMENSION_TEXTURE2D,
-			parent->GetViewFormat());
-		ctx->GetDevice()->CreateRenderTargetView(
-			parent->GetResource(),
-			&renderTargetViewDesc,
-			m_pID3D11RenderTargetView.ReleaseAndGetAddressOf()
-		);
+		{
+			CD3D11_RENDER_TARGET_VIEW_DESC renderTargetViewDesc(
+				desc.SampleDesc.Count > 1 ? D3D11_RTV_DIMENSION_TEXTURE2DMS : D3D11_RTV_DIMENSION_TEXTURE2D,
+				parent->GetViewFormat());
+			ctx->GetDevice()->CreateRenderTargetView(
+				parent->GetResource(),
+				&renderTargetViewDesc,
+				m_pID3D11RenderTargetView.ReleaseAndGetAddressOf()
+			);
+		}
 
 		DXGI_FORMAT srgbFormat = GetSRGBFormat(parent->GetViewFormat());
 		if (srgbFormat != DXGI_FORMAT_UNKNOWN) {
@@ -290,11 +293,11 @@ HRESULT D3D11::D3D11SwapChain::TestCooperativeLevel()
 #pragma endregion
 
 #pragma region D3D11Texture
-D3D11::D3D11Texture::D3D11Texture(D3D11Context* ctx, UINT Width, UINT Height, UINT Levels, DWORD Usage, D3DFORMAT Format, UINT MultiSampleCount, DWORD MultisampleQuality) : m_refCount(0), m_d3dCtx(ctx), m_d3d9Format(Format)
+D3D11::D3D11Texture::D3D11Texture(D3D11Context* ctx, UINT Width, UINT Height, UINT Levels, DWORD Usage, D3DFORMAT Format, UINT MultiSampleCount, DWORD MultisampleQuality) : m_refCount(0), m_d3dCtx(ctx), m_d3d9Format(Format), m_blockSize(0), m_formatSize(0)
 {
 	assert(Usage <= D3DUSAGE_DYNAMIC);
 	if (Levels == 0)
-		Levels = 1 + std::max(log2(Width), log2(Height));
+		Levels = static_cast<UINT>(1 + std::max(log2(Width), log2(Height)));
 
 	DXGI_FORMAT d3d11Format = D3DFORMAT_to_DXGI_FORMAT(Format);
 
@@ -759,7 +762,7 @@ D3D11::D3D11CubeTexture::D3D11CubeTexture(D3D11Context* ctx, UINT EdgeLength, UI
 {
 	assert(Usage == 0);
 	if (Levels == 0)
-		Levels = 1 + log2(EdgeLength);
+		Levels = static_cast<UINT>(1 + log2(EdgeLength));
 
 	DXGI_FORMAT d3d11Format = D3DFORMAT_to_DXGI_FORMAT(Format);
 	DXGI_FORMAT srgbFormat = GetSRGBFormat(d3d11Format);
@@ -794,12 +797,14 @@ D3D11::D3D11CubeTexture::D3D11CubeTexture(D3D11Context* ctx, UINT EdgeLength, UI
 		}
 	}
 
-	CD3D11_SHADER_RESOURCE_VIEW_DESC srvDesc(
-		D3D11_SRV_DIMENSION_TEXTURECUBE,
-		d3d11Format,
-		0, Levels
-	);
-	m_d3dCtx->GetDevice()->CreateShaderResourceView(m_pID3D11Texture2D.Get(), &srvDesc, m_pID3D11ShaderResourceView.ReleaseAndGetAddressOf());
+	{
+		CD3D11_SHADER_RESOURCE_VIEW_DESC srvDesc(
+			D3D11_SRV_DIMENSION_TEXTURECUBE,
+			d3d11Format,
+			0, Levels
+		);
+		m_d3dCtx->GetDevice()->CreateShaderResourceView(m_pID3D11Texture2D.Get(), &srvDesc, m_pID3D11ShaderResourceView.ReleaseAndGetAddressOf());
+	}
 
 	if (srgbFormat != DXGI_FORMAT_UNKNOWN) {
 		CD3D11_SHADER_RESOURCE_VIEW_DESC srvDesc(
@@ -948,3 +953,4 @@ ID3D11ShaderResourceView* D3D11::D3D11CubeTexture::GetShaderResourceView(bool sr
 	return m_pID3D11ShaderResourceView.Get();
 }
 #pragma endregion
+D3D11_IGNORE_WARNINGS_END

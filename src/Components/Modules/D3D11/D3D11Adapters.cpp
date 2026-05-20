@@ -3,6 +3,8 @@
 #include "D3D11.hpp"
 #include "D3D11Utils.hpp"
 
+D3D11_IGNORE_WARNINGS_START
+
 #pragma region D3D11Adapter
 
 HMONITOR D3D11::D3D11Adapter::GetMonitor()
@@ -290,3 +292,5 @@ HRESULT WINAPI D3D11::DXGI::CreateDevice(UINT Adapter, D3DDEVTYPE DeviceType, HW
 	return D3D_OK;
 }
 #pragma endregion
+
+D3D11_IGNORE_WARNINGS_END

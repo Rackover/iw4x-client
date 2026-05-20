@@ -1,5 +1,14 @@
 #pragma once
 
+#define D3D11_IGNORE_WARNINGS_START __pragma(warning(push)) \
+                                    __pragma(warning(disable: 4018)) \
+                                    __pragma(warning(disable: 4100)) \
+                                    __pragma(warning(disable: 4101)) \
+                                    __pragma(warning(disable: 4245)) \
+                                    __pragma(warning(disable: 4189))
+
+#define D3D11_IGNORE_WARNINGS_END   __pragma(warning(pop))
+
 namespace D3D11 {
 	class DXGI;
 	class D3D11SwapChain;

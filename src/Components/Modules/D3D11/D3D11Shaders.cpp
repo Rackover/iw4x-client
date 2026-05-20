@@ -3,6 +3,8 @@
 #include "D3D11.hpp"
 #include "D3D11Utils.hpp"
 
+D3D11_IGNORE_WARNINGS_START
+
 #pragma region D3D11InputLayout
 D3D11::D3D11InputLayout::D3D11InputLayout(D3D11Context* ctx, CONST D3DVERTEXELEMENT9* pVertexElements) : m_refCount(0), m_d3dCtx(ctx)
 {
@@ -168,3 +170,5 @@ HRESULT D3D11::D3D11PixelShader::GetFunction(void* pData, UINT* pSizeOfData)
 	NOT_IMPLEMENTED_ERROR
 }
 #pragma endregion
+
+D3D11_IGNORE_WARNINGS_END
