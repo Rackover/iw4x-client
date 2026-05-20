@@ -17,6 +17,7 @@
 #include "Modules/Console.hpp"
 #include "Modules/ConfigStrings.hpp"
 #include "Modules/D3D9Ex.hpp"
+#include "Modules/D3D11/D3D11.hpp"
 #include "Modules/Debug.hpp"
 #include "Modules/Discord.hpp"
 #include "Modules/Discovery.hpp"
