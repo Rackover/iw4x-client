@@ -1,5 +1,3 @@
-#include <STDInclude.hpp>
-
 #include <Components/Modules/Events.hpp>
 
 #include "IO.hpp"
@@ -101,7 +99,7 @@ namespace Components::GSC
 		}
 
 		Logger::Warning(Game::CON_CHANNEL_PARSERSCRIPT, "ReadStream failed.\n");
-		
+
 		if (std::feof(openScriptIOFileHandle))
 		{
 			Logger::Print(Game::CON_CHANNEL_PARSERSCRIPT, "ReadStream: EOF reached\n");

@@ -55,6 +55,12 @@ namespace Game
 
 	typedef void(*Scr_AddConstString_t)(unsigned int value);
 	extern Scr_AddConstString_t Scr_AddConstString;
+	
+	typedef void(*Scr_AddArray_t)();
+	extern Scr_AddArray_t Scr_AddArray;
+
+	typedef void(*Scr_MakeArray_t)();
+	extern Scr_MakeArray_t Scr_MakeArray;
 
 	typedef void(*Scr_AddIString_t)(const char* value);
 	extern Scr_AddIString_t Scr_AddIString;
@@ -106,7 +112,7 @@ namespace Game
 
 	typedef float(*Scr_GetFloat_t)(unsigned int index);
 	extern Scr_GetFloat_t Scr_GetFloat;
-	
+
 	typedef float(*Scr_GetVector_t)(unsigned int index, float* destination);
 	extern Scr_GetVector_t Scr_GetVector;
 

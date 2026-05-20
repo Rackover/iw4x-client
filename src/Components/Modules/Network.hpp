@@ -55,7 +55,7 @@ namespace Components
 		static const char* AdrToString(const Address& a, bool port = false);
 
 		static std::uint16_t GetPort();
-		
+
 		// Send quake-styled binary data
 		static void Send(const Address& target, const std::string& data);
 		static void Send(Game::netsrc_t type, const Address& target, const std::string& data);
@@ -92,6 +92,6 @@ struct std::hash<Components::Network::Address>
 {
 	std::size_t operator()(const Components::Network::Address& x) const noexcept
 	{
-		return std::hash<std::uint32_t>()(static_cast<std::uint32_t>(x.getIP().bytes[0])) ^ std::hash<std::uint16_t>()(x.getPort());
+		return std::hash<std::uint32_t>()(*reinterpret_cast<const std::uint32_t*>(x.getIP().bytes)) ^ std::hash<std::uint16_t>()(x.getPort());
 	}
 };

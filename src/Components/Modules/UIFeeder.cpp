@@ -1,7 +1,5 @@
-#include <STDInclude.hpp>
-
-#include "Events.hpp"
 #include "UIFeeder.hpp"
+#include "Events.hpp"
 
 namespace Components
 {
@@ -356,6 +354,11 @@ namespace Components
 	{
 		Maps::ScanCustomMaps();
 		Select(60.0f, 0); // Will select nothing if there's no map
+
+		if (GetMapCount() > 0)
+		{
+			SelectMap(0);
+		}
 	}
 
 	int UIFeeder::CheckSelection(int feeder)

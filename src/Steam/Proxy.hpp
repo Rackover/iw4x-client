@@ -1,6 +1,5 @@
 #pragma once
 
-#include <STDInclude.hpp>
 
 #ifdef _WIN64
 #define GAMEOVERLAY_LIB "gameoverlayrenderer64.dll"
@@ -273,8 +272,8 @@ namespace Steam
 	class Proxy
 	{
 	public:
-		static bool Inititalize();
-		static void Uninititalize();
+		static bool Initialize();
+		static void UnInitialize();
 
 		static void SetGame(uint32_t appId);
 		static void RunGame();
@@ -354,7 +353,7 @@ namespace Steam
 
 		static HANDLE Process;
 		static HANDLE CancelHandle;
-		static std::thread WatchGuard;
+		static std::jthread WatchGuard;
 
 		static std::recursive_mutex CallMutex;
 		static std::vector<CallContainer> Calls;

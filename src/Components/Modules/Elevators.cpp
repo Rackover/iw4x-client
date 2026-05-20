@@ -1,5 +1,3 @@
-#include <STDInclude.hpp>
-
 #include "Elevators.hpp"
 #include "Events.hpp"
 
@@ -41,7 +39,7 @@ namespace Components
 				{
 					break;
 				}
-			}	
+			}
 
 			++i;
 			if (i >= 26) // CorrectSolidDeltas count

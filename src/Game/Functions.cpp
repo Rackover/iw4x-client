@@ -1,8 +1,11 @@
-#include <STDInclude.hpp>
+#include "Functions.hpp"
 
 // Unsorted function definitions
 namespace Game
 {
+	__security_init_cookie_t __security_init_cookie = __security_init_cookie_t(0x06CA062);
+	__tmainCRTStartup_t __tmainCRTStartup = __tmainCRTStartup_t(0x06BAA2F);
+
 	AngleVectors_t AngleVectors = AngleVectors_t(0x4691A0);
 
 	Cbuf_AddServerText_f_t Cbuf_AddServerText_f = Cbuf_AddServerText_f_t(0x4BB9B0);
@@ -14,6 +17,7 @@ namespace Game
 
 	CG_LocationalTrace_t CG_LocationalTrace = CG_LocationalTrace_t(0x48B1D0);
 	CG_WorldTrace_t CG_WorldTrace = CG_WorldTrace_t(0x501F00);
+	CG_ExecuteNewServerCommands_t CG_ExecuteNewServerCommands = CG_ExecuteNewServerCommands_t(0x4BE6E0);
 	CG_DrawDisconnect_t CG_DrawDisconnect = CG_DrawDisconnect_t(0x454A70);
 	CG_NextWeapon_f_t CG_NextWeapon_f = CG_NextWeapon_f_t(0x449DE0);
 	CG_GetClientNum_t CG_GetClientNum = CG_GetClientNum_t(0x433700);
@@ -25,6 +29,8 @@ namespace Game
 	CG_ScrollScoreboardDown_t CG_ScrollScoreboardDown = CG_ScrollScoreboardDown_t(0x493B50);
 	CG_GetTeamName_t CG_GetTeamName = CG_GetTeamName_t(0x4B6210);
 	CG_SetupWeaponConfigString_t CG_SetupWeaponConfigString = CG_SetupWeaponConfigString_t(0x4BD520);
+
+	CL_GetSnapshot_t CL_GetSnapshot = CL_GetSnapshot_t(0x46B7C0);
 
 	Cmd_AddCommand_t Cmd_AddCommand = Cmd_AddCommand_t(0x470090);
 	Cmd_AddServerCommand_t Cmd_AddServerCommand = Cmd_AddServerCommand_t(0x4DCE00);
@@ -145,6 +151,11 @@ namespace Game
 
 	Playlist_ParsePlaylists_t Playlist_ParsePlaylists = Playlist_ParsePlaylists_t(0x4295A0);
 
+	PMoveSingle_t PMoveSingle = PMoveSingle_t(0x5743E0);
+
+	PM_CheckLadderMove_t PM_CheckLadderMove = PM_CheckLadderMove_t(0x573D00);
+	PM_Weapon_t PM_Weapon = PM_Weapon_t(0x44C380);
+
 	R_AddCmdDrawStretchPic_t R_AddCmdDrawStretchPic = R_AddCmdDrawStretchPic_t(0x509770);
 	R_AllocStaticIndexBuffer_t R_AllocStaticIndexBuffer = R_AllocStaticIndexBuffer_t(0x51E7A0);
 	R_Cinematic_StartPlayback_Now_t R_Cinematic_StartPlayback_Now = R_Cinematic_StartPlayback_Now_t(0x51C5B0);
@@ -156,6 +167,8 @@ namespace Game
 	R_FlushSun_t R_FlushSun = R_FlushSun_t(0x53FB50);
 	R_SortWorldSurfaces_t R_SortWorldSurfaces = R_SortWorldSurfaces_t(0x53DC10);
 	R_ErrorDescription_t R_ErrorDescription = R_ErrorDescription_t(0x6D0926);
+
+	RMesg_SendMessages_t RMesg_SendMessages = RMesg_SendMessages_t(0x49CC30);
 
 	GetMemory_t GetMemory = GetMemory_t(0x4E67B0);
 	GetClearedMemory_t GetClearedMemory = GetClearedMemory_t(0x422E70);
@@ -195,6 +208,7 @@ namespace Game
 	UI_ReplaceConversions_t UI_ReplaceConversions = UI_ReplaceConversions_t(0x4E9740);
 	UI_ParseInfos_t UI_ParseInfos = UI_ParseInfos_t(0x4027A0);
 	UI_GetMapDisplayName_t UI_GetMapDisplayName = UI_GetMapDisplayName_t(0x420700);
+	UI_GetGameTypeDisplayName_t UI_GetGameTypeDisplayName = UI_GetGameTypeDisplayName_t(0x4EB0B0);
 	ParseConfigStringToStruct_t ParseConfigStringToStruct = ParseConfigStringToStruct_t(0x403B60);
 
 	Win_GetLanguage_t Win_GetLanguage = Win_GetLanguage_t(0x45CBA0);
@@ -223,6 +237,8 @@ namespace Game
 	Weapon_RocketLauncher_Fire_t Weapon_RocketLauncher_Fire = Weapon_RocketLauncher_Fire_t(0x424680);
 	Bullet_Fire_t Bullet_Fire = Bullet_Fire_t(0x4402C0);
 
+	IN_Frame_t IN_Frame = IN_Frame_t(0x475E10);
+	IN_MouseEvent_t IN_MouseEvent = IN_MouseEvent_t(0x4C84D0);
 	IN_RecenterMouse_t IN_RecenterMouse = IN_RecenterMouse_t(0x463D80);
 
 	IN_MouseMove_t IN_MouseMove = IN_MouseMove_t(0x64C490);
@@ -360,6 +376,8 @@ namespace Game
 
 	float (*penetrationDepthTable)[PENETRATE_TYPE_COUNT][SURF_TYPE_COUNT] = reinterpret_cast<float(*)[PENETRATE_TYPE_COUNT][SURF_TYPE_COUNT]>(0x7C4878);
 
+	char (*com_consoleLines)[32] = reinterpret_cast<char(*)[32]>(0x1AD7948);
+
 	WinMouseVars_t* s_wmv = reinterpret_cast<WinMouseVars_t*>(0x649D640);
 
 	int* window_center_x = reinterpret_cast<int*>(0x649D638);
@@ -369,7 +387,7 @@ namespace Game
 
 	int* g_waitingForKey = reinterpret_cast<int*>(0x63A50FC);
 
-	Material** whiteMaterial = reinterpret_cast<Material**>(0x8EE4B8);
+	Game::cgMedia_t* cgMedia = reinterpret_cast<Game::cgMedia_t*>(0x8EE4B8);
 
 	unsigned long* g_dwTlsIndex = reinterpret_cast<unsigned long*>(0x66D94A8);
 
@@ -398,6 +416,8 @@ namespace Game
 	bool* s_havePlaylists = reinterpret_cast<bool*>(0x1AD3680);
 
 	huffman_t* msgHuff = reinterpret_cast<huffman_t*>(0x1CB9EC0);
+
+	const char* logFileName = reinterpret_cast<const char*>(0x730130);
 
 	const char* TableLookup(StringTable* stringtable, int row, int column)
 	{

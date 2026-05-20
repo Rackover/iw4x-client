@@ -1,4 +1,4 @@
-#include <STDInclude.hpp>
+#include "Script.hpp"
 
 namespace Game
 {

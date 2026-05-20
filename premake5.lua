@@ -283,6 +283,7 @@ workspace "iw4x"
 		-- Pre-compiled header
 		pchheader "STDInclude.hpp" -- must be exactly same as used in #include directives
 		pchsource "src/STDInclude.cpp" -- real path
+		forceincludes  { "STDInclude.hpp" }
 		defines { "_SILENCE_ALL_CXX17_DEPRECATION_WARNINGS", "DISABLE_FRIENDS", "DISABLE_ANTICHEAT", "DISABLE_STEAM" }
 		
 		targetname "steam_api"

@@ -1,4 +1,3 @@
-#include <STDInclude.hpp>
 #include "IXAnimParts.hpp"
 
 namespace Assets
@@ -119,7 +118,7 @@ namespace Assets
 
 				if (framecount > 0xFF)
 				{
-					buffer->save(delta->quat->u.frames.indices._1, 2, delta->quat->size + 1);
+					buffer->save(delta->quat->u.frames.indices._2, 2, delta->quat->size + 1);
 				}
 				else
 				{
@@ -129,12 +128,12 @@ namespace Assets
 				if (delta->quat->u.frames.frames)
 				{
 					buffer->align(Utils::Stream::ALIGN_4);
-					buffer->save(delta->quat->u.frames.frames, 4, delta->quat->size + 1);
+					buffer->save(delta->quat->u.frames.frames, 4, 2 * (delta->quat->size + 1));
 				}
 			}
 			else
 			{
-				buffer->save(delta->quat->u.frame0, 4);
+				buffer->save(delta->quat->u.frame0, sizeof(uint16_t), 4); // 2x4
 			}
 
 			Utils::Stream::ClearPointer(&destDelta->quat);

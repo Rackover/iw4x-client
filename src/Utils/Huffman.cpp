@@ -1,4 +1,4 @@
-#include <STDInclude.hpp>
+#include "Huffman.hpp"
 #include "HuffmanTree.hpp"
 
 namespace Utils::Huffman

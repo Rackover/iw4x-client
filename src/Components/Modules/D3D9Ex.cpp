@@ -1,4 +1,3 @@
-#include <STDInclude.hpp>
 #include "D3D9Ex.hpp"
 #include "D3D11/D3D11Adapters.hpp"
 

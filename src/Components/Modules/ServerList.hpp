@@ -28,13 +28,12 @@ namespace Components
 			bool svRunning;
 			bool aimassist;
 			bool voice;
+			std::time_t lastSeen;
 		};
 
 		ServerList();
-		
-		void preDestroy() override;
 
-		static void Refresh([[maybe_unused]] const UIScript::Token& token, [[maybe_unused]] const Game::uiInfo_s* info);
+		static void Refresh();
 		static void RefreshVisibleList([[maybe_unused]] const UIScript::Token& token, [[maybe_unused]] const Game::uiInfo_s* info);
 		static void RefreshVisibleListInternal([[maybe_unused]] const UIScript::Token& token, [[maybe_unused]] const Game::uiInfo_s* info, bool refresh = false);
 		static void UpdateVisibleList([[maybe_unused]] const UIScript::Token& token, [[maybe_unused]] const Game::uiInfo_s* info);
@@ -60,6 +59,8 @@ namespace Components
 		static Dvar::Var UIServerSelectedMap;
 		static Dvar::Var NETServerQueryLimit;
 		static Dvar::Var NETServerFrames;
+		static Dvar::Var NETServerDeadTimeout;
+		static Dvar::Var UIBrowserEnableFilters;
 
 	private:
 		enum class Column : int
@@ -79,6 +80,10 @@ namespace Components
 		};
 
 		static constexpr auto* FavouriteFile = "players/favourites.json";
+		static constexpr auto* ServerCacheFile = "players/server_cache.json";
+		static constexpr auto* FiltersFile = "players/iw4x_filters.json";
+
+		static std::vector<std::string> HostnameFilters;
 
 #pragma pack(push, 1)
 		union MasterEntry
@@ -113,13 +118,13 @@ namespace Components
 				int sendTime;
 				std::string challenge;
 				Network::Address target;
+				int sourceList;
 			};
 
-			bool awatingList;
+			bool awaitingList;
 			int awaitTime;
-
-			int sentCount;
-			int sendCount;
+			bool needsInitialRefresh;
+			bool loadingCache;
 
 			Network::Address host;
 			std::vector<ServerContainer> servers;
@@ -142,8 +147,17 @@ namespace Components
 		static void StoreFavourite(const std::string& server);
 		static void RemoveFavourite(const std::string& server);
 
-		static ServerInfo* GetServer(unsigned int index);
+		static void CreateDefaultFiltersFile();
+		static void LoadFilters();
+		static std::string NormalizeHostname(const std::string& hostname);
+		static bool IsHostnameFiltered(const std::string& hostname);
 
+		static void LoadServerCache();
+		static void SaveServerCache();
+		static void RemoveDeadServers();
+		static void HeartbeatServers();
+
+		static ServerInfo* GetServer(unsigned int index);
 		static bool CompareVersion(const std::string& version1, const std::string& version2);
 		static bool IsServerDuplicate(const std::vector<ServerInfo>* list, const ServerInfo& server);
 
@@ -173,7 +187,7 @@ struct std::hash<Components::ServerList::ServerInfo>
 		hash ^= std::hash<std::string>()(x.hostname);
 		hash ^= std::hash<std::string>()(x.mapname);
 		hash ^= std::hash<std::string>()(x.mod);
-		hash ^= std::hash<std::uint32_t>()(static_cast<const std::uint32_t>(x.addr.getIP().bytes[0]));
+		hash ^= std::hash<std::uint32_t>()(*reinterpret_cast<const std::uint32_t*>(x.addr.getIP().bytes));
 		hash ^= x.clients;
 
 		return hash;

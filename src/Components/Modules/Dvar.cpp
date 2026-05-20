@@ -1,5 +1,4 @@
-#include <STDInclude.hpp>
-
+#include "Dvar.hpp"
 #include "Friends.hpp"
 #include "TextRenderer.hpp"
 
@@ -401,10 +400,10 @@ namespace Components
 
 		// un-cheat camera_thirdPersonCrosshairOffset and add archive flags
 		Utils::Hook::Xor<std::uint8_t>(0x447B41, Game::DVAR_CHEAT | Game::DVAR_ARCHIVE);
-		
+
 		// un-cheat cg_fov and add archive flags
 		Utils::Hook::Xor<std::uint8_t>(0x4F8E35, Game::DVAR_CHEAT | Game::DVAR_ARCHIVE);
-		
+
 		// un-cheat cg_fovscale and add archive flags
 		Utils::Hook::Xor<std::uint8_t>(0x4F8E68, Game::DVAR_CHEAT | Game::DVAR_ARCHIVE);
 

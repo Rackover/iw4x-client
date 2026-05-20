@@ -1,4 +1,4 @@
-#include <STDInclude.hpp>
+#include "FileSystem.hpp"
 
 namespace Game
 {
@@ -31,6 +31,8 @@ namespace Game
 	FS_BuildOSPath_t FS_BuildOSPath = FS_BuildOSPath_t(0x4702C0);
 
 	searchpath_s** fs_searchpaths = reinterpret_cast<searchpath_s**>(0x63D96E0);
+
+	char* fs_gamedir = reinterpret_cast<char*>(0x63D0BB8);
 
 	int FS_FOpenFileReadCurrentThread(const char* filename, int* file)
 	{

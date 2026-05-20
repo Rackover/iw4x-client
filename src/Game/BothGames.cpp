@@ -1,4 +1,4 @@
-#include <STDInclude.hpp>
+#include "BothGames.hpp"
 
 namespace Game
 {

@@ -1,4 +1,3 @@
-#include <STDInclude.hpp>
 #include <Utils/Compression.hpp>
 #include <Utils/InfoString.hpp>
 
@@ -197,7 +196,7 @@ namespace Components
 		{
 			for (auto& entry : Nodes)
 			{
-				// clearing the last request and response times makes the 
+				// clearing the last request and response times makes the
 				// dispatcher think its a new node and will force a refresh
 				entry.lastRequest.reset();
 				entry.lastResponse.reset();
@@ -445,12 +444,5 @@ namespace Components
 					Add(address);
 				}
 			});
-	}
-
-	void Node::preDestroy()
-	{
-		std::lock_guard _(Mutex);
-		StoreNodes(true);
-		Nodes.clear();
 	}
 }

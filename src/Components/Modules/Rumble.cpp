@@ -1,5 +1,4 @@
-#include <STDInclude.hpp>
-
+#include "Rumble.hpp"
 #include "ConfigStrings.hpp"
 #include "Events.hpp"
 
@@ -288,7 +287,7 @@ namespace Components
 
 		const auto logError = [&](const std::string& view)
 			{
-				if ((*Game::com_sv_running)->current.value)
+				if ((*Game::sv_running)->current.value)
 				{
 					Components::Logger::Error(Game::ERR_DROP, view);
 				}
@@ -752,16 +751,16 @@ namespace Components
 		{
 			pushad;
 
-			push bx
-				push[esp + 0x20 + 0x28 + 0x2] // weapon
-				push esi // cent
-				push ebp
+			push ebx
+			push[esp + 0x20 + 0x28 + 0x4] // weapon
+			push esi // cent
+			push ebp
 
-				call CG_FireWeapon_Rumble
+			call CG_FireWeapon_Rumble
 
-				add esp, 0x4 * 3 + 0x2
+			add esp, 0x4 * 4
 
-				popad;
+			popad;
 
 			// OG code
 			sub esp, 0x10;
@@ -1031,7 +1030,7 @@ namespace Components
 	void Rumble::InitDvars()
 	{
 		cl_debug_rumbles = Dvar::Register<bool>("cl_debug_rumbles", false, Game::DVAR_SAVED, "Debug rumbles on the screen");
-		cl_rumbleScale = Dvar::Register<float>("cl_rumbleScale", 0.6f, 0.f, 1.f, Game::DVAR_SAVED, "Rumble multiplier for the controller");
+		cl_rumbleScale = Dvar::Register<float>("cl_rumbleScale", 0.6f, 0.f, 1.f, Game::DVAR_ARCHIVE, "Rumble multiplier for the controller");
 	}
 
 	void Rumble::CG_StopRumble(int localClientNum, int entityNum, const char* rumbleName)

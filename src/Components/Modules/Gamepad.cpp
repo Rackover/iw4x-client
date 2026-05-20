@@ -1,6 +1,6 @@
-#include <STDInclude.hpp>
 #include "Gamepad.hpp"
 #include "RawMouse.hpp"
+#include "Window.hpp"
 
 namespace Components
 {
@@ -174,8 +174,13 @@ namespace Components
 
 	GamepadControls::Controller Gamepad::gamePads[Game::MAX_GPAD_COUNT]{};
 	std::mutex Gamepad::gamePadStateMutexes[Game::MAX_GPAD_COUNT]{};
+	bool Gamepad::gamePadDataReady[Game::MAX_GPAD_COUNT]{};
 	Gamepad::GamePadGlobals Gamepad::gamePadGlobals[Game::MAX_GPAD_COUNT]{ {} };
 	int Gamepad::gamePadBindingsModifiedFlags = 0;
+
+	unsigned Gamepad::buttonPressedTime[Game::MAX_GPAD_COUNT][Game::K_LAST_KEY]{};
+	unsigned Gamepad::buttonReleaseTime[Game::MAX_GPAD_COUNT][Game::K_LAST_KEY]{};
+	bool Gamepad::buttonPendingRelease[Game::MAX_GPAD_COUNT][Game::K_LAST_KEY]{};
 
 	Dvar::Var Gamepad::gpad_enabled;
 	Dvar::Var Gamepad::gpad_present;
@@ -185,8 +190,15 @@ namespace Components
 	Dvar::Var Gamepad::gpad_buttonConfig;
 	Dvar::Var Gamepad::gpad_menu_scroll_delay_first;
 	Dvar::Var Gamepad::gpad_menu_scroll_delay_rest;
+	Dvar::Var Gamepad::gpad_menu_scroll_delay_min;
+	Dvar::Var Gamepad::gpad_menu_scroll_accel_time;
 	Dvar::Var Gamepad::gpad_rumble;
 	Dvar::Var Gamepad::gpad_use_hold_time;
+	Dvar::Var Gamepad::gpad_button_release_delay_enabled;
+	Dvar::Var Gamepad::gpad_button_release_delay;
+	Dvar::Var Gamepad::gpad_button_release_delay_scale;
+	Dvar::Var Gamepad::gpad_button_release_delay_sprint_only;
+	Dvar::Var Gamepad::gpad_button_release_grace;
 	Dvar::Var Gamepad::gpad_lockon_enabled;
 	Dvar::Var Gamepad::gpad_slowdown_enabled;
 	Dvar::Var Gamepad::input_viewSensitivity;
@@ -217,7 +229,9 @@ namespace Components
 
 	Gamepad::GamePadGlobals::GamePadGlobals()
 		: axes{},
-		nextScrollTime(0)
+		nextScrollTime(0),
+		scrollHoldStartTime(0),
+		scrollHoldKey(0)
 	{
 		for (auto& virtualAxis : axes.virtualAxes)
 		{
@@ -318,8 +332,19 @@ namespace Components
 		AssertIn(localClientNum, Game::MAX_GPAD_COUNT);
 
 		auto& gamePad = gamePads[localClientNum];
-		std::lock_guard _(gamePadStateMutexes[localClientNum]);
 
+		std::unique_lock lock(gamePadStateMutexes[localClientNum], std::try_to_lock);
+
+		// If we cannot acquire the lock, then assume the current state is correct.
+		//
+		// That is, it's primarily used to detect whether a gamepad is present or
+		// usable. While a stale state may briefly persist if another thread holds
+		// the lock, that is preferable to blocking here. Gamepad presence is
+		// expected to stabilize quickly, and timely feedback is more important than
+		// precision in this path.
+		//
+		if (!lock.owns_lock())
+			return gamePad.get_enabled();
 
 		return gamePad.get_enabled() ||
 			gamePad.PlugIn(static_cast<uint8_t>(portIndex));
@@ -1043,6 +1068,7 @@ namespace Components
 
 		if (!down)
 		{
+			gamePadGlobal.scrollHoldKey = 0;
 			return;
 		}
 
@@ -1051,6 +1077,11 @@ namespace Components
 		{
 			if (key == scrollButton)
 			{
+				if (key >= Game::K_DPAD_UP && key <= Game::K_DPAD_RIGHT && gamePadGlobal.scrollHoldKey != key)
+				{
+					gamePadGlobal.scrollHoldStartTime = time;
+					gamePadGlobal.scrollHoldKey = key;
+				}
 				gamePadGlobal.nextScrollTime = scrollDelayFirst + time;
 				return;
 			}
@@ -1169,6 +1200,8 @@ namespace Components
 		{
 			const int scrollDelayFirst = gpad_menu_scroll_delay_first.get<int>();
 			const int scrollDelayRest = gpad_menu_scroll_delay_rest.get<int>();
+			const int scrollDelayMin = gpad_menu_scroll_delay_min.get<int>();
+			const int accelTime = gpad_menu_scroll_accel_time.get<int>();
 
 			for (const auto menuScrollButton : menuScrollButtonList)
 			{
@@ -1182,7 +1215,14 @@ namespace Components
 
 					if (time > gamePadGlobal.nextScrollTime)
 					{
-						gamePadGlobal.nextScrollTime = time + scrollDelayRest;
+						auto delay = scrollDelayRest;
+						if (key >= Game::K_DPAD_UP && key <= Game::K_DPAD_RIGHT && accelTime > 0 && scrollDelayRest > scrollDelayMin)
+						{
+							const auto elapsed = static_cast<int>(time - gamePadGlobal.scrollHoldStartTime);
+							const auto t = std::min(elapsed, accelTime);
+							delay = scrollDelayRest - (scrollDelayRest - scrollDelayMin) * t / accelTime;
+						}
+						gamePadGlobal.nextScrollTime = time + delay;
 						return false;
 					}
 					break;
@@ -1285,21 +1325,104 @@ namespace Components
 		}
 	}
 
-	void Gamepad::CL_GamepadButtonEventForPort(const int localClientNum, const int key, const Game::GamePadButtonEvent buttonEvent, const unsigned time)
+	unsigned
+	Gamepad::GetButtonReleaseDelay (const int i)
 	{
-		AssertIn(localClientNum, Game::MAX_GPAD_COUNT);
+		// See if we are supposed to be doing this at all.
+		//
+		if (!gpad_button_release_delay_enabled.get<bool> ())
+			return 0;
 
-		auto& gamePad = gamePads[localClientNum];
-		gamePad.inUse = true;
-		gpad_in_use.setRaw(true);
+		// Load configuration. m is the floor (minimum delay) and s is the
+		// ping scaling factor.
+		//
+		auto m (static_cast<unsigned> (gpad_button_release_delay.get<int> ()));
+		auto s (gpad_button_release_delay_scale.get<float> ());
 
-		if (Game::Key_IsCatcherActive(localClientNum, Game::KEYCATCH_UI))
+		// If the scale is zero (or negative, implying configuration error),
+		// then the ping is irrelevant.
+		//
+		if (s <= 0.0f)
+			return m;
+
+		// Calculate the target delay d. We derive it from the client's snapshot
+		// ping. Note that we assume i is a valid client index.
+		//
+		const auto& c (Game::clients[i]);
+		auto p (static_cast<unsigned> (c.snap.ping));
+		auto d (static_cast<unsigned> (static_cast<float> (p) * s));
+
+		// Clamp the result. The 2s upper bound is a safety net: if the ping is
+		// that bad, we don't want the button stuck indefinitely. The lower bound
+		// is our configured floor m.
+		//
+		return std::min (std::max (m, d), 2000u);
+	}
+
+	void
+	Gamepad::CL_GamepadButtonEventForPort (const int i,
+																				 const int k,
+																				 const Game::GamePadButtonEvent e,
+																				 const unsigned t)
+	{
+		AssertIn (i, Game::MAX_GPAD_COUNT);
+
+		// Mark the controller as active. We consider any button activity as
+		// an "in use" signal, which might prevent sleep or switch the primary
+		// input focus.
+		//
+		auto& gp (gamePads [i]);
+		gp.inUse = true;
+		gpad_in_use.setRaw (true);
+
+		// If this is a press, record the timestamp. We need this to handle the
+		// release delay logic (debouncing) downstream so that we don't drop
+		// quick taps.
+		//
+		if (e == Game::GPAD_BUTTON_PRESSED)
 		{
-			CL_GamepadResetMenuScrollTime(localClientNum, key, buttonEvent == Game::GPAD_BUTTON_PRESSED, time);
+			buttonPressedTime [i][k] = t;
+			buttonPendingRelease [i][k] = false;
 		}
 
+		// If debug is enabled, dump the event details. Note that we have to
+		// manually look up the key binding string to make the log actually
+		// readable.
+		//
+		if (GamepadControls::Controller::gpad_debug.get<bool> ())
+		{
+			const char* n ("UNKNOWN");
+			switch (e)
+			{
+				case Game::GPAD_BUTTON_PRESSED:
+					n = "PRESSED";
+					break;
+				case Game::GPAD_BUTTON_UPDATE:
+					n = "UPDATE";
+					break;
+				case Game::GPAD_BUTTON_RELEASED:
+					n = "RELEASED";
+					break;
+			}
 
-		CL_GamepadButtonEvent(localClientNum, key, buttonEvent, time);
+			const auto& ks (Game::playerKeys [i]);
+			const auto* b (ks.keys [k].binding ? ks.keys [k].binding : "(none)");
+
+			Logger::Debug ("Gamepad button event: key={} event={} time={} binding={}",
+										 k,
+										 n,
+										 t,
+										 b);
+		}
+
+		// If the UI key catcher is active (we are in a menu), we need to reset
+		// the scroll timing to responds immediately to the input rather than
+		// waiting for the next accumulated scroll tick.
+		//
+		if (Game::Key_IsCatcherActive (i, Game::KEYCATCH_UI))
+			CL_GamepadResetMenuScrollTime (i, k, e == Game::GPAD_BUTTON_PRESSED, t);
+
+		CL_GamepadButtonEvent (i, k, e, t);
 	}
 
 	void Gamepad::GPad_SetLowRumble(int gamePadIndex, double rumble)
@@ -1329,12 +1452,19 @@ namespace Components
 
 	void Gamepad::GPad_UpdateAll()
 	{
-		GPad_RefreshAll();
-
 		for (auto localClientNum = 0; localClientNum < Game::MAX_GPAD_COUNT; ++localClientNum)
 		{
 			const auto& gamePad = gamePads[localClientNum];
-			std::lock_guard _(gamePadStateMutexes[localClientNum]);
+
+			std::unique_lock lock(gamePadStateMutexes[localClientNum], std::try_to_lock);
+
+			// If the lock is held, skip this gamepad and defer to the main
+			// thread's state. The main thread is responsible for real-time input
+			// processing, and we avoid introducing contention or latency here. Any
+			// missed updates will be picked up in the next frame.
+			//
+			if (!lock.owns_lock())
+				continue;
 
 			if (!gamePad.get_enabled())
 			{
@@ -1346,8 +1476,14 @@ namespace Components
 				gamePads[localClientNum].StopRumbles();
 			}
 
-			gamePads[localClientNum].UpdateState();
-			gamePads[localClientNum].PushUpdates(); // We call them both together now because we update from another thread anyway
+			if (!gamePadDataReady[localClientNum])
+			{
+				gamePads[localClientNum].UpdateState();
+			}
+
+			gamePads[localClientNum].PushUpdates();
+
+			gamePadDataReady[localClientNum] = true;
 		}
 	}
 
@@ -1368,59 +1504,167 @@ namespace Components
 		}
 	}
 
-	void Gamepad::IN_GamePadsMove()
+	void
+	Gamepad::IN_GamePadsMove ()
 	{
-		if (!gpad_enabled.get<bool>())
+		if (!gpad_enabled.get<bool> ())
 			return;
 
-		const auto time = Game::Sys_Milliseconds();
+		// Poll the hardware state once per frame.
+		//
+		// Note that we assume the set of connected devices is stable during the
+		// frame. We don't want to deal with hot-plugging logic in the middle of
+		// input processing.
+		//
+		GPad_UpdateAll ();
 
-		bool gpadPresent = false;
-		for (auto localClientNum = 0; localClientNum < Game::MAX_GPAD_COUNT; ++localClientNum)
+		auto t (Game::Sys_Milliseconds ());
+		bool any (false);
+
+		for (auto i (0); i < Game::MAX_GPAD_COUNT; ++i)
 		{
-			auto& gamePad = gamePads[localClientNum];
-			std::lock_guard _(gamePadStateMutexes[localClientNum]);
+			auto& g (gamePads [i]);
+			std::lock_guard _ (gamePadStateMutexes [i]);
 
-			if (!gamePad.get_enabled())
-			{
+			if (!g.get_enabled ())
 				continue;
-			}
 
-			gpadPresent = true;
-			const auto lx = gamePad.GetStick(Game::GPAD_LX);
-			const auto ly = gamePad.GetStick(Game::GPAD_LY);
-			const auto rx = gamePad.GetStick(Game::GPAD_RX);
-			const auto ry = gamePad.GetStick(Game::GPAD_RY);
-			const auto leftTrig = gamePad.GetButton(Game::GPAD_L_TRIG);
-			const auto rightTrig = gamePad.GetButton(Game::GPAD_R_TRIG);
+			any = true;
 
-			CL_GamepadEvent(localClientNum, Game::GPAD_PHYSAXIS_LSTICK_X, lx, time);
-			CL_GamepadEvent(localClientNum, Game::GPAD_PHYSAXIS_LSTICK_Y, ly, time);
-			CL_GamepadEvent(localClientNum, Game::GPAD_PHYSAXIS_RSTICK_X, rx, time);
-			CL_GamepadEvent(localClientNum, Game::GPAD_PHYSAXIS_RSTICK_Y, ry, time);
-			CL_GamepadEvent(localClientNum, Game::GPAD_PHYSAXIS_LTRIGGER, leftTrig, time);
-			CL_GamepadEvent(localClientNum, Game::GPAD_PHYSAXIS_RTRIGGER, rightTrig, time);
+			// Map raw physical axes to game events.
+			//
+			// We intentionally push raw values. That is, deadzones and sensitivity
+			// curves are applied later in the client input aggregation layer.
+			//
+			CL_GamepadEvent (i,
+											 Game::GPAD_PHYSAXIS_LSTICK_X,
+											 g.GetStick (Game::GPAD_LX),
+											 t);
+			CL_GamepadEvent (i,
+											 Game::GPAD_PHYSAXIS_LSTICK_Y,
+											 g.GetStick (Game::GPAD_LY),
+											 t);
+			CL_GamepadEvent (i,
+											 Game::GPAD_PHYSAXIS_RSTICK_X,
+											 g.GetStick (Game::GPAD_RX),
+											 t);
+			CL_GamepadEvent (i,
+											 Game::GPAD_PHYSAXIS_RSTICK_Y,
+											 g.GetStick (Game::GPAD_RY),
+											 t);
+			CL_GamepadEvent (i,
+											 Game::GPAD_PHYSAXIS_LTRIGGER,
+											 g.GetButton (Game::GPAD_L_TRIG),
+											 t);
+			CL_GamepadEvent (i,
+											 Game::GPAD_PHYSAXIS_RTRIGGER,
+											 g.GetButton (Game::GPAD_R_TRIG),
+											 t);
 
-			for (const auto& buttonMapping : buttonList)
+			// Handle digital buttons with latency compensation.
+			//
+			// The issue here is high-latency connections: if a user taps a button
+			// (e.g., sprint) quickly, the "pressed" and "released" packets might
+			// arrive at the server almost simultaneously, or the "pressed" packet
+			// might be dropped.
+			//
+			// To mitigate this, we calculate a minimum retention delay based on the
+			// current ping. If the physical press is shorter than this delay, we
+			// lie to the server and pretend the button is still held down.
+			//
+			auto delay (GetButtonReleaseDelay (i));
+			auto grace (static_cast<unsigned> (gpad_button_release_grace.get<int> ()));
+			auto so (gpad_button_release_delay_sprint_only.get<bool> ());
+
+			for (const auto& m : buttonList)
 			{
-				if (gamePad.IsButtonPressed(buttonMapping.padButton))
+				auto k (m.code);
+				auto b (m.padButton);
+
+				// If "sprint only" is enabled, then we don't introduce artificial lag
+				// to shooting or menu navigation.
+				//
+				auto apply (delay > 0 || grace > 0);
+				if (apply && so)
 				{
-					CL_GamepadButtonEventForPort(localClientNum, buttonMapping.code, Game::GPAD_BUTTON_PRESSED, time);
+					const auto* s (Game::playerKeys [i].keys [k].binding);
+					apply = s && (std::strcmp (s, "+sprint") == 0 ||
+												std::strcmp (s, "+breath_sprint") == 0);
 				}
-				else if (gamePad.ButtonRequiresUpdates(buttonMapping.padButton))
+
+				if (g.IsButtonPressed (b))
 				{
-					CL_GamepadButtonEventForPort(localClientNum, buttonMapping.code, Game::GPAD_BUTTON_UPDATE, time);
+					CL_GamepadButtonEventForPort (i, k, Game::GPAD_BUTTON_PRESSED, t);
 				}
-				else if (gamePad.IsButtonReleased(buttonMapping.padButton))
+				else if (g.ButtonRequiresUpdates (b))
 				{
-					CL_GamepadButtonEventForPort(localClientNum, buttonMapping.code, Game::GPAD_BUTTON_RELEASED, time);
+					CL_GamepadButtonEventForPort (i, k, Game::GPAD_BUTTON_UPDATE, t);
+				}
+				else if (g.IsButtonReleased (b))
+				{
+					if (!apply)
+					{
+						CL_GamepadButtonEventForPort (i, k, Game::GPAD_BUTTON_RELEASED, t);
+					}
+					else
+					{
+						// Record the physical release time and defer the release event.
+						//
+						buttonReleaseTime [i][k] = t;
+						buttonPendingRelease [i][k] = true;
+						CL_GamepadButtonEventForPort (i, k, Game::GPAD_BUTTON_UPDATE, t);
+
+						if (GamepadControls::Controller::gpad_debug.get<bool> ())
+						{
+							auto p (Game::clients [i].snap.ping);
+							auto held (t - buttonPressedTime [i][k]);
+							Logger::Debug (
+								"Button release delayed: k={} held={}ms delay={}ms grace={}ms (ping={})",
+								k,
+								held,
+								delay,
+								grace,
+								p);
+						}
+					}
+				}
+				else if (buttonPendingRelease [i][k])
+				{
+					// We are currently faking a hold state. The release fires once
+					// both conditions are satisfied:
+					//   1. The button has been held at least `delay` ms since press
+					//      (ensures the server registered the press).
+					//   2. At least `grace` ms have elapsed since the physical release
+					//      (absorbs accidental L3 slips mid-sprint).
+					//
+					auto sincePres (t - buttonPressedTime [i][k]);
+					auto sinceRel  (t - buttonReleaseTime [i][k]);
+
+					if (sincePres >= delay && sinceRel >= grace)
+					{
+						buttonPendingRelease [i][k] = false;
+						CL_GamepadButtonEventForPort (i, k, Game::GPAD_BUTTON_RELEASED, t);
+
+						if (GamepadControls::Controller::gpad_debug.get<bool> ())
+							Logger::Debug ("Deferred button release sent: k={} held={}ms waited={}ms",
+														 k,
+														 sincePres,
+														 sinceRel);
+					}
+					else
+					{
+						// Still waiting. Keep lying.
+						//
+						CL_GamepadButtonEventForPort (i, k, Game::GPAD_BUTTON_UPDATE, t);
+					}
 				}
 			}
 
-			UpdateForceFeedback(gamePad);
+			UpdateForceFeedback (g);
+			gamePadDataReady [i] = false;
 		}
 
-		gpad_present.setRaw(gpadPresent);
+		gpad_present.setRaw (any);
 	}
 
 	void Gamepad::IN_Frame_Hk()
@@ -1622,11 +1866,25 @@ namespace Components
 		gpad_menu_scroll_delay_first = Dvar::Register<int>("gpad_menu_scroll_delay_first", 420, 0, 1000, Game::DVAR_ARCHIVE, "Menu scroll key-repeat delay, for the first repeat, in milliseconds");
 		gpad_menu_scroll_delay_rest = Dvar::Register<int>("gpad_menu_scroll_delay_rest", 210, 0, 1000, Game::DVAR_ARCHIVE,
 			"Menu scroll key-repeat delay, for repeats after the first, in milliseconds");
+		gpad_menu_scroll_delay_min = Dvar::Register<int>("gpad_menu_scroll_delay_min", 50, 0, 1000, Game::DVAR_ARCHIVE,
+			"Menu scroll key-repeat delay at maximum acceleration, in milliseconds");
+		gpad_menu_scroll_accel_time = Dvar::Register<int>("gpad_menu_scroll_accel_time", 1500, 0, 5000, Game::DVAR_ARCHIVE,
+			"Time in milliseconds for menu scroll to reach maximum speed");
 		gpad_rumble = Dvar::Register<bool>("gpad_rumble", true, Game::DVAR_ARCHIVE, "Enable game pad rumble");
 
 		GamepadControls::Controller::InitializeDvars();
 
 		gpad_use_hold_time = Dvar::Register<int>("gpad_use_hold_time", 250, 0, std::numeric_limits<int>::max(), Game::DVAR_ARCHIVE, "Time to hold the 'use' button on gamepads to activate use");
+		gpad_button_release_delay_enabled = Dvar::Register<bool>("gpad_button_release_delay_enabled", true, Game::DVAR_ARCHIVE,
+			"Enable button release delay to prevent canceling input on high ping. Set to false to disable completely.");
+		gpad_button_release_delay = Dvar::Register<int>("gpad_button_release_delay", 50, 0, 2000, Game::DVAR_ARCHIVE,
+			"Minimum button release delay (ms). Auto-scales with ping using gpad_button_release_delay_scale.");
+		gpad_button_release_delay_scale = Dvar::Register<float>("gpad_button_release_delay_scale", 3.5f, 0.0f, 10.0f, Game::DVAR_ARCHIVE,
+			"Multiplier for ping-based release delay (delay = ping * scale). Set to 0 to use fixed gpad_button_release_delay value.");
+		gpad_button_release_delay_sprint_only = Dvar::Register<bool>("gpad_button_release_delay_sprint_only", true, Game::DVAR_ARCHIVE,
+			"Only apply release delay to sprint button. Set to false to apply delay to all buttons.");
+		gpad_button_release_grace = Dvar::Register<int>("gpad_button_release_grace", 75, 0, 500, Game::DVAR_ARCHIVE,
+			"Fixed grace period (ms) after physical button release before sending release event.");
 		gpad_lockon_enabled = Dvar::Register<bool>("gpad_lockon_enabled", true, Game::DVAR_ARCHIVE, "Game pad lockon aim assist enabled");
 		gpad_slowdown_enabled = Dvar::Register<bool>("gpad_slowdown_enabled", true, Game::DVAR_ARCHIVE, "Game pad slowdown aim assist enabled");
 
@@ -2075,26 +2333,23 @@ namespace Components
 		// Add gamepad inputs to user commands if it is enabled
 		Utils::Hook(0x5A6DAE, CL_MouseMove_Stub, HOOK_CALL).install()->quick();
 
-		// Refresh gamepads on a separate thread to prevent IO latency from breaking up framerate
-		// This is never a problem at 30~60 fps (which the game is made for) but becomes a problem above 300+...
-		// Some users like their game at 300 hZ so let's handle it
+		// Register a callback to handle gamepad device changes reported by the
+		// Window subsystem. That is, detect gamepad hotplug events without relying
+		// on periodic polling.
+		//
+		Window::OnDeviceChange([](WPARAM wParam, LPARAM)
 		{
-			static std::thread gamepadRefreshThread([]()
-				{
-					constexpr auto INPUT_THREAD_REFRESH_RATE = 120; // hZ for input refresh rate
-					constexpr auto INPUT_THREAD_TICK_TIME_MS = 1000 / INPUT_THREAD_REFRESH_RATE;
+			if (wParam == GIDC_ARRIVAL || wParam == GIDC_REMOVAL)
+				GPad_RefreshAll();
+		});
 
-					while (true)
-					{
-						const auto startTime = std::chrono::system_clock::now();
-						const auto sleepUntil = startTime + std::chrono::milliseconds(INPUT_THREAD_TICK_TIME_MS);
+		// Perform an initial scan to detect any gamepads already connected
+		// before any device change notifications are received.
+		//
+		GPad_RefreshAll();
+	}
 
-						GPad_UpdateAll();
-						std::this_thread::sleep_until(sleepUntil);
-					}
-				});
-
-			gamepadRefreshThread.detach();
-		}
+	Gamepad::~Gamepad()
+	{
 	}
 }

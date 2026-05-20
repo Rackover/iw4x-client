@@ -45,7 +45,7 @@ namespace Components
 		std::map<std::string, Utils::Slot<PacketCallback>> packetCallbacks;
 
 		HANDLE pipe;
-		std::thread thread;
+		std::jthread thread;
 		bool threadAttached;
 
 		Type type;
@@ -64,8 +64,6 @@ namespace Components
 	{
 	public:
 		IPCPipe();
-
-		void preDestroy() override;
 
 		static bool Write(const std::string& command, const std::string& data);
 		static void On(const std::string& command, const Utils::Slot<Pipe::PacketCallback>& callback);

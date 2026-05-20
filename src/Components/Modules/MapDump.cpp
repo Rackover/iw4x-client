@@ -1,4 +1,3 @@
-#include <STDInclude.hpp>
 #include "Screenshot.hpp"
 #include "MapDump.hpp"
 

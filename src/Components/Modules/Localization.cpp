@@ -1,4 +1,4 @@
-#include <STDInclude.hpp>
+#include "Localization.hpp"
 #include "ArenaLength.hpp"
 #include "GSC/Script.hpp"
 
@@ -126,7 +126,7 @@ namespace Components
 			"Laupetin",
 			"Louvenarde",
 			"lsb_release -a",
-			"quaK",			
+			"quaK",
 		};
 
 		static const char* contributors[] =
@@ -377,11 +377,11 @@ namespace Components
 
 		const char* gametype = Game::Scr_GetString(0);
 
-		// UI_GetGameTypeDisplayName
-		const auto result = Utils::Hook::Call<const char* (const char*)>(0x4EB0B0)(gametype);
+		const auto result = Game::UI_GetGameTypeDisplayName(gametype);
 
 		Game::Scr_AddString(result);
 	}
+
 
 	Localization::Localization()
 	{

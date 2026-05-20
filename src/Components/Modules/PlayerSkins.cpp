@@ -525,7 +525,7 @@ namespace Components
 
 	void PlayerSkins::GScr_GetPlayerBody(Game::gentity_s* entRef)
 	{
-		if ((*Game::com_sv_running)->current.enabled)
+		if ((*Game::sv_running)->current.enabled)
 		{
 			Game::scr_string_t head{};
 			Game::scr_string_t body{};
@@ -550,7 +550,7 @@ namespace Components
 
 	void PlayerSkins::GScr_GetPlayerHead(Game::gentity_s* entRef)
 	{
-		if ((*Game::com_sv_running)->current.enabled)
+		if ((*Game::sv_running)->current.enabled)
 		{
 			Game::scr_string_t head{};
 			Game::scr_string_t body{};
@@ -575,7 +575,7 @@ namespace Components
 
 	bool PlayerSkins::GetPlayerSkinInternal(Game::gentity_s* entRef, OUT Game::scr_string_t& head, OUT Game::scr_string_t& body)
 	{
-		if ((*Game::com_sv_running)->current.enabled && entRef && entRef->client)
+		if ((*Game::sv_running)->current.enabled && entRef && entRef->client)
 		{
 			for (signed int partyIndex = 0; partyIndex < Game::MAX_CLIENTS; partyIndex++)
 			{

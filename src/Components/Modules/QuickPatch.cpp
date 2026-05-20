@@ -1,4 +1,3 @@
-#include <STDInclude.hpp>
 #define RAWFILE_VERSION_FILE "VERSION.TXT"
 #include <Utils/Compression.hpp>
 
@@ -174,7 +173,7 @@ namespace Components
 	BOOL QuickPatch::IsDynClassname_Stub(const char* classname)
 	{
 		const auto version = Zones::Version();
-		
+
 		if (version >= VERSION_LATEST_CODO)
 		{
 			for (auto i = 0; i < Game::spawnVars->numSpawnVars; i++)
@@ -188,7 +187,7 @@ namespace Components
 
 				if (isSpecOps && isSpecOpsOnly)
 				{
-					// This will prevent spawning of any entity that contains "script_specialops: '1'" 
+					// This will prevent spawning of any entity that contains "script_specialops: '1'"
 					// It removes extra hitboxes / meshes on 461+ CODO multiplayer maps
 					return TRUE;
 				}
@@ -291,6 +290,81 @@ namespace Components
 		}
 	}
 
+	// Fix out-of-bounds crash at 0x42854A
+	//
+	// The problem here is that vehicle playerIndex is packed and transmitted as a
+  // 5-bit field, which naturally allows for values up to 31 whereas the client
+  // array is strictly bounded by MAX_CLIENTS (18).
+	//
+	// https://github.com/iw4x/iw4x-client/issues/285#issuecomment-3458190361
+  //
+  // For whatever reason, the original implementation blindly uses this received
+  // value as a direct array index, and so we (in some situation) end up with an
+  // out-of-bounds memory read/write.
+	//
+	// NOTE:
+	//
+	// This is a tentative fix intended to finally address the issue. It may or may
+	// not fully resolve the problem depending on underlying conditions not yet
+	// accounted for.
+
+	__declspec(naked) void QuickPatch::VehicleFx_PlayerIndexCheck_Stub()
+	{
+		__asm
+		{
+			mov ecx, [esi + 0x38]
+			cmp ecx, 18
+			jb validIndex
+
+			test eax, eax
+			jmp done
+
+		validIndex:
+			imul ecx, ecx, 0x52C
+			cmp eax, [ecx + 0x8E77CC]
+
+		done:
+			push 0x428555
+			ret
+		}
+	}
+
+	__declspec(naked) void QuickPatch::VehicleCl_SetPlayerIndex_UpdateEntity_Stub()
+	{
+		__asm
+		{
+			cmp eax, 18
+			jb updateValid
+			xor eax, eax
+
+		updateValid:
+			mov [ebx + 0x38], eax
+			lea edi, [ebx + 0x1C]
+
+			push 0x679EAC
+			ret
+		}
+	}
+
+	__declspec(naked) void QuickPatch::VehicleCl_SetPlayerIndex_ResetEntity_Stub()
+	{
+		__asm
+		{
+			cmp ecx, 18
+			jb resetValid
+			xor ecx, ecx
+
+		resetValid:
+			mov [esi + 0x38], ecx
+
+			mov eax, 0x402500             // Com_DPrintf (args already on stack)
+			call eax
+
+			push 0x679E34
+			ret
+		}
+	}
+
 	Game::dvar_t* QuickPatch::Dvar_RegisterConMinicon(const char* dvarName, [[maybe_unused]] bool value, unsigned __int16 flags, const char* description)
 	{
 #ifdef _DEBUG
@@ -299,6 +373,79 @@ namespace Components
 		constexpr auto value_ = false;
 #endif
 		return Game::Dvar_RegisterBool(dvarName, value_, flags, description);
+	}
+
+	void QuickPatch::CL_InitRef_Hk(Game::GfxConfiguration* config)
+	{
+		// CL_InitRef() creates a GfxConfiguration with defaultFullscreen = true,
+		// which r_fullscreen inherits as the default value. We override the field
+		// here to force windowed startup on first launch.
+		config->defaultFullscreen = false;
+
+		// Call original R_ConfigureRenderer()
+		return Utils::Hook::Call<void(Game::GfxConfiguration* config)>(0x508040)(config);
+	}
+
+	void QuickPatch::R_EnumDisplayModes_Hk(unsigned int adapterIndex)
+	{
+		// Call original R_EnumDisplayModes() to let it register and save available display modes in r_mode
+		Utils::Hook::Call<void(unsigned int adapterIndex)>(0x506F10)(adapterIndex);
+
+		if (Dvar::Var("g_firstLaunch").get<bool>() == false)
+		{
+			return;
+		}
+
+		if (!(*Game::d3d9))
+		{
+			return;
+		}
+
+		// Get the resolution of the monitor that will be used for the game
+		HMONITOR adapterMonitor = (*Game::d3d9)->GetAdapterMonitor(adapterIndex);
+		MONITORINFO mi{};
+		mi.cbSize = sizeof(MONITORINFO);
+
+		if (!GetMonitorInfoA(adapterMonitor, &mi))
+		{
+			return;
+		}
+
+		const int monitor_width  = mi.rcMonitor.right  - mi.rcMonitor.left;
+		const int monitor_height = mi.rcMonitor.bottom - mi.rcMonitor.top;
+
+		Game::dvar_t* r_mode = Game::Dvar_FindVar("r_mode");
+
+		if (!r_mode || !r_mode->domain.enumeration.strings || r_mode->domain.enumeration.stringCount <= 0)
+		{
+			return;
+		}
+
+		int mode_index  = r_mode->current.integer;
+		int mode_width  = 0;
+		int mode_height = 0;
+
+		for (int i = 0; i < r_mode->domain.enumeration.stringCount; i++)
+		{
+			const char* mode = r_mode->domain.enumeration.strings[i];
+
+			if (std::sscanf(mode, "%ix%i", &mode_width, &mode_height) == 2)
+			{
+				if (mode_width == monitor_width && mode_height == monitor_height)
+				{
+					mode_index = i;
+					break;
+				}
+			}
+		}
+
+		Game::Dvar_SetInt(r_mode, mode_index);
+
+		// Move the window to the top-left corner for a fullscreen-like appearance
+		Game::dvar_t* vid_xpos = Game::Dvar_FindVar("vid_xpos");
+		Game::dvar_t* vid_ypos = Game::Dvar_FindVar("vid_ypos");
+		if (vid_xpos) Game::Dvar_SetInt(vid_xpos, 0);
+		if (vid_ypos) Game::Dvar_SetInt(vid_ypos, 0);
 	}
 
 	QuickPatch::QuickPatch()
@@ -316,9 +463,21 @@ namespace Components
 		Utils::Hook(0x5D6D56, QuickPatch::ClientEventsFireWeapon_Stub, HOOK_JUMP).install()->quick();
 		Utils::Hook(0x5D6D6A, QuickPatch::ClientEventsFireWeaponMelee_Stub, HOOK_JUMP).install()->quick();
 
+		// Fix vehicle playerIndex out-of-bounds crash (0x42854A)
+		Utils::Hook(0x428541, QuickPatch::VehicleFx_PlayerIndexCheck_Stub, HOOK_JUMP).install()->quick();
+		Utils::Hook::Nop(0x428546, 12);
+		Utils::Hook(0x679EA6, QuickPatch::VehicleCl_SetPlayerIndex_UpdateEntity_Stub, HOOK_JUMP).install()->quick();
+		Utils::Hook::Nop(0x679EAB, 1);
+		Utils::Hook(0x679E2C, QuickPatch::VehicleCl_SetPlayerIndex_ResetEntity_Stub, HOOK_JUMP).install()->quick();
+		Utils::Hook::Nop(0x679E31, 3);
+
 		// Add ultrawide support
 		Utils::Hook(0x51B13B, QuickPatch::Dvar_RegisterAspectRatioDvar, HOOK_CALL).install()->quick();
 		Utils::Hook(0x5063F3, QuickPatch::SetAspectRatio_Stub, HOOK_JUMP).install()->quick();
+
+		// Disable fullscreen mode on first launch
+		Utils::Hook(0x4A6B14, QuickPatch::CL_InitRef_Hk, HOOK_CALL).install()->quick();
+		Utils::Hook(0x507443, QuickPatch::R_EnumDisplayModes_Hk, HOOK_CALL).install()->quick();
 
 		Utils::Hook(0x4FA448, QuickPatch::Dvar_RegisterConMinicon, HOOK_CALL).install()->quick();
 
@@ -382,8 +541,6 @@ namespace Components
 		// splash logo
 		Utils::Hook::Set<const char*>(0x475F9E, BASEGAME "/images/splash.bmp");
 		Utils::Hook::Nop(0x45148B, 5);          // Disable splash screen
-
-		Utils::Hook::Set<const char*>(0x4876C6, "Successfully read stats data\n");
 
 		// Numerical ping (cg_scoreboardPingText 1)
 		Utils::Hook::Set<BYTE>(0x45888E, 1);
@@ -455,7 +612,7 @@ namespace Components
 		// intro stuff
 		Utils::Hook::Nop(0x60BEE9, 5); // Don't show legals
 		Utils::Hook::Nop(0x60BEF6, 5); // Don't reset the intro dvar
-		Utils::Hook::Set<const char*>(0x60BED2, "unskippablecinematic IW_logo\n");
+		Utils::Hook::Set<const char*>(0x60BED2, "cinematic IW_logo\n");
 		Utils::Hook::Set<const char*>(0x51C2A4, "%s\\" BASEGAME "\\video\\%s.bik");
 		Utils::Hook::Set<DWORD>(0x51C2C2, 0x78A0AC);
 
@@ -717,7 +874,7 @@ namespace Components
 					info.freeFlags = 0x20;
 					Game::DB_LoadXAssets(&info, 1, true);
 				}
-				
+
 				count++;
 			}
 		});
@@ -763,61 +920,5 @@ namespace Components
 		{
 			Utils::Hook::Set<BYTE>(0x60BECF, 0xEB);
 		}
-	}
-
-	bool QuickPatch::unitTest()
-	{
-		uint32_t randIntCount = 4'000'000;
-		Logger::Debug("Generating {} random integers...", randIntCount);
-
-		const auto startTime = std::chrono::high_resolution_clock::now();
-
-		for (uint32_t i = 0; i < randIntCount; ++i)
-		{
-			Utils::Cryptography::Rand::GenerateInt();
-		}
-
-		auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - startTime).count();
-		Logger::Debug("took {}ms", duration);
-
-		Logger::Debug("Testing ZLib compression...");
-
-		std::string test = Utils::String::VA("%c", Utils::Cryptography::Rand::GenerateInt());
-
-		for (int i = 0; i < 21; ++i)
-		{
-			std::string compressed = Utils::Compression::ZLib::Compress(test);
-			std::string decompressed = Utils::Compression::ZLib::Decompress(compressed);
-
-			if (test != decompressed)
-			{
-				Logger::PrintError(Game::CON_CHANNEL_ERROR, "Compressing {} bytes and decompressing failed!\n", test.size());
-				return false;
-			}
-
-			const auto size = test.size();
-			for (unsigned int j = 0; j < size; ++j)
-			{
-				test.append(Utils::String::VA("%c", Utils::Cryptography::Rand::GenerateInt()));
-			}
-		}
-
-		Logger::Debug("Success");
-
-		Logger::Debug("Testing trimming...");
-		std::string trim1 = " 1 ";
-		std::string trim2 = "   1";
-		std::string trim3 = "1   ";
-
-		Utils::String::Trim(trim1);
-		Utils::String::LTrim(trim2);
-		Utils::String::RTrim(trim3);
-
-		if (trim1 != "1") return false;
-		if (trim2 != "1") return false;
-		if (trim3 != "1") return false;
-
-		Logger::Debug("Success");
-		return true;
 	}
 }

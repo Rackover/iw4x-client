@@ -1,4 +1,4 @@
-#include <STDInclude.hpp>
+#include "Singleton.hpp"
 #include "ConnectProtocol.hpp"
 #include "Console.hpp"
 
@@ -13,14 +13,6 @@ namespace Components
 	bool Singleton::IsFirstInstance()
 	{
 		return FirstInstance;
-	}
-
-	void Singleton::preDestroy()
-	{
-		if (INVALID_HANDLE_VALUE != Mutex)
-		{
-			CloseHandle(Mutex);
-		}
 	}
 
 	Singleton::Singleton()
@@ -38,7 +30,7 @@ namespace Components
 
 		Console::FreeNativeConsole();
 
-		if (Loader::IsPerformingUnitTests() || Dedicated::IsEnabled() || ZoneBuilder::IsEnabled()) return;
+		if (Dedicated::IsEnabled() || ZoneBuilder::IsEnabled()) return;
 
 		Mutex = CreateMutexA(nullptr, FALSE, "iw4x_mutex");
 		FirstInstance = ((INVALID_HANDLE_VALUE != Mutex) && GetLastError() != ERROR_ALREADY_EXISTS);

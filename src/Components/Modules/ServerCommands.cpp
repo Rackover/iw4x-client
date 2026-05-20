@@ -1,4 +1,3 @@
-#include <STDInclude.hpp>
 #include "ServerCommands.hpp"
 
 namespace Components
@@ -13,7 +12,7 @@ namespace Components
 	bool ServerCommands::OnServerCommand()
 	{
 		Command::ClientParams params;
-		
+
 		for (const auto& [id, callback] : Commands)
 		{
 			if (params.size() >= 1)

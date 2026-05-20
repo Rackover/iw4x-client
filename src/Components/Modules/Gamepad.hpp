@@ -1,5 +1,11 @@
 #pragma once
 
+#include <atomic>
+#include <chrono>
+#include <condition_variable>
+#include <mutex>
+#include <thread>
+
 #include "Gamepad/Controller.hpp"
 
 namespace Components
@@ -16,6 +22,8 @@ namespace Components
 		{
 			Game::GpadAxesGlob axes;
 			unsigned nextScrollTime;
+			unsigned scrollHoldStartTime;
+			int scrollHoldKey;
 
 			GamePadGlobals();
 		};
@@ -24,6 +32,7 @@ namespace Components
 		static const int RUMBLE_CONFIGSTRINGS_COUNT = 32;
 
 		Gamepad();
+		~Gamepad();
 
 		static void OnMouseMove(int x, int y, int dx, int dy);
 
@@ -33,6 +42,8 @@ namespace Components
 		static void GPad_UpdateFeedbacks();
 
 		static Dvar::Var sv_allowAimAssist;
+
+		static bool IsGamePadInUse();
 
 	private:
 		enum TriggerRole
@@ -64,7 +75,7 @@ namespace Components
 		static GamePadGlobals gamePadGlobals[Game::MAX_GPAD_COUNT];
 		static std::mutex gamePadStateMutexes[Game::MAX_GPAD_COUNT];
 
-
+		static bool gamePadDataReady[Game::MAX_GPAD_COUNT];
 		static int gamePadBindingsModifiedFlags;
 
 		static Dvar::Var gpad_enabled;
@@ -75,8 +86,21 @@ namespace Components
 		static Dvar::Var gpad_buttonConfig;
 		static Dvar::Var gpad_menu_scroll_delay_first;
 		static Dvar::Var gpad_menu_scroll_delay_rest;
+		static Dvar::Var gpad_menu_scroll_delay_min;
+		static Dvar::Var gpad_menu_scroll_accel_time;
 		static Dvar::Var gpad_rumble;
 		static Dvar::Var gpad_use_hold_time;
+		static Dvar::Var gpad_button_release_delay_enabled;
+		static Dvar::Var gpad_button_release_delay;
+		static Dvar::Var gpad_button_release_delay_scale;
+		static Dvar::Var gpad_button_release_delay_sprint_only;
+		static Dvar::Var gpad_button_release_grace;
+
+		static unsigned buttonPressedTime[Game::MAX_GPAD_COUNT][Game::K_LAST_KEY];
+		static unsigned buttonReleaseTime[Game::MAX_GPAD_COUNT][Game::K_LAST_KEY];
+		static bool buttonPendingRelease[Game::MAX_GPAD_COUNT][Game::K_LAST_KEY];
+
+		static unsigned GetButtonReleaseDelay(int localClientNum);
 		static Dvar::Var gpad_lockon_enabled;
 		static Dvar::Var gpad_slowdown_enabled;
 		static Dvar::Var input_viewSensitivity;
@@ -137,7 +161,7 @@ namespace Components
 		static void CL_GamepadMove(int localClientNum, float frameTimeBase, Game::usercmd_s* cmd);
 		static void CL_MouseMove(int localClientNum, Game::usercmd_s* cmd, float frametime_base);
 		static void CL_MouseMove_Stub();
-		
+
 		static bool Gamepad_ShouldUse(const Game::gentity_s* playerEnt, unsigned useTime);
 		static void Player_UseEntity_Stub();
 
@@ -179,7 +203,6 @@ namespace Components
 		static void Key_GetCommandAssignmentInternal_Stub();
 		static void Key_SetBinding_Hk(int localClientNum, int keyNum, const char* binding);
 		static void CL_KeyEvent_Hk(const int localClientNum, const int key, const int down, const unsigned time);
-		static bool IsGamePadInUse();
 		static int CL_MouseEvent_Hk(int x, int y, int dx, int dy);
 		static bool UI_RefreshViewport_Hk();
 

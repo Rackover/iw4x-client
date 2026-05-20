@@ -1,4 +1,4 @@
-#include <STDInclude.hpp>
+#include "Thread.hpp"
 
 namespace Utils::Thread
 {
@@ -32,7 +32,7 @@ namespace Utils::Thread
 		return SetName(t, name);
 	}
 
-	bool SetName(std::thread& t, const std::string& name)
+	bool SetName(std::jthread& t, const std::string& name)
 	{
 		return SetName(t.native_handle(), name);
 	}

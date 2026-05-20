@@ -1,4 +1,3 @@
-#include <STDInclude.hpp>
 #include "IFont_s.hpp"
 
 #define STB_TRUETYPE_IMPLEMENTATION
@@ -116,7 +115,7 @@ namespace Assets
 
 		auto w = fontDef["textureWidth"].get<int>();
 		auto h = fontDef["textureHeight"].get<int>();
-			
+
 		auto size = fontDef["size"].get<int>();
 		auto yOffset = fontDef["yOffset"].get<int>();
 
@@ -218,7 +217,7 @@ namespace Assets
 
 		// Save generated image
 		Utils::IO::CreateDir("userraw\\images");
-			
+
 		int fileSize = w * h * 4;
 		int iwiHeaderSize = static_cast<int>(sizeof(Game::GfxImageFileHeader));
 

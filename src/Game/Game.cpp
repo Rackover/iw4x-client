@@ -1,4 +1,4 @@
-#include <STDInclude.hpp>
+#include "Game.hpp"
 
 namespace Game
 {
@@ -21,10 +21,14 @@ namespace Game
 	gentity_s* g_entities = reinterpret_cast<gentity_s*>(0x18835D8);
 	bool* g_quitRequested = reinterpret_cast<bool*>(0x649FB61);
 
+	char(*g_cmdlineCopy)[1024] = reinterpret_cast<char(*)[1024]>(0x1AD7AB0);
+
 	NetField* clientStateFields = reinterpret_cast<Game::NetField*>(0x741E40);
 	size_t clientStateFieldsCount = Utils::Hook::Get<size_t>(0x7433C8);
 
 	MssLocal* milesGlobal = reinterpret_cast<MssLocal*>(0x649A1A0);
+
+	WinVars_t* g_wv = reinterpret_cast<WinVars_t*>(0x64A3AC8);
 
 	const char* origErrorMsg = reinterpret_cast<const char*>(0x79B124);
 

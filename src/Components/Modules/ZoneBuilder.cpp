@@ -1,6 +1,6 @@
-#include <STDInclude.hpp>
 #include <Utils/Compression.hpp>
 
+#include "ZoneBuilder.hpp"
 #include "Console.hpp"
 #include "FastFiles.hpp"
 
@@ -20,7 +20,7 @@ namespace Components
 	DWORD ZoneBuilder::InterruptingThreadId;
 
 	volatile bool ZoneBuilder::CommandThreadTerminate = false;
-	std::thread ZoneBuilder::CommandThread;
+	std::jthread ZoneBuilder::CommandThread;
 	iw4of::api ZoneBuilder::ExporterAPI(GetExporterAPIParams());
 	std::string ZoneBuilder::DumpingZone{};
 
@@ -921,7 +921,7 @@ namespace Components
 
 	void ZoneBuilder::Com_Quitf_t()
 	{
-		ExitProcess(0);
+		Game::Sys_Quit();
 	}
 
 	void ZoneBuilder::CommandThreadCallback()
@@ -937,8 +937,13 @@ namespace Components
 		}
 	}
 
-	BOOL APIENTRY ZoneBuilder::EntryPoint(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, LPSTR /*lpCmdLine*/, int /*nShowCmd*/)
+	BOOL APIENTRY ZoneBuilder::EntryPoint(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, LPSTR lpCmdLine, int /*nShowCmd*/)
 	{
+		// The game saves the command line in these two arrays
+		// See GH-151
+		Game::I_strncpyz(*Game::sys_cmdline, lpCmdLine, 1024); // Used instead of calling GetCommandLineA
+		Game::I_strncpyz(*Game::g_cmdlineCopy, lpCmdLine, 1024); // Used by logfile functions (in case ZoneBuilder will ever use the game's logging functions)
+
 		Utils::Hook::Call<void()>(0x42F0A0)(); // Com_InitCriticalSections
 		Utils::Hook::Call<void()>(0x4301B0)(); // Com_InitMainThread
 		Utils::Hook::Call<void(int)>(0x406D10)(0); // Win_InitLocalization
@@ -994,10 +999,10 @@ namespace Components
 		Utils::Hook::Call<void()>(0x4A1280)();  // something related to uiInfoArray
 
 
-		Utils::Hook::Call<void(const char*)>(0x464A90)(GetCommandLineA()); // Com_ParseCommandLine
+		Utils::Hook::Call<void(const char*)>(0x464A90)(*Game::sys_cmdline); // Com_ParseCommandLine
 		Utils::Hook::Call<void()>(0x60C3D0)(); // Com_AddStartupCommands
 
-		// so for this i'm going to say that we just run the commands (after + signs) 
+		// so for this i'm going to say that we just run the commands (after + signs)
 		// and don't spawn into a shell because why not?
 		if (Flags::HasFlag("stdout"))
 		{
@@ -1011,12 +1016,12 @@ namespace Components
 		Logger::Print(" --------------------------------------------------------------------------------\n");
 		Logger::Print(" IW4x ZoneBuilder - {}\n", SHORTVERSION);
 		Logger::Print(" Commands:\n");
-		Logger::Print("\t-buildmod [mod name]: Build a mod.ff from the source located in zone_source/mod_name.csv\n");
-		Logger::Print("\t-buildzone [zone]: Builds a zone from a csv located in zone_source\n");
-		Logger::Print("\t-dumpzone [zone]: Loads and dump the specified zone in userraw/dump\n");
-		Logger::Print("\t-verifyzone [zone]: loads and verifies the specified zone\n");
-		Logger::Print("\t-listassets [assettype]: lists all loaded assets of the specified type\n");
-		Logger::Print("\t-quit: quits the program\n");
+		Logger::Print("\t\u2022 buildmod [mod name]: Build a mod.ff from the source located in zone_source/mod_name.csv\n");
+		Logger::Print("\t\u2022 buildzone [zone]: Builds a zone from a csv located in zone_source\n");
+		Logger::Print("\t\u2022 dumpzone [zone]: Loads and dump the specified zone in userraw/dump\n");
+		Logger::Print("\t\u2022 verifyzone [zone]: Loads and verifies the specified zone\n");
+		Logger::Print("\t\u2022 listassets [assettype]: Lists all loaded assets of the specified type\n");
+		Logger::Print("\t\u2022 quit: Quits the program\n");
 		Logger::Print(" --------------------------------------------------------------------------------\n");
 
 		// now run main loop until quit

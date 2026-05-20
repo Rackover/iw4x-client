@@ -1,83 +1,54 @@
-#include "STDInclude.hpp"
-
 namespace Main
 {
 	void Initialize()
 	{
+		std::srand(std::uint32_t(std::time(nullptr)) ^ ~(GetTickCount() * GetCurrentProcessId()));
+
+		Utils::SetEnvironment();
+		Steam::Proxy::RunMod();
 		Utils::Cryptography::Initialize();
 		Components::Loader::Initialize();
-
-#if defined(DEBUG) || defined(FORCE_UNIT_TESTS)
-		if (Components::Loader::IsPerformingUnitTests())
-		{
-			auto result = (Components::Loader::PerformUnitTests() ? 0 : -1);
-			Components::Loader::Uninitialize();
-			ExitProcess(result);
-		}
-#else
-		if (Components::Flags::HasFlag("tests"))
-		{
-			Components::Logger::Print("Unit tests are disabled outside the debug environment!\n");
-		}
-#endif
 	}
 
-	void Uninitialize()
+ 	int EntryPoint()
 	{
-		Components::Loader::Uninitialize();
-	}
+		// /GS security cookie must be initialized before any exception-handling
+		// constructs are registered in the current module.
+		//
+		Game::__security_init_cookie();
 
-	__declspec(naked) void EntryPoint()
-	{
-		__asm
-		{
-			pushad
-			call Main::Initialize
-			popad
+		// Perform IW4x-specific initialization before transferring control
+		// to the original C runtime startup. See DllMain() for context.
+		//
+		Initialize();
 
-			push 6BAA2Fh // Continue init routine
-			push 6CA062h // __security_init_cookie
-			retn
-		}
+		return Game::__tmainCRTStartup();
 	}
 }
 
 BOOL APIENTRY DllMain(HINSTANCE /*hinstDLL*/, DWORD fdwReason, LPVOID /*lpvReserved*/)
 {
-	if (fdwReason == DLL_PROCESS_ATTACH)
-	{
-		SetProcessDEPPolicy(PROCESS_DEP_ENABLE);
+	if (fdwReason != DLL_PROCESS_ATTACH)
+		return TRUE;
 
-		std::srand(std::uint32_t(std::time(nullptr)) ^ ~(GetTickCount() * GetCurrentProcessId()));
+	SetProcessDEPPolicy(PROCESS_DEP_ENABLE);
 
 #ifndef DISABLE_BINARY_CHECK
-		// Ensure we're working with our desired binary
-
-#ifndef DEBUG_BINARY_CHECK
-		const auto* binary = reinterpret_cast<const char*>(0x6F9358);
-		if (!binary || std::memcmp(binary, BASEGAME_NAME, 14) != 0)
-#endif
-		{
-			MessageBoxA(nullptr,
-			            "Failed to load game binary.\n"
-			            "You did not install the iw4x-rawfiles!\n"
-			            "Please use the XLabs launcher to run the game. For support, please visit https://xlabs.dev/support_iw4x_client",
-			            "ERROR",
-			            MB_ICONERROR
-			);
-			return FALSE;
-		}
-#endif
-
-		Utils::SetEnvironment();
-		Steam::Proxy::RunMod();
-		// Install entry point hook
-		Utils::Hook(0x6BAC0F, Main::EntryPoint, HOOK_JUMP).install()->quick();
-	}
-	else if (fdwReason == DLL_PROCESS_DETACH)
+	const auto* binary = reinterpret_cast<const char*> (0x6F9358);
+	if (!binary || std::memcmp (binary, BASEGAME_NAME, 14) != 0)
 	{
-		Main::Uninitialize();
+		MessageBoxA(nullptr,
+									"Failed to load game binary.\n"
+									"You did not install the iw4x-rawfiles!\n"
+									"For support, please visit https://iw4x.io/install",
+									"ERROR",
+									MB_ICONERROR
+			);
+		return FALSE;
 	}
+#endif
+
+	Utils::Hook (0x6BAC0F, Main::EntryPoint, HOOK_JUMP).install ()->quick ();
 
 	return TRUE;
 }

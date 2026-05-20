@@ -16,7 +16,7 @@ namespace Components
 			std::uint32_t len;
 			std::string fileContents;
 		};
-		
+
 		Zones();
 
 		static void SetVersion(int version);

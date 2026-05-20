@@ -11,7 +11,7 @@ namespace Components
 			UserMapContainer() : wasFreed(false), hash(0) {}
 			UserMapContainer(const std::string& _mapname) : wasFreed(false), mapname(_mapname)
 			{
-				ZeroMemory(&this->searchPath, sizeof this->searchPath);
+				ZeroMemory(&this->searchPath, sizeof(this->searchPath));
 				this->hash = Maps::GetUsermapHash(this->mapname);
 				Maps::ForceRefreshArenas();
 			}
@@ -133,5 +133,9 @@ namespace Components
 		static void G_SpawnTurretHook(Game::gentity_s* ent, int unk, int unk2);
 		static bool SV_SetTriggerModelHook(Game::gentity_s* ent);
 		static unsigned short CM_TriggerModelBounds_Hk(unsigned int brushModelPointer, Game::Bounds* bounds);
+
+		static void GSCr_GetMapArenaInfo();
+
+		static void GSCr_GetMapList();
 	};
 }

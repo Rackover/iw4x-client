@@ -1,4 +1,4 @@
-#include <STDInclude.hpp>
+#include "Common.hpp"
 
 namespace Game
 {
@@ -27,6 +27,7 @@ namespace Game
 	Com_UpdateSlowMotion_t Com_UpdateSlowMotion = Com_UpdateSlowMotion_t(0x60B2D0);
 	Com_Compress_t Com_Compress = Com_Compress_t(0x498220);
 	Com_LoadInfoString_t Com_LoadInfoString = Com_LoadInfoString_t(0x463500);
+	Com_SyncThreads_t Com_SyncThreads = Com_SyncThreads_t(0x464A60);
 
 	int* com_frameTime = reinterpret_cast<int*>(0x1AD8F3C);
 
@@ -35,6 +36,9 @@ namespace Game
 	int* com_errorPrintsCount = reinterpret_cast<int*>(0x1AD7910);
 
 	int* errorcode = reinterpret_cast<int*>(0x1AD7EB4);
+
+	int* com_consoleLogOpenFailed = reinterpret_cast<int*>(0x1AD8F84);
+	int* opening_qconsole = reinterpret_cast<int*>(0x1AD8FA8);
 
 	char* Com_GetParseThreadInfo()
 	{
@@ -90,5 +94,10 @@ namespace Game
 		}
 
 		return result;
+	}
+
+	char* Com_GetCommandLine()
+	{
+		return reinterpret_cast<char*>(0x1AD7AB0);
 	}
 }

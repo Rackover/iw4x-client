@@ -1,4 +1,3 @@
-#include <STDInclude.hpp>
 #include "IFxWorld.hpp"
 
 namespace Assets
@@ -185,7 +184,7 @@ namespace Assets
 			}
 		}
 	}
-	
+
 	void IFxWorld::load(Game::XAssetHeader* header, const std::string& name, Components::ZoneBuilder::Zone* builder)
 	{
 		if (!header->fxWorld) loadFromDisk(header, name, builder);

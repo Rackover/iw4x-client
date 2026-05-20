@@ -27,14 +27,14 @@ namespace Game
 
 	typedef gentity_s* (*G_Spawn_t)();
 	extern G_Spawn_t G_Spawn;
-	
+
 	typedef gentity_s* (*G_TempEntity_t)(float *origin, Game::entity_event_t  entity);
 	extern G_TempEntity_t G_TempEntity;
-	
+
 	typedef void (*G_AddEvent_t)(gentity_s *ent, entity_event_t event, unsigned int eventParm);
 	extern G_AddEvent_t G_AddEvent;
 
-	
+
 
 	typedef void(*G_FreeEntity_t)(gentity_s* ed);
 	extern G_FreeEntity_t G_FreeEntity;
@@ -57,16 +57,16 @@ namespace Game
 	typedef void(*G_DebugLineWithDuration_t)(const float* start, const float* end, const float* color, int depthTest, int duration);
 	extern G_DebugLineWithDuration_t G_DebugLineWithDuration;
 
-	constexpr std::size_t MAX_GENTITIES = 2048;
-	constexpr std::size_t ENTITYNUM_NONE = MAX_GENTITIES - 1;
 	extern gentity_s* g_entities;
 	extern bool* g_quitRequested;
+
+	extern char(*g_cmdlineCopy)[1024];
 
 	// This does not belong anywhere else
 	extern NetField* clientStateFields;
 	extern size_t clientStateFieldsCount;
 	extern MssLocal* milesGlobal;
-
+	extern WinVars_t* g_wv;
 
 	extern const char* origErrorMsg;
 

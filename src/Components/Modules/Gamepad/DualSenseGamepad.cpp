@@ -1,6 +1,4 @@
-#include <STDInclude.hpp>
 #include "DualSenseGamepad.hpp"
-
 
 bool Components::GamepadControls::DualSenseGamePadAPI::PlugIn(uint8_t index)
 {
@@ -234,7 +232,7 @@ void Components::GamepadControls::DualSenseGamePadAPI::ReadDigitals(unsigned sho
 	TRANSLATE(GPAD_BACK, DS5W_ISTATE_BTN_A_SELECT);
 	TRANSLATE(GPAD_L3, DS5W_ISTATE_BTN_A_LEFT_STICK);
 	TRANSLATE(GPAD_R3, DS5W_ISTATE_BTN_A_RIGHT_STICK);
-	
+
 	TRANSLATE(GPAD_L_SHLDR, DS5W_ISTATE_BTN_A_LEFT_BUMPER);
 	TRANSLATE(GPAD_R_SHLDR, DS5W_ISTATE_BTN_A_RIGHT_BUMPER);
 

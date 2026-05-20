@@ -1,4 +1,3 @@
-#include <STDInclude.hpp>
 #include "IWeapon.hpp"
 
 namespace Assets
@@ -652,7 +651,7 @@ namespace Assets
 			buffer->saveString(def->szScript);
 			Utils::Stream::ClearPointer(&dest->szScript);
 		}
-		
+
 		if (def->locationDamageMultipliers)
 		{
 			buffer->align(Utils::Stream::ALIGN_4);

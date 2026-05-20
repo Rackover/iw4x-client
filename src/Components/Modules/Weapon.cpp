@@ -1,4 +1,3 @@
-#include <STDInclude.hpp>
 #include "Weapon.hpp"
 
 #include "GSC/Script.hpp"
@@ -7,6 +6,7 @@ namespace Components
 {
 	const Game::dvar_t* Weapon::BGWeaponOffHandFix;
 	const Game::dvar_t* Weapon::CGRecoilMultiplier;
+	const Game::dvar_t* Weapon::BGDisableDoubleTaps;
 
 	Game::WeaponCompleteDef* Weapon::LoadWeaponCompleteDef(const char* name)
 	{
@@ -61,8 +61,8 @@ namespace Components
 							auto str = Game::SL_ConvertToString(noteTrackRumbleMap[i]);
 							if (str && *str)
 							{
-								std::string path = std::format("rumble/{}", str); 
-								const auto rawfile = Game::DB_FindXAssetHeader(Game::XAssetType::ASSET_TYPE_RAWFILE, path.c_str()); 
+								std::string path = std::format("rumble/{}", str);
+								const auto rawfile = Game::DB_FindXAssetHeader(Game::XAssetType::ASSET_TYPE_RAWFILE, path.c_str());
 								if (rawfile.data == nullptr || !strnlen(rawfile.rawfile->buffer, 1))
 								{
 									// Void it and warn the user
@@ -521,9 +521,38 @@ namespace Components
 		GSC::Script::AddMethod("FreezeControlsAllowLook", PlayerCmd_FreezeControlsAllowLook);
 	}
 
+	void Weapon::PM_Weapon_stub(Game::pmove_s* pm, Game::pml_t* pml)
+	{
+		if (BGDisableDoubleTaps && BGDisableDoubleTaps->current.enabled)
+		{
+			if (pm && pm->ps)
+			{
+				if (pm->cmd.weapon == pm->ps->weapCommon.weapon &&
+					(pm->ps->weapState[Game::WEAPON_HAND_RIGHT].weaponState == Game::WEAPON_DROPPING
+						|| pm->ps->weapState[Game::WEAPON_HAND_RIGHT].weaponState == Game::WEAPON_DROPPING_QUICK
+						|| pm->ps->weapState[Game::WEAPON_HAND_RIGHT].weaponState == Game::WEAPON_DROPPING_ALT))
+				{
+					// change each hand's weapon data
+					for (int index = 0; index < Game::NUM_WEAPON_HANDS; index++)
+					{
+						pm->ps->weapState[index].weaponState = Game::WEAPON_RAISING;
+						pm->ps->weapState[index].weaponTime = Game::BG_GetWeaponDef(pm->ps->weapCommon.weapon)->quickRaiseTime;
+						pm->ps->weapState[index].weapAnim = Game::WEAP_ANIM_QUICK_DROP;
+					}
+				}
+			}
+		}
+
+		Game::PM_Weapon(pm, pml);
+	}
+
 	Weapon::Weapon()
 	{
-		PatchLimit();
+		if (!Flags::HasFlag("steamdemo") && !Flags::HasFlag("retaildemo"))
+		{
+			// Steam version uses a limit of 1400 weapons and other clients use the default limit of 1200 weapons
+			PatchLimit();
+		}
 
 		// BG_LoadWEaponCompleteDef_FastFile
 		Utils::Hook(0x57B650, LoadWeaponCompleteDef, HOOK_JUMP).install()->quick();
@@ -546,6 +575,12 @@ namespace Components
 		Utils::Hook::Nop(0x4B3670, 5);
 		Utils::Hook(0x57B4F0, LoadNoneWeaponHookStub, HOOK_JUMP).install()->quick();
 
+		// MW3-style weapon swapping mechanics
+		BGDisableDoubleTaps = Game::Dvar_RegisterBool("bg_disableDoubleTaps", false, Game::DVAR_CODINFO, "Enables MW3-style weapon swapping mechanics");
+		Utils::Hook(0x574960, PM_Weapon_stub, HOOK_CALL).install()->quick(); // PmoveSingle
+		Utils::Hook(0x574B69, PM_Weapon_stub, HOOK_CALL).install()->quick(); // ^
+		Utils::Hook(0x574AB2, PM_Weapon_stub, HOOK_CALL).install()->quick(); // ^
+
 		// Clear weapons independently from fs_game
 		Utils::Hook::Nop(0x452C1D, 2);
 		Utils::Hook::Nop(0x452C24, 5);
@@ -560,7 +595,7 @@ namespace Components
 		AssertOffset(Game::playerState_s, grenadeTimeLeft, 0x34);
 		BGWeaponOffHandFix = Game::Dvar_RegisterBool("bg_weaponOffHandFix", true, Game::DVAR_CODINFO, "Reset grenadeTimeLeft after using off hand weapon");
 		Utils::Hook(0x578F52, JavelinResetHook_Stub, HOOK_JUMP).install()->quick();
-	
+
 		CGRecoilMultiplier = Game::Dvar_RegisterFloat("cg_recoilMultiplier",
 			1.0f, 0.0f, 1000.0f, Game::DVAR_CHEAT,
 			"The scale applied to the player recoil when firing");

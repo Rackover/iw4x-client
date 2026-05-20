@@ -1,4 +1,4 @@
-#include <STDInclude.hpp>
+#include "System.hpp"
 
 namespace Game
 {
@@ -26,10 +26,19 @@ namespace Game
 	Sys_CreateFile_t Sys_CreateFile = Sys_CreateFile_t(0x4B2EF0);
 	Sys_OutOfMemErrorInternal_t Sys_OutOfMemErrorInternal = Sys_OutOfMemErrorInternal_t(0x4B2E60);
 	Sys_QuitAndStartProcess_t Sys_QuitAndStartProcess = Sys_QuitAndStartProcess_t(0x45FCF0);
+	Sys_Quit_t Sys_Quit = Sys_Quit_t(0x4D6970);
+	Sys_QueEvent_t Sys_QueEvent = Sys_QueEvent_t(0x497DE0);
 
 	char(*sys_exitCmdLine)[1024] = reinterpret_cast<char(*)[1024]>(0x649FB68);
+	char(*sys_cmdline)[1024] = reinterpret_cast<char(*)[1024]>(0x649F760);
 
 	RTL_CRITICAL_SECTION* s_criticalSection = reinterpret_cast<RTL_CRITICAL_SECTION*>(0x6499BC8);
+
+	void Sys_QueEvents(int time, int type, int value2, int ptrLength, void* ptr)
+	{
+		Sys_QueEvent(time, type, value2, TRUE, ptrLength, ptr);
+		Sys_QueEvent(time, type, value2, FALSE, ptrLength, ptr);
+	}
 
 	void Sys_LockRead(FastCriticalSection* critSect)
 	{
@@ -60,6 +69,6 @@ namespace Game
 	HANDLE Sys_OpenFileReliable(const char* filename)
 	{
 		return CreateFileA(filename, GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING,
-		                   FILE_FLAG_OVERLAPPED | FILE_FLAG_NO_BUFFERING, nullptr);
+			FILE_FLAG_OVERLAPPED | FILE_FLAG_NO_BUFFERING, nullptr);
 	}
 }

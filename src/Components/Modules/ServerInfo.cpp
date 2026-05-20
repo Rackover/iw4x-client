@@ -1,10 +1,9 @@
-#include <STDInclude.hpp>
 #include <Utils/InfoString.hpp>
 
+#include "ServerInfo.hpp"
 #include "Friends.hpp"
 #include "Gamepad.hpp"
 #include "Party.hpp"
-#include "ServerInfo.hpp"
 #include "ServerList.hpp"
 #include "UIFeeder.hpp"
 #include "Voice.hpp"
@@ -234,6 +233,16 @@ namespace Components
 					// Score and ping are irrelevant
 					const auto* namePtr = Game::PartyHost_GetMemberName(reinterpret_cast<Game::PartyData*>(0x1081C00), i);
 					if (!namePtr || !*namePtr) continue;
+
+					if (Game::svs_clients[i].header.state >= Game::CS_ACTIVE &&
+						  Game::svs_clients[i].gentity && Game::svs_clients[i].gentity->client)
+					{
+						const auto client = Game::svs_clients[i].gentity->client;
+						const auto team = client->sess.cs.team;
+
+						if (Game::svs_clients[i].bIsTestClient || team == Game::TEAM_SPECTATOR)
+							continue;
+					}
 
 					name = namePtr;
 				}

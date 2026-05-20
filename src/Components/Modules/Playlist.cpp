@@ -1,10 +1,9 @@
-#include <STDInclude.hpp>
 #include <Utils/Compression.hpp>
 
 #include <proto/party.pb.h>
 
-#include "Party.hpp"
 #include "Playlist.hpp"
+#include "Party.hpp"
 
 namespace Components
 {
@@ -83,13 +82,13 @@ namespace Components
 			Logger::Print("Received stray playlist response, ignoring it.\n");
 			return;
 		}
-			
+
 		if (address != Party::Target())
 		{
 			Logger::Print("Received playlist from someone else than our target host, ignoring it.\n");
 			return;
 		}
-		
+
 		Proto::Party::Playlist list;
 
 		if (!list.ParseFromString(data))

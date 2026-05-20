@@ -67,6 +67,9 @@
 #include <hidsdi.h>
 #pragma comment(lib, "Hid.lib")
 
+#include <CommCtrl.h>
+#pragma comment(lib, "Comctl32.lib")
+
 #pragma warning(push)
 #pragma warning(disable: 4005)
 #include <wrl/client.h>

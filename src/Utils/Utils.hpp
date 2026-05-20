@@ -14,6 +14,18 @@ namespace Utils
 
 	bool IsWineEnvironment();
 
+	/// <summary>
+	/// Retrieves the current Windows Version, Build Number, and Architecture.
+	/// </summary>
+	/// <returns>A std::string of format "Windows {type} (Build {number}) {Arch}"</returns>
+	std::string GetWindowsVersion();
+
+	/// <summary>
+	/// Returns the architecture of the current Windows Version as a string.
+	/// </summary>
+	/// <returns>A string that is either "64 Bit", "32 Bit", "ARM" or "Unknown Architecture"</returns>
+	std::string GetWindowsArchitecture();
+
 	unsigned long GetParentProcessId();
 	std::size_t GetModuleSize(HMODULE);
 	void* GetThreadStartAddress(HANDLE hThread);
@@ -27,6 +39,8 @@ namespace Utils
 	std::wstring GetLaunchParameters();
 
 	bool HasIntersection(unsigned int base1, unsigned int len1, unsigned int base2, unsigned int len2);
+
+	std::string GetTime();
 
 	template <typename T>
 	void RotLeft(T& object, std::size_t bits)

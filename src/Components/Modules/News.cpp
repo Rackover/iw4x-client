@@ -1,40 +1,101 @@
-#include <STDInclude.hpp>
-#include "Changelog.hpp"
 #include "News.hpp"
+#include "Changelog.hpp"
+#include "StartupMessages.hpp"
+#include "rapidjson/document.h"
+#include "version.h"
 
 #define NEWS_MOTD_DEFAULT "Welcome to IW4x Multiplayer!"
 
+/*
+  MOTD, Changelog and popup messages are fetched as JSON using Cache::GetFile.
+  {
+     "motd":string,
+     "popmenu":[
+	    {
+		   "title":string,
+		   "message":string,
+		   "revisions":array of strings,
+		   "show":bool
+	    }
+     ],
+     "changelog":string
+  }
+
+  Popups are shown on startup using StartupMessages::AddMessage.
+  In any case where theres invalid data in the response/the request failed,
+  the default values are used or, in case of popups, they are discarded.
+  We only accept a valid response, anything that doesn't match the above format is discarded.
+*/
+
 namespace Components
 {
-	bool News::Terminate;
-	std::thread News::Thread;
-
-	bool News::unitTest()
-	{
-		bool result = true;
-
-		if (Thread.joinable())
-		{
-			Logger::Debug("Awaiting thread termination...");
-			Thread.join();
-
-			if (!std::strcmp(Localization::Get("MPUI_MOTD_TEXT"), NEWS_MOTD_DEFAULT))
-			{
-				Logger::Print("Failed to fetch motd!\n");
-				result = false;
-			}
-			else
-			{
-				Logger::Print("Successfully fetched motd");
-			}
-		}
-
-		return result;
-	}
-
 	const char* News::GetNewsText()
 	{
 		return Localization::Get("MPUI_MOTD_TEXT");
+	}
+
+	std::optional<std::string> News::ExtractStringByMemberName(const rapidjson::Document& document, const std::string& memberName)
+	{
+		if (document.HasMember(memberName) && document[memberName].IsString())
+			return document[memberName].GetString();
+
+		return std::nullopt;
+	}
+
+	void News::ProcessPopmenus(const rapidjson::Document& document)
+	{
+		if (!document.HasMember("popmenu") || !document["popmenu"].IsArray())
+			return;
+
+		for (const auto& menuItem : document["popmenu"].GetArray())
+		{
+			auto item = ExtractPopmenuItem(menuItem);
+			if (!item.has_value())
+				continue;
+
+			if (ShouldShowForRevision(menuItem["revisions"]))
+				StartupMessages::AddMessage(item->second, item->first);
+		}
+	}
+
+	std::optional<std::pair<std::string, std::string>> News::ExtractPopmenuItem(const rapidjson::Value& menuItem)
+	{
+		if (!menuItem.HasMember("title") ||
+			!menuItem.HasMember("message") ||
+			!menuItem.HasMember("revisions") ||
+			!menuItem.HasMember("show"))
+		{
+			return std::nullopt;
+		}
+
+
+		if (!menuItem["show"].GetBool())
+			return std::nullopt;
+
+		const auto& title = menuItem["title"];
+		const auto& message = menuItem["message"];
+
+		if (!title.IsString() || !message.IsString())
+			return std::nullopt;
+
+		return std::make_pair(title.GetString(), message.GetString());
+	}
+
+	bool News::ShouldShowForRevision(const rapidjson::Value& revisions)
+	{
+		if (!revisions.IsArray())
+			return false;
+
+		for (const auto& revision : revisions.GetArray())
+		{
+			if (!revision.IsString())
+				continue;
+
+			const std::string revStr = revision.GetString();
+			if (revStr == REVISION_STR || revStr == "any")
+				return true;
+		}
+		return false;
 	}
 
 	News::News()
@@ -43,18 +104,20 @@ namespace Components
 
 		Dvar::Register<bool>("g_firstLaunch", true, Game::DVAR_ARCHIVE, "");
 
+		// Called by main_text.menu
 		UIScript::Add("checkFirstLaunch", []([[maybe_unused]] const UIScript::Token& token, [[maybe_unused]] const Game::uiInfo_s* info)
 		{
 			if (Dvar::Var("g_firstLaunch").get<bool>())
 			{
 				Command::Execute("openmenu menu_first_launch", false);
-				//Dvar::Var("g_firstLaunch").set(false); // The menus should set it
 			}
+
+			StartupMessages::Show();
 		});
 
 		UIScript::Add("visitWebsite", []([[maybe_unused]] const UIScript::Token& token, [[maybe_unused]] const Game::uiInfo_s* info)
 		{
-			Utils::OpenUrl(Utils::Cache::GetUrl(Utils::Cache::Urls[1], {}));
+			Utils::OpenUrl("https://iw4x.io");
 		});
 
 		Localization::Set("MPUI_CHANGELOG_TEXT", "Loading...");
@@ -67,42 +130,28 @@ namespace Components
 		Utils::Hook::Nop(0x6388BB, 2); // skip the "if (item->text[0] == '@')" localize check
 		Utils::Hook(0x6388C1, GetNewsText, HOOK_CALL).install()->quick();
 
-		if (!Utils::IsWineEnvironment() && !Loader::IsPerformingUnitTests())
-		{
-			Terminate = false;
-			Thread = std::thread([]()
-			{
-				Changelog::LoadChangelog();
-				if (Terminate) return;
+		const auto result = Utils::Cache::GetFile("/info");
+		if (result.empty())
+			return;
 
-				const auto data = Utils::Cache::GetFile("/iw4/motd.txt");
-				if (!data.empty())
-				{
-					Localization::Set("MPUI_MOTD_TEXT", data);
-				}
+		rapidjson::Document jsonDocument{};
+		const rapidjson::ParseResult parseResult = jsonDocument.Parse(result);
 
-				if (!Loader::IsPerformingUnitTests() && !Terminate)
-				{
-					while (!Terminate)
-					{
-						// Sleep for 3 minutes
-						for (int i = 0; i < 180 && !Terminate; ++i)
-						{
-							Game::Sys_Sleep(1);
-						}
-					}
-				}
-			});
-		}
-	}
+		if (!parseResult || !jsonDocument.IsObject())
+			return;
 
-	void News::preDestroy()
-	{
-		Terminate = true;
+		auto motd = ExtractStringByMemberName(jsonDocument, "motd");
+		auto changelog = ExtractStringByMemberName(jsonDocument, "changelog");
 
-		if (Thread.joinable())
-		{
-			Thread.join();
-		}
+		if (!motd.has_value())
+			motd = NEWS_MOTD_DEFAULT;
+
+		if (!changelog.has_value())
+			changelog = "Changelog could not be retrieved.";
+
+		Localization::Set("MPUI_MOTD_TEXT", motd.value());
+		Changelog::SetChangelog(changelog.value());
+
+		ProcessPopmenus(jsonDocument);
 	}
 }

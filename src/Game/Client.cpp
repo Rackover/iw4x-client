@@ -1,4 +1,4 @@
-#include <STDInclude.hpp>
+#include "Client.hpp"
 
 namespace Game
 {
@@ -38,6 +38,8 @@ namespace Game
 	clientUIActive_t* clientUIActives = reinterpret_cast<clientUIActive_t*>(0xB2BB88);
 
 	clientActive_t* clients = reinterpret_cast<clientActive_t*>(0xB2C698);
+
+	GfxConfiguration* gfxCfg = reinterpret_cast<GfxConfiguration*>(0x66E1C90);
 
 	cg_s* cgArray = reinterpret_cast<cg_s*>(0x7F0F78);
 	cgs_t* cgsArray = reinterpret_cast<cgs_t*>(0x7ED3B8);

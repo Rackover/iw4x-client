@@ -1,4 +1,3 @@
-#include <STDInclude.hpp>
 #include <proto/ipc.pb.h>
 
 #include "IPCPipe.hpp"
@@ -65,12 +64,8 @@ namespace Components
 
 		if (INVALID_HANDLE_VALUE != this->pipe && this->pipe)
 		{
-			// Only create the thread, when not performing unit tests!
-			if (!Loader::IsPerformingUnitTests())
-			{
-				this->threadAttached = true;
-				this->thread = std::thread(ReceiveThread, this);
-			}
+			this->threadAttached = true;
+			this->thread = std::jthread(ReceiveThread, this);
 
 			Logger::Print("Pipe successfully created\n");
 			return true;
@@ -201,7 +196,7 @@ namespace Components
 
 	IPCPipe::IPCPipe()
 	{
-		if (Dedicated::IsEnabled() || Loader::IsPerformingUnitTests() || ZoneBuilder::IsEnabled()) return;
+		if (Dedicated::IsEnabled() || ZoneBuilder::IsEnabled()) return;
 
 		// Server pipe
 		ServerPipe.onConnect(ConnectClient);
@@ -230,11 +225,5 @@ namespace Components
 			Logger::Print("Sending ping to pipe!\n");
 			Write("ping", {});
 		});
-	}
-
-	void IPCPipe::preDestroy()
-	{
-		ServerPipe.destroy();
-		ClientPipe.destroy();
 	}
 }

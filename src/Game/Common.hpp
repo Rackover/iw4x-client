@@ -74,18 +74,26 @@ namespace Game
 	typedef char* (*Com_LoadInfoString_t)(const char* fileName, const char* fileDesc, const char* ident, char* loadBuffer);
 	extern Com_LoadInfoString_t Com_LoadInfoString;
 
+	typedef void (*Com_SyncThreads_t)();
+	extern Com_SyncThreads_t Com_SyncThreads;
+
 	extern int* com_frameTime;
 
 	extern int* com_fixedConsolePosition;
 
 	extern int* com_errorPrintsCount;
 
+	extern int* com_consoleLogOpenFailed;
 	extern int* errorcode;
+
+	extern int* opening_qconsole;
 
 	extern char* Com_GetParseThreadInfo();
 	extern void Com_SetParseNegativeNumbers(int parse);
 
 	extern const char* Com_LoadInfoString_FastFile(const char* fileName, const char* fileDesc, const char* ident, char* loadBuffer);
+
+	extern char* Com_GetCommandLine();
 }
 
 #define Com_InitThreadData()                                                             \

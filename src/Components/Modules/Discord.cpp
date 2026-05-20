@@ -1,4 +1,3 @@
-#include <STDInclude.hpp>
 #include "Discord.hpp"
 #include "Party.hpp"
 #include "TextRenderer.hpp"
@@ -136,15 +135,5 @@ namespace Components
 		Scheduler::Loop(UpdateDiscord, Scheduler::Pipeline::MAIN, 15s);
 
 		Initialized_ = true;
-	}
-
-	void Discord::preDestroy()
-	{
-		if (!Initialized_)
-		{
-			return;
-		}
-
-		Discord_Shutdown();
 	}
 }

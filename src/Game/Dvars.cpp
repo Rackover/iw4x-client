@@ -1,4 +1,4 @@
-#include <STDInclude.hpp>
+#include "Dvars.hpp"
 
 namespace Game
 {
@@ -20,6 +20,7 @@ namespace Game
 	Dvar_InfoString_Big_t Dvar_InfoString_Big = Dvar_InfoString_Big_t(0x4D98A0);
 	Dvar_SetCommand_t Dvar_SetCommand = Dvar_SetCommand_t(0x4EE430);
 	Dvar_DisplayableValue_t Dvar_DisplayableValue = Dvar_DisplayableValue_t(0x4B5530);
+	Dvar_ClearModified_t Dvar_ClearModified = Dvar_ClearModified_t(0x494290);
 	Dvar_Reset_t Dvar_Reset = Dvar_Reset_t(0x4FEFD0);
 
 	Dvar_SetFromStringByName_t Dvar_SetFromStringByName = Dvar_SetFromStringByName_t(0x4F52E0);
@@ -36,9 +37,12 @@ namespace Game
 	const dvar_t** com_developer_script = reinterpret_cast<const dvar_t**>(0x1AD8F10);
 	const dvar_t** com_timescale = reinterpret_cast<const dvar_t**>(0x1AD7920);
 	const dvar_t** com_maxFrameTime = reinterpret_cast<const dvar_t**>(0x1AD78F4);
-	const dvar_t** com_sv_running = reinterpret_cast<const dvar_t**>(0x1AD7934);
 	const dvar_t** com_masterServerName = reinterpret_cast<const dvar_t**>(0x1AD8F48);
 	const dvar_t** com_masterPort = reinterpret_cast<const dvar_t**>(0x1AD8F30);
+
+	const dvar_t** r_mode	= reinterpret_cast<const dvar_t**>(0x69F0E00);
+	const dvar_t** vid_xpos = reinterpret_cast<const dvar_t**>(0x69F0EA4);
+	const dvar_t** vid_ypos = reinterpret_cast<const dvar_t**>(0x69F0DFC);
 
 	const dvar_t** dev_timescale = reinterpret_cast<const dvar_t**>(0x1AD8F20);
 
@@ -50,6 +54,7 @@ namespace Game
 	const dvar_t** fs_homepath = reinterpret_cast<const dvar_t**>(0x63D4FD8);
 
 	const dvar_t** sv_privatePassword = reinterpret_cast<const dvar_t**>(0x62C7C14);
+	const dvar_t** sv_running = reinterpret_cast<const dvar_t**>(0x1AD7934);
 	const dvar_t** sv_hostname = reinterpret_cast<const dvar_t**>(0x2098D98);
 	const dvar_t** sv_gametype = reinterpret_cast<const dvar_t**>(0x2098DD4);
 	const dvar_t** sv_mapname = reinterpret_cast<const dvar_t**>(0x2098DDC);
@@ -80,6 +85,7 @@ namespace Game
 	const dvar_t** cg_scoreboardWidth = reinterpret_cast<const dvar_t**>(0x9FD0AC);
 
 	const dvar_t** version = reinterpret_cast<const dvar_t**>(0x1AD7930);
+	const dvar_t** shortversion = reinterpret_cast<const dvar_t**>(0x01AD79D0);
 
 	const dvar_t** viewposNow = reinterpret_cast<const dvar_t**>(0x9FD30C);
 

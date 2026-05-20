@@ -1,5 +1,4 @@
-#include <STDInclude.hpp>
-
+#include "Maps.hpp"
 #include "ArenaLength.hpp"
 #include "FastFiles.hpp"
 #include "RawFiles.hpp"
@@ -102,7 +101,7 @@ namespace Components
 			Utils::Hook::Call<void(void*)>(0x6B5CF2)(this->searchPath.iwd->buildBuffer);
 			Utils::Hook::Call<void(void*)>(0x6B5CF2)(this->searchPath.iwd);
 
-			ZeroMemory(&this->searchPath, sizeof this->searchPath);
+			ZeroMemory(&this->searchPath, sizeof(this->searchPath));
 		}
 	}
 
@@ -279,13 +278,20 @@ namespace Components
 
 		if (type == Game::XAssetType::ASSET_TYPE_MAP_ENTS)
 		{
-			if (Flags::HasFlag("dump"))
+			std::string entitiesFilename = name;
+
+			if (entitiesFilename.starts_with("maps/mp/maps/mp") && entitiesFilename.ends_with(".d3dbsp.d3dbsp"))
 			{
-				Utils::IO::WriteFile(Utils::String::VA("raw/%s.ents", name.data()), asset.mapEnts->entityString, true);
+				// As of 2026 some MW3 maps have been built with this strange clipmap name, likely an artifact of IW5xport.
+				// It is not problematic in itself but it breaks overrides via ents files
+				// We can hotfix it here until one day where we re-build and re-ship every MW3 maps with additional fixes
+				const auto prefixLength = "maps/mp/"s.size();
+				const auto suffixLength = ".d3dbsp"s.size();
+				entitiesFilename = entitiesFilename.substr(prefixLength, entitiesFilename.size() - prefixLength - suffixLength);
 			}
 
 			static std::string mapEntities;
-			FileSystem::File ents(name + ".ents", Game::FS_THREAD_DATABASE);
+			FileSystem::File ents(entitiesFilename + ".ents", Game::FS_THREAD_DATABASE);
 			if (ents.exists())
 			{
 				mapEntities = ents.getBuffer();
@@ -467,12 +473,28 @@ namespace Components
 
 	void Maps::PrepareUsermap(const char* mapname)
 	{
+		// Handle the redundant call scenario first.
+		//
+		// It appears that this function is called a second time during fastfile
+		// loading. If we are already holding a valid IWD for this map, we must
+		// return immediately. Proceeding would cause us to free the IWD we just
+		// loaded.
+		//
+		if (Maps::UserMap.isValid() && Maps::UserMap.getName() == mapname)
+			return;
+
+		// If we are here, we are either starting up or switching contexts. In
+		// either case, we need to tear down any previous state before loading the
+		// new one.
+		//
 		if (Maps::UserMap.isValid())
 		{
 			Maps::UserMap.freeIwd();
 			Maps::UserMap.clear();
 		}
 
+		// Now set up the new map.
+		//
 		if (Maps::IsUserMap(mapname))
 		{
 			Maps::UserMap = Maps::UserMapContainer(mapname);
@@ -480,6 +502,8 @@ namespace Components
 		}
 		else
 		{
+			// If the mapname isn't valid, we leave the state cleared.
+			//
 			Maps::UserMap.clear();
 		}
 	}
@@ -516,7 +540,7 @@ namespace Components
 		Theatre::StopRecording();
 
 		char hashBuf[100] = { 0 };
-		unsigned int hash = atoi(Game::MSG_ReadStringLine(msg, hashBuf, sizeof hashBuf));
+		unsigned int hash = atoi(Game::MSG_ReadStringLine(msg, hashBuf, sizeof(hashBuf)));
 
 		if (!Maps::CheckMapInstalled(mapname, false, true) || hash && hash != Maps::GetUsermapHash(mapname))
 		{
@@ -804,6 +828,60 @@ namespace Components
 		return 0;
 	}
 
+	void Maps::GSCr_GetMapArenaInfo()
+	{
+		if (Game::Scr_GetNumParam() != 2)
+		{
+			Game::Scr_Error("GetMapArenaInfo: Needs a map name and a field name!");
+			return;
+		}
+
+		const std::string mapName = Game::SL_ConvertToString(Game::Scr_GetConstString(0));
+		const std::string fieldName = Game::SL_ConvertToString(Game::Scr_GetConstString(1));
+
+		Game::UI_UpdateArenas();
+		for (int i = 0; i < *Game::arenaCount; ++i)
+		{
+			Game::newMapArena_t* arena = &ArenaLength::NewArenas[i];
+			if (arena->mapName == mapName)
+			{
+				// Found the map!
+				for (std::size_t j = 0; j < std::extent_v<decltype(Game::newMapArena_t::keys)>; ++j)
+				{
+					const auto* key = arena->keys[j];
+					const auto* value = arena->values[j];
+
+					// Foudn the field!
+					if (key == fieldName)
+					{
+						Game::Scr_AddString(value);
+						return;
+					}
+				}
+
+				const std::string error = std::format("Could not find field {} in arena entry for map {}!\n", fieldName, mapName);
+				Game::Scr_Error(error.data());
+				return;
+			}
+		}
+
+		const std::string error = std::format("Map {} has no arena entry!\n", mapName);
+		Game::Scr_Error(error.data());
+	}
+
+	void Maps::GSCr_GetMapList()
+	{
+		Game::Scr_MakeArray();
+
+		Game::UI_UpdateArenas();
+		for (int i = 0; i < *Game::arenaCount; ++i)
+		{
+			Game::newMapArena_t* arena = &ArenaLength::NewArenas[i];
+			Game::Scr_AddString(arena->mapName);
+			Game::Scr_AddArray();
+		}
+	}
+
 	Maps::Maps()
 	{
 		// disable turrets on CoD:OL 448+ maps for now
@@ -819,7 +897,7 @@ namespace Components
 		Utils::Hook(0x5FC2671, Maps::SV_SetTriggerModelHook, HOOK_CALL).install()->quick();
 #endif
 
-		// 
+		//
 
 //#define SORT_SMODELS
 #if !defined(DEBUG) || !defined(SORT_SMODELS)
@@ -886,67 +964,22 @@ namespace Components
 		// Allow hiding specific smodels
 		Utils::Hook(0x50E67C, Maps::HideModelStub, HOOK_CALL).install()->quick();
 
+		// gsc: GetMapList()
+		Components::GSC::Script::AddFunction(
+			"LOUV_GetMapList",
+			GSCr_GetMapList
+		);
+
+		// gsc: GetMapArenaInfo(mapName, fieldName)
+		Components::GSC::Script::AddFunction(
+			"LOUV_GetMapArenaInfo",
+			GSCr_GetMapArenaInfo
+		);
+
 		if (Dedicated::IsEnabled() || ZoneBuilder::IsEnabled())
 		{
 			return;
 		}
-
-		Components::GSC::Script::AddFunction("LOUV_GetMapList", [] // gsc: LOUV_GetMapList()
-			{
-				Game::Scr_MakeArray();
-
-				Game::UI_UpdateArenas();
-				for (int i = 0; i < *Game::arenaCount; ++i)
-				{
-					Game::newMapArena_t* arena = &ArenaLength::NewArenas[i];
-					Game::Scr_AddString(arena->mapName);
-					Game::Scr_AddArray();
-				}
-			});
-
-
-		Components::GSC::Script::AddFunction("LOUV_GetMapArenaInfo", [] // gsc: LOUV_GetMapArenaInfo(mapName, fieldName)
-			{
-				if (Game::Scr_GetNumParam() != 2)
-				{
-					Game::Scr_Error("LOUV_GetMapArenaInfo: Needs az map name and a field name!");
-					return;
-				}
-
-
-				const std::string mapName = Game::SL_ConvertToString(Game::Scr_GetConstString(0));
-				const std::string fieldName = Game::SL_ConvertToString(Game::Scr_GetConstString(1));
-
-				Game::UI_UpdateArenas();
-				for (int i = 0; i < *Game::arenaCount; ++i)
-				{
-					Game::newMapArena_t* arena = &ArenaLength::NewArenas[i];
-					if (arena->mapName == mapName)
-					{
-						// Found the map!
-						for (std::size_t j = 0; j < std::extent_v<decltype(Game::newMapArena_t::keys)>; ++j)
-						{
-							const auto* key = arena->keys[j];
-							const auto* value = arena->values[j];
-
-							// Foudn the field!
-							if (key == fieldName)
-							{
-								Game::Scr_AddString(value);
-								return;
-							}
-						}
-
-						const std::string error = std::format("Could not find field {} in arena entry for map {}!\n", fieldName, mapName);
-						Game::Scr_Error(error.data());
-						return;
-					}
-				}
-
-				const std::string error = std::format("Map {} has no arena entry!\n", mapName);
-				Game::Scr_Error(error.data());
-			});
-
 	}
 
 	Maps::~Maps()

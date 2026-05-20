@@ -1,4 +1,5 @@
-#include <STDInclude.hpp>
+#include "Steam.hpp"
+
 #include "Components/Modules/StartupMessages.hpp"
 
 namespace Steam
@@ -125,23 +126,22 @@ namespace Steam
 		bool SteamAPI_Init()
 		{
 #ifdef DISABLE_STEAM
-			Proxy::SetGame(10190);
+      Proxy::SetGame(10190);
 
-			if (!Proxy::Inititalize())
-			{
+      if (!Proxy::Initialize())
+      {
 #ifdef _DEBUG
-				OutputDebugStringA("Steam proxy not initialized properly");
+        OutputDebugStringA("Steam proxy not initialized properly");
 #endif
-				Components::StartupMessages::AddMessage("Warning:\nUnable to connect to Steam. Steam features will be unavailable");
-			}
-			else
-			{
-				Proxy::SetMod("IW4x: Modern Warfare 2");
-				Proxy::RunGame();
-			}
+      }
+      else
+      {
+        Proxy::SetMod("IW4x: Modern Warfare 2");
+        Proxy::RunGame();
+      }
 #endif
 
-			return true;
+      return true;
 		}
 
 		void SteamAPI_RegisterCallResult(Callbacks::Base* result, uint64_t call)
@@ -162,7 +162,7 @@ namespace Steam
 
 		void SteamAPI_Shutdown()
 		{
-			Proxy::Uninititalize();
+			Proxy::UnInitialize();
 			Callbacks::Uninitialize();
 		}
 

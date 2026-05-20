@@ -7,7 +7,9 @@
 
 IW4x is a community-driven project that aims to revitalize and enhance the [Call of Duty: Modern Warfare 2 (2009)](https://store.steampowered.com/app/10180/Call_of_Duty_Modern_Warfare_2_2009/) multiplayer experience by providing a stable platform with support for dedicated servers and modding.
 
-IW4x is currently distributed through the [AlterWare Launcher](https://github.com/mxve/alterware-launcher).
+A [__Steam__](https://store.steampowered.com/app/10180/Call_of_Duty_Modern_Warfare_2_2009/) installation of Modern Warfare 2 is required to run IW4x, copies from the Microsoft Store are **not compatible**.
+
+IW4x is distributed through the [IW4x Launcher](https://github.com/iw4x/launcher).
 
 ## Compiling from Source
 
@@ -52,14 +54,12 @@ To use the `iw4x.dll`, you must have a valid Modern Warfare 2 installation with 
 |:----------------------------|:-----------------------------------------------|
 | `--copy-to=PATH`            | Optional, copy the DLL to a custom folder after build, define the path here if wanted. |
 | `--copy-pdb`                | Copy debug information for binaries as well to the path given via --copy-to. |
-| `--force-unit-tests`        | Always compile unit tests.                     |
 | `--disable-binary-check`    | Do not perform integrity checks on the exe. |
 
 ## Command line arguments
 
 | Argument                | Description                                    |
 |:------------------------|:-----------------------------------------------|
-| `-tests`                | Perform unit tests.                            |
 | `-entries`              | Print to the console a list of every asset as they are loaded from zonefiles. |
 | `-stdout`               | Redirect all logging output to the terminal iw4x is started from, or if there is none, creates a new terminal window to write log information in. |
 | `-console`              | Allow the game to display its own separate interactive console window. |
@@ -69,12 +69,14 @@ To use the `iw4x.dll`, you must have a valid Modern Warfare 2 installation with 
 | `-dump`                 | Write info of loaded assets to the raw folder as they are being loaded. |
 | `-nointro`              | Skip game's cinematic intro.                   |
 | `-version`              | Print IW4x build info on startup.              |
-| `-nosteam`              | Disable friends feature and do not update Steam about the game's current status just like an invisible mode. |
+| `-steam`                | Enable friends feature and other Steam integrations. |
 | `-unprotect-dvars`      | Allow the server to modify saved/archive dvars. |
 | `-zonebuilder`          | Start the interactive zonebuilder tool console instead of starting the game. |
+| `-original-str-parsing` | (ZoneBuilder mode only) Parse .str files in the same manner as the CoD4 Mod Tools. |
 | `-disable-notifies`     | Disable "Anti-CFG" checks |
 | `-disable-mongoose`     | Disable Mongoose HTTP server |
 | `-disable-rate-limit-check` | Disable RCon rate limit checks |
+| `-disable-mod-unloading` | Disable automatic mod (fs_game) unloading when disconnecting |
 
 ## Disclaimer
 

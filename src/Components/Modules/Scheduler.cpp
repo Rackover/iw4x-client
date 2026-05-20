@@ -1,11 +1,11 @@
-#include <STDInclude.hpp>
+#include "Scheduler.hpp"
 
 constexpr bool COND_CONTINUE = false;
 constexpr bool COND_END = true;
 
 namespace Components
 {
-	std::thread Scheduler::Thread;
+	std::jthread Scheduler::Thread;
 	volatile bool Scheduler::Kill = false;
 	Scheduler::TaskPipeline Scheduler::Pipelines[static_cast<std::underlying_type_t<Pipeline>>(Pipeline::COUNT)];
 
@@ -180,14 +180,5 @@ namespace Components
 
 		// Sys_Quit
 		Utils::Hook(0x4D697A, SysSetBlockSystemHotkeys_Hk, HOOK_CALL).install()->quick();
-	}
-
-	void Scheduler::preDestroy()
-	{
-		Kill = true;
-		if (Thread.joinable())
-		{
-			Thread.join();
-		}
 	}
 }

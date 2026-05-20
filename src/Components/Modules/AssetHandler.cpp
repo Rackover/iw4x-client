@@ -1,4 +1,4 @@
-#include <STDInclude.hpp>
+#include "AssetHandler.hpp"
 #include "FastFiles.hpp"
 #include "Weapon.hpp"
 
@@ -81,7 +81,8 @@ namespace Components
 
 	void AssetHandler::StoreTemporaryAsset(Game::XAssetType type, Game::XAssetHeader asset)
 	{
-		AssetHandler::TemporaryAssets[type][Game::DB_GetXAssetNameHandlers[type](&asset)] = asset;
+		const char* assetName = Game::DB_GetXAssetNameHandlers[type](&asset);
+  	AssetHandler::TemporaryAssets[type][assetName] = asset;
 	}
 
 	Game::XAssetHeader AssetHandler::FindAsset(Game::XAssetType type, const char* filename)

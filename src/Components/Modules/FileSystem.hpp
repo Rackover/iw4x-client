@@ -102,12 +102,15 @@ namespace Components
 		/**
 		 * The game will check in FS_Startup if homepath != default(base) path
 		 * If they differ which will happen when IW4x is containerized it will register two brand new search paths:
-		 * one for the container and one where the game files are. Pretty cool! 
+		 * one for the container and one where the game files are. Pretty cool!
 		*/
 		static const char* Sys_DefaultInstallPath_Hk();
 		static const char* Sys_DefaultCDPath_Hk();
 		static const char* Sys_HomePath_Hk();
 		static const char* Sys_Cwd_Hk();
+
+		static bool FileWrapper_Rotate(const char* ospath);
+		static bool FileRotate(const std::string& filename);
 
 	private:
 		static std::mutex Mutex;

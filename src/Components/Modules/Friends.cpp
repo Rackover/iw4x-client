@@ -1,12 +1,10 @@
-#include <STDInclude.hpp>
-
 #pragma warning(push)
 #pragma warning(disable: 4100)
 #include <proto/friends.pb.h>
 #pragma warning(pop)
 
-#include "Events.hpp"
 #include "Friends.hpp"
+#include "Events.hpp"
 #include "Materials.hpp"
 #include "Node.hpp"
 #include "Party.hpp"
@@ -142,7 +140,7 @@ namespace Components
 
 	void Friends::UpdateState()
 	{
-		if (Friends::CLAnonymous.get<bool>() || Friends::IsInvisible() || !Steam::Enabled())
+		if (Friends::CLAnonymous.get<bool>() || Friends::IsInvisible())
 		{
 			return;
 		}
@@ -238,7 +236,7 @@ namespace Components
 
 	void Friends::SetPresence(const std::string& key, const std::string& value)
 	{
-		if (Steam::Proxy::ClientFriends && Steam::Proxy::SteamUtils && !Friends::CLAnonymous.get<bool>() && !Friends::IsInvisible() && Steam::Enabled())
+		if (Steam::Proxy::ClientFriends && Steam::Proxy::SteamUtils && !Friends::CLAnonymous.get<bool>() && !Friends::IsInvisible())
 		{
 			Friends::SetRawPresence(key.data(), value.data());
 		}
@@ -681,7 +679,7 @@ namespace Components
 				Friends::InitialState = Steam::Proxy::SteamFriends->GetFriendPersonaState(Steam::Proxy::SteamUser_->GetSteamID());
 			}
 
-			if (Friends::CLAnonymous.get<bool>() || Friends::IsInvisible() || !Steam::Enabled())
+			if (Friends::CLAnonymous.get<bool>() || Friends::IsInvisible())
 			{
 				if (Steam::Proxy::ClientFriends)
 				{

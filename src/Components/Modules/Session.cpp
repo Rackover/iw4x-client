@@ -1,13 +1,9 @@
-#include <STDInclude.hpp>
 #include <proto/session.pb.h>
 
 #include "Session.hpp"
 
 namespace Components
 {
-	volatile bool Session::Terminate;
-	std::thread Session::Thread;
-
 	std::recursive_mutex Session::Mutex;
 	std::unordered_map<Network::Address, Session::Frame> Session::Sessions;
 	std::unordered_map<Network::Address, std::queue<std::shared_ptr<Session::Packet>>> Session::PacketQueue;
@@ -139,21 +135,17 @@ namespace Components
 		Session::SignatureKey = Utils::Cryptography::ECC::GenerateKey(512);
 		//Scheduler::OnFrame(Session::RunFrame);
 
-		if (!Loader::IsPerformingUnitTests())
+		Utils::Thread::CreateNamedThread("Session", []()
 		{
-			Session::Terminate = false;
-			Session::Thread = std::thread([]()
-			{
-				Com_InitThreadData();
+			Com_InitThreadData();
 
-				while (!Session::Terminate)
-				{
-					Session::RunFrame();
-					Session::HandleSignatures();
-					Game::Sys_Sleep(20);
-				}
-			});
-		}
+			for (;;)
+			{
+				Session::RunFrame();
+				Session::HandleSignatures();
+				Game::Sys_Sleep(20);
+			}
+		});
 
 		Network::OnPacket("sessionSyn", [](const Network::Address& address, [[maybe_unused]] const std::string& data)
 		{
@@ -196,92 +188,5 @@ namespace Components
 			handler->second(address, dataPacket.data());
 		});
 #endif
-	}
-
-	Session::~Session()
-	{
-		std::lock_guard _(Session::Mutex);
-		Session::PacketHandlers.clear();
-		Session::PacketQueue.clear();
-		Session::SignatureQueue = std::queue<std::pair<Network::Address, std::string>>();
-
-		Session::SignatureKey.free();
-	}
-
-	void Session::preDestroy()
-	{
-		Session::Terminate = true;
-		if (Session::Thread.joinable())
-		{
-			Session::Thread.join();
-		}
-	}
-
-	bool Session::unitTest()
-	{
-		printf("Testing ECDSA key...");
-		Utils::Cryptography::ECC::Key key = Utils::Cryptography::ECC::GenerateKey(512);
-
-		if (!key.isValid())
-		{
-			printf("Error\n");
-			printf("ECDSA key seems invalid!\n");
-			return false;
-		}
-
-		printf("Success\n");
-		printf("Testing 10 valid signatures...");
-
-		for (int i = 0; i < 10; ++i)
-		{
-			std::string message = Utils::Cryptography::Rand::GenerateChallenge();
-			std::string signature = Utils::Cryptography::ECC::SignMessage(key, message);
-
-			if (!Utils::Cryptography::ECC::VerifyMessage(key, message, signature))
-			{
-				printf("Error\n");
-				printf("Signature for '%s' (%d) was invalid!\n", message.data(), i);
-				return false;
-			}
-		}
-
-		printf("Success\n");
-		printf("Testing 10 invalid signatures...");
-
-		for (int i = 0; i < 10; ++i)
-		{
-			std::string message = Utils::Cryptography::Rand::GenerateChallenge();
-			std::string signature = Utils::Cryptography::ECC::SignMessage(key, message);
-
-			// Invalidate the message...
-			++message[Utils::Cryptography::Rand::GenerateInt() % message.size()];
-
-			if (Utils::Cryptography::ECC::VerifyMessage(key, message, signature))
-			{
-				printf("Error\n");
-				printf("Signature for '%s' (%d) was valid? What the fuck? That is absolutely impossible...\n", message.data(), i);
-				return false;
-			}
-		}
-
-		printf("Success\n");
-		printf("Testing ECDSA key import...");
-
-		std::string pubKey = key.getPublicKey();
-		std::string message = Utils::Cryptography::Rand::GenerateChallenge();
-		std::string signature = Utils::Cryptography::ECC::SignMessage(key, message);
-
-		Utils::Cryptography::ECC::Key testKey;
-		testKey.set(pubKey);
-
-		if (!Utils::Cryptography::ECC::VerifyMessage(key, message, signature))
-		{
-			printf("Error\n");
-			printf("Verifying signature for message '%s' using imported keys failed!\n", message.data());
-			return false;
-		}
-
-		printf("Success\n");
-		return true;
 	}
 }

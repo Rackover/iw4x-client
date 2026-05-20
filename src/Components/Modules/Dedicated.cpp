@@ -1,9 +1,10 @@
-#include <STDInclude.hpp>
 #include <Utils/InfoString.hpp>
 
+#include "Dedicated.hpp"
 #include "CardTitles.hpp"
 #include "ClanTags.hpp"
 #include "Events.hpp"
+#include "Friends.hpp"
 #include "Party.hpp"
 #include "ServerCommands.hpp"
 
@@ -31,8 +32,8 @@ namespace Components
 
 	bool Dedicated::IsRunning()
 	{
-		assert(*Game::com_sv_running);
-		return *Game::com_sv_running && (*Game::com_sv_running)->current.enabled;
+		assert(*Game::sv_running);
+		return *Game::sv_running && (*Game::sv_running)->current.enabled;
 	}
 
 	void Dedicated::InitDedicatedServer()
@@ -62,7 +63,7 @@ namespace Components
 
 	void Dedicated::PostInitialization()
 	{
-		Command::Execute("exec autoexec.cfg");
+		Command::Execute("exec autoexec.cfg"); // Can be used by mods / server owners at will : Currently shows an error message on a default setup
 		Command::Execute("onlinegame 1");
 		Command::Execute("exec default_xboxlive.cfg");
 		Command::Execute("xblive_rankedmatch 1");
@@ -114,7 +115,7 @@ namespace Components
 			popad
 
 			// Game's code
-			mov edx, dword ptr com_sv_running
+			mov edx, dword ptr sv_running
 
 			push 0x47DDB8
 			ret
@@ -160,7 +161,7 @@ namespace Components
 	}
 
 	void Dedicated::Heartbeat()
-	{	
+	{
 		// Do not send a heartbeat if sv_lanOnly is set to true
 		if (SVLanOnly.get<bool>())
 		{
@@ -299,7 +300,7 @@ namespace Components
 					PlayerGuids[client][0].bits = std::strtoull(params->get(2 * client + 1), nullptr, 16);
 					PlayerGuids[client][1].bits = std::strtoull(params->get(2 * client + 2), nullptr, 16);
 
-					if (Steam::Proxy::SteamFriends && PlayerGuids[client][1].bits != 0)
+					if (Steam::Proxy::SteamFriends && PlayerGuids[client][1].bits != 0 && !Friends::IsInvisible() && !Friends::CLAnonymous.get<bool>())
 					{
 						Steam::Proxy::SteamFriends->SetPlayedWith(PlayerGuids[client][1]);
 					}

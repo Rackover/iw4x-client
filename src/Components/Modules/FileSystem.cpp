@@ -1,4 +1,4 @@
-#include <STDInclude.hpp>
+#include "FileSystem.hpp"
 
 namespace Components
 {
@@ -379,6 +379,65 @@ namespace Components
 		return Utils::Hook::Call<Game::HunkUser*(int, const char*, bool, int)>(0x430E90)(maxSize, name, fixed, type);
 	}
 
+	bool FileSystem::FileWrapper_Rotate(const char* ospath)
+	{
+		constexpr auto MAX_BACKUPS = 20;
+
+		std::string renamedPath;
+
+		std::optional<int> oldestIndex;
+		auto currentIndex = 0;
+		std::filesystem::file_time_type oldestime{};
+
+		// Check if the original file exists
+		if (!Utils::IO::FileExists(ospath))
+		{
+			return true; // Return true if the file does not exist (no file to rotate)
+		}
+
+		for (; currentIndex < MAX_BACKUPS; ++currentIndex)
+		{
+			renamedPath = std::format("{0}.{1:03}", ospath, currentIndex);
+
+			if (!Utils::IO::FileExists(renamedPath))
+			{
+				break; // Stop if an available slot is found
+			}
+
+			auto time = std::filesystem::last_write_time(renamedPath);
+			if (!oldestIndex.has_value() || time < oldestime)
+			{
+				oldestime = time;
+				oldestIndex = currentIndex;
+			}
+		}
+
+		if (currentIndex == MAX_BACKUPS)
+		{
+			renamedPath = std::format("{0}.{1:03}", ospath, *oldestIndex);
+			Utils::IO::RemoveFile(renamedPath); // Remove the oldest backup file
+		}
+		else
+		{
+			renamedPath = std::format("{0}.{1:03}", ospath, currentIndex);
+		}
+
+		// Rename the original file to the selected backup slot
+		std::error_code ec;
+		std::filesystem::rename(ospath, renamedPath, ec);
+
+		return !ec;
+	}
+
+	bool FileSystem::FileRotate(const std::string& filename)
+	{
+		std::array<char, MAX_OSPATH> ospath{};
+
+		const auto* basepath = (*Game::fs_homepath)->current.string;
+		Game::FS_BuildOSPath(basepath, Game::fs_gamedir, filename.c_str(), ospath.data());
+		return FileWrapper_Rotate(ospath.data());
+	}
+
 	FileSystem::FileSystem()
 	{
 		// Thread safe file system interaction
@@ -427,12 +486,12 @@ namespace Components
 		// Set the working dir based on info from the Xlabs launcher
 		Utils::Hook(0x4326E0, Sys_DefaultInstallPath_Hk, HOOK_JUMP).install()->quick();
 
-		// Make the exe run from a folder other than the game folder 
+		// Make the exe run from a folder other than the game folder
 		Utils::Hook(0x406D26, FS_FileOpenReadText_Hk, HOOK_CALL).install()->quick();
 
-		// Make the exe run from a folder other than the game folder 
-		Utils::Hook::Nop(0x4290D8, 5); // FS_IsBasePathValid  
-		Utils::Hook::Set<uint8_t>(0x4290DF, 0xEB);				
+		// Make the exe run from a folder other than the game folder
+		Utils::Hook::Nop(0x4290D8, 5); // FS_IsBasePathValid
+		Utils::Hook::Set<uint8_t>(0x4290DF, 0xEB);
 		// ^^ This check by the game above is super redundant, IW4x has other checks in place to make sure we
 		// are running from a properly installed directory. This only breaks the containerized patch and we don't need it
 
@@ -441,7 +500,7 @@ namespace Components
 		Utils::Hook(0x643232, Sys_HomePath_Hk, HOOK_CALL).install()->quick();
 		Utils::Hook(0x6431B6, Sys_Cwd_Hk, HOOK_CALL).install()->quick();
 		Utils::Hook(0x51C29A, Sys_Cwd_Hk, HOOK_CALL).install()->quick();
-		
+
 		// patch max file amount returned by Sys_ListFiles
 		Utils::Hook::Set<std::uint32_t>(0x45A66B, (NEW_MAX_FILES_LISTED + FILE_COUNT_MULTIPLIER) * 4);
 		Utils::Hook::Set<std::uint32_t>(0x64AF78, NEW_MAX_FILES_LISTED);
