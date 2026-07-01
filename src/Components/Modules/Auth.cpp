@@ -602,13 +602,8 @@ namespace Components
 								}
 							}
 						}
-
-						pIpAdapterInfo = pIpAdapterInfo->Next;
 					}
 				}
-
-				// Free before going next because clearly this is not working
-				free(pIpAdapterInfo);
 			}
 
 		}
