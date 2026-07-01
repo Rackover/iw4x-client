@@ -1,5 +1,6 @@
 #include "Window.hpp"
 #include "FastFiles.hpp"
+#include "Events.hpp"
 
 namespace Components
 {
@@ -181,9 +182,11 @@ namespace Components
 
 	Window::Window()
 	{
-		// Borderless window
-		Window::NoBorder = Dvar::Register<bool>("r_noborder", false, Game::DVAR_SAVED, "Do not use a border in windowed mode");
-		Window::NativeCursor = Dvar::Register<bool>("ui_nativeCursor", false, Game::DVAR_SAVED, "Display native cursor");
+		Components::Events::OnDvarInit([]() {
+			// Borderless window
+			Window::NoBorder = Dvar::Register<bool>("r_noborder", false, Game::DVAR_ARCHIVE | Game::DVAR_SAVED, "Do not use a border in windowed mode");
+			Window::NativeCursor = Dvar::Register<bool>("ui_nativeCursor", false, Game::DVAR_ARCHIVE | Game::DVAR_SAVED, "Display native cursor");
+		});
 
 		Utils::Hook(0x507643, Window::StyleHookStub, HOOK_CALL).install()->quick();
 
